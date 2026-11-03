@@ -14,7 +14,7 @@ These are the rules enforced by the Django models on the central server. The Flu
 
 Show the messages below to the user.
 
-The server returns the same wording only for rules marked **(same on server)**. For the other rules, the server currently returns Django's default English message, so the wording here is for the app.
+The server returns the same wording only for rules marked **(same on server)**. For the other rules, the server returns Django's default French message, which may be worded differently, so the wording here is for the app.
 
 Standard messages used in the tables:
 
@@ -170,12 +170,29 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `prenom` | Required | Up to 100 characters | OBLIGATOIRE, LONGUEUR |
 | `email` | Optional (empty text), valid email format | Up to 254 characters | Saisissez une adresse e-mail valide. |
 | `phone` | Optional (empty text), **not unique** | Up to 20 characters | LONGUEUR |
-| `role` | Required | `femme`, `asc`, `agent_csb`, `admin` | CHOIX |
+| `profile_id` | Required | Id from `profile` | OBLIGATOIRE |
 | `consentement` | Default `false` | `true`, `false` | – |
-| `profile_id` | Optional (null) | Id from `profile` | – |
 | `region_id` | Optional (null) | Id from `region` | – |
 
-**PIN:** the PIN format is not defined in the models yet. It will be validated separately in the login.
+### PIN
+
+| Field | Rule | Allowed values | Error message |
+|---|---|---|---|
+| `nouveau_pin` | Required, digits 0–9 only | 4 to 6 digits | Le PIN doit contenir de 4 à 6 chiffres. **(same on server)** |
+
+The login doesn't check the PIN format: a badly formatted PIN just counts as a wrong PIN. Administration accounts (`is_staff`) use a password instead of a PIN, and it follows Django's password rules.
+
+### Failed attempts
+
+The server applies these rules, so the app only has to show the message it receives. See `docs/endpoint.md`.
+
+| Wrong PINs in a row | Result |
+|---|---|
+| 5 | Blocked for 15 minutes |
+| 10 | Blocked for 1 hour |
+| 15 | Blocked until an administrator unblocks the account |
+
+Only a correct PIN resets the count. A block ending doesn't reset it.
 
 ## Server-managed tables
 
@@ -186,7 +203,8 @@ The phone reads these tables and never changes them, so it doesn't need to apply
 | province | `nom` | Required | Up to 100 characters |
 | region | `nom` | Required | Up to 100 characters |
 | region | `province_id` | Required | Id from `province` |
-| profile | `type` | Required | `femme`, `mere`, `asc`, `agent_csb`, `admin` |
+| profile | `code` | Required, unique | Up to 30 characters. Known to the API: `beneficiaire`, `asc`, `agent_csb`, `admin` |
+| profile | `libelle` | Required | Up to 100 characters |
 | csb | `name` | Required | Up to 150 characters |
 | csb | `region_id` | Required | Id from `region` |
 | csb | `tel` | Required | Up to 20 characters |

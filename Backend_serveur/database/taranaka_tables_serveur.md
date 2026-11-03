@@ -27,6 +27,16 @@ Version 2, 3 Nov 2026. This version follows the Django plan from Claude Code, wi
 16. A soft delete also increases `version` and updates `updated_at`, so the deletion reaches the other phones.
 17. `cycle`: `duree_cycle`, `duree_regle` and `estimation_prochain` can be empty while a cycle is still going on. `journal_audit.user_id` can be empty, so failed logins can be recorded.
 
+## What changed for the login (3 Nov 2026)
+
+18. `utilisateur.role` is **removed**. `utilisateur.profile_id` now decides what a user can do. It is required and protected: a profile that has users can't be deleted.
+19. `profile.type` is **replaced** by `code` (unique, used by the code) and `libelle` (name shown on screen). This replaces point 4's table layout; `femme` and `mere` become one profile, `beneficiaire`.
+20. A data migration creates the 4 profiles: `beneficiaire`, `asc`, `agent_csb`, `admin`. A profile whose code the API doesn't know gets no access. Adding a row is not enough: its code must also be added to the API.
+21. `utilisateur` gets `tentatives_echouees` and `bloque_jusqu_a`. Blocking is progressive: 15 minutes after 5 wrong PINs in a row, 1 hour after 10, and until an admin unblocks the account after 15. Only a correct PIN resets the counter.
+22. Point 6 changes: `profile_id` can no longer be empty. `region_id` still can.
+23. `journal_audit.action` also records `login_succes`, `login_echec`, `login_bloque`, `login_refuse`, `changer_pin_succes`, `changer_pin_echec`, `changer_pin_bloque` and `compte_debloque`.
+24. Two Django tables are added for logging out and token rotation: `token_blacklist_outstandingtoken` and `token_blacklist_blacklistedtoken`.
+
 ---
 
 ## Types used
@@ -77,7 +87,8 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | Column | Type | What it's for |
 |---|---|---|
 | id | INTEGER, PK | Profile id |
-| type | ENUM (femme, mere, asc, agent_csb, admin) | Kind of user |
+| code | TEXT, unique | **NEW**: used by the code: beneficiaire, asc, agent_csb, admin |
+| libelle | TEXT | **NEW**: name shown on screen |
 
 ## 4. utilisateur (was User)
 
@@ -89,15 +100,16 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | prenom | TEXT | First name |
 | email | TEXT, can be empty | Email |
 | phone | TEXT, can be empty, not unique | Phone number (can be shared) |
-| role | ENUM (femme, asc, agent_csb, admin) | What the user can do |
 | pin_hash | TEXT | Hashed PIN |
 | consentement | BOOLEAN | **MOVED** from profile |
 | date_creation | TIMESTAMP | Account creation |
 | updated_at | TIMESTAMP | Last change |
-| profile_id | INTEGER, FK → profile, can be empty | Profile |
+| profile_id | INTEGER, FK → profile (protected) | Profile: decides what the user can do |
 | region_id | INTEGER, FK → region, can be empty | Region |
 | is_active, is_staff, is_superuser | BOOLEAN | **NEW**: needed by Django |
 | last_login | TIMESTAMP, can be empty | **NEW**: needed by Django |
+| tentatives_echouees | INTEGER, default 0 | **NEW**: wrong PINs in a row |
+| bloque_jusqu_a | TIMESTAMP, can be empty | **NEW**: end of the current block |
 
 ## 5. cycle (synced)
 

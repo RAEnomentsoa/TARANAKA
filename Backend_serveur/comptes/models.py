@@ -8,9 +8,10 @@ from django.contrib.auth.models import (
 from django.db import models
 
 
-class TypeProfile(models.TextChoices):
-    FEMME = "femme", "Femme"
-    MERE = "mere", "Mère"
+class CodeProfile(models.TextChoices):
+    """Profiles known to the API. Any other code in the table gets no access."""
+
+    BENEFICIAIRE = "beneficiaire", "Bénéficiaire"
     ASC = "asc", "Agent de santé communautaire"
     AGENT_CSB = "agent_csb", "Agent de CSB"
     ADMIN = "admin", "Administrateur"
@@ -18,31 +19,30 @@ class TypeProfile(models.TextChoices):
 
 class Profile(models.Model):
     id = models.AutoField(primary_key=True)
-    type = models.CharField(max_length=20, choices=TypeProfile.choices)
+    code = models.CharField(max_length=30, unique=True)
+    libelle = models.CharField(max_length=100)
 
     class Meta:
         db_table = "profile"
         verbose_name = "Profil"
         verbose_name_plural = "Profils"
-        ordering = ["type"]
+        ordering = ["libelle"]
 
     def __str__(self):
-        return self.get_type_display()
-
-
-class Role(models.TextChoices):
-    FEMME = "femme", "Femme"
-    ASC = "asc", "Agent de santé communautaire"
-    AGENT_CSB = "agent_csb", "Agent de CSB"
-    ADMIN = "admin", "Administrateur"
+        return self.libelle
 
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
+    def get_queryset(self):
+        return super().get_queryset().select_related("profile")
+
     def create_user(self, identifiant, password=None, **extra_fields):
         if not identifiant:
             raise ValueError("L'identifiant est obligatoire.")
+        if "profile" not in extra_fields and "profile_id" not in extra_fields:
+            raise ValueError("Le profil est obligatoire.")
         user = self.model(identifiant=identifiant, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -51,7 +51,10 @@ class UserManager(BaseUserManager):
     def create_superuser(self, identifiant, password=None, **extra_fields):
         extra_fields["is_staff"] = True
         extra_fields["is_superuser"] = True
-        extra_fields.setdefault("role", Role.ADMIN)
+        extra_fields.setdefault(
+            "profile",
+            Profile.objects.get(code=CodeProfile.ADMIN),
+        )
         return self.create_user(identifiant, password, **extra_fields)
 
 
@@ -68,16 +71,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     prenom = models.CharField(max_length=100)
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
-    role = models.CharField(max_length=20, choices=Role.choices)
     password = models.CharField("PIN (haché)", max_length=128, db_column="pin_hash")
     consentement = models.BooleanField(default=False)
     date_creation = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     profile = models.ForeignKey(
         Profile,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.PROTECT,
         related_name="utilisateurs",
     )
     region = models.ForeignKey(
@@ -89,6 +89,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    tentatives_echouees = models.PositiveSmallIntegerField(default=0)
+    bloque_jusqu_a = models.DateTimeField(null=True, blank=True)
 
     objects = UserManager()
 
