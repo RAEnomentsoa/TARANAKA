@@ -25,6 +25,7 @@ Version 2, 3 Nov 2026. This version follows the Django plan from Claude Code, wi
 14. `journal_audit`: `table_nom` and `ligne_id` can be empty, for example for a login.
 15. `referencement`: `enfant_id` and `grossesse_id` are protected. A child or pregnancy that has a referral can't be deleted.
 16. A soft delete also increases `version` and updates `updated_at`, so the deletion reaches the other phones.
+17. `cycle`: `duree_cycle`, `duree_regle` and `estimation_prochain` can be empty while a cycle is still going on. `journal_audit.user_id` can be empty, so failed logins can be recorded.
 
 ---
 
@@ -108,9 +109,9 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | date_fin | DATE, can be empty | Last day |
 | intensite | ENUM (faible, moyenne, forte) | Flow |
 | symptome | TEXT | Symptoms |
-| duree_cycle | INTEGER | Cycle length in days |
-| duree_regle | INTEGER | Period length in days |
-| estimation_prochain | DATE | Predicted next period |
+| duree_cycle | INTEGER, can be empty | Cycle length in days (empty until the cycle ends) |
+| duree_regle | INTEGER, can be empty | Period length in days (empty until the period ends) |
+| estimation_prochain | DATE, can be empty | Predicted next period |
 | + sync columns | | |
 
 ## 6. grossesse (synced)
@@ -253,7 +254,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | Column | Type | What it's for |
 |---|---|---|
 | id | INTEGER, PK, automatic | Line id |
-| user_id | UUID, FK → utilisateur | Who |
+| user_id | UUID, FK → utilisateur, can be empty | Who (empty for a failed login) |
 | action | TEXT | login, create, update, delete, export_csv… |
 | table_nom | TEXT, can be empty | Which table |
 | ligne_id | UUID, can be empty | Which row |
