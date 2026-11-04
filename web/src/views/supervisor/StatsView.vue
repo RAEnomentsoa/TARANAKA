@@ -218,8 +218,13 @@ onMounted(async () => {
 }
 
 .groups {
-  min-width: 56rem;
   font-size: var(--text-sm);
+}
+
+@media (min-width: 40.01rem) {
+  .groups {
+    min-width: 56rem;
+  }
 }
 
 .num {

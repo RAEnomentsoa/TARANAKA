@@ -12,7 +12,7 @@ cp .env.example .env.local   # à adapter
 npm run dev                   # http://localhost:5173, /api est relayé vers le backend Django
 ```
 
-Le backend doit tourner sur `VITE_API_PROXY_TARGET` (par défaut `http://127.0.0.1:8000`).
+Le backend doit tourner sur `VITE_API_PROXY_TARGET` (par défaut `http://127.0.0.1:8000`). Pour une démonstration complète, chargez les données fictives côté backend (`python manage.py charger_demo`, voir `docs/DEMO.md`) puis connectez-vous avec `inf.crenas` / `3333` (infirmier) ou `sup.analamanga` / `2222` (superviseur). À la première connexion, le tableau de bord fait activer la double authentification : scannez le QR code avec une application TOTP (FreeOTP, Aegis, Google Authenticator…).
 
 | Commande | Rôle |
 |---|---|
@@ -29,22 +29,24 @@ Le backend doit tourner sur `VITE_API_PROXY_TARGET` (par défaut `http://127.0.0
 | `VITE_API_BASE_URL` | vide | URL de l'API. Vide = même domaine (`/api`). |
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | Cible du proxy de développement. |
 | `VITE_IDLE_TIMEOUT_MINUTES` | `15` | Déconnexion automatique après inactivité. |
-| `VITE_ALLOW_LOGIN_WITHOUT_TOTP` | `false` | **Développement uniquement** : accepte une connexion sans second facteur, tant que le backend n'a pas le TOTP. |
 
 ## Écrans et rôles
 
 | Profil (`profile.code`) | Écrans |
 |---|---|
-| `agent_csb` (infirmier / médecin) | File des référencements, fiche de référencement, fiche enfant, recherche par code, conflits de synchronisation |
-| `superviseur` (proposé, voir `docs/API_ISSUES.md`) | Statistiques agrégées et export CSV |
-| `admin` | Tous les écrans |
+| `agent_csb` (infirmier / médecin) | File des référencements, fiche de référencement (dont la sortie), fiche enfant, recherche par code, conflits de synchronisation |
+| `superviseur` | Statistiques agrégées et export CSV ; aucun dossier individuel |
+| `admin` | Tous les écrans, sauf l'enregistrement d'une sortie (réservé au centre de destination, D7) |
 | `asc`, `beneficiaire` | Aucun : connexion refusée, ils utilisent l'application mobile |
 
-- **File** : triée par urgence (rouge, orange, jaune) puis du plus ancien au plus récent ; « Patient arrivé » en un clic (avec confirmation).
-- **Fiche de référencement** : étapes du dossier, une seule action suivante (le backend impose l'ordre des statuts), consultations, contrôles, sortie avec issue.
+Les permissions suivent le tableau « Qui peut faire quoi » de `Backend_serveur/docs/endpoint.md` (`src/utils/roles.ts`). Le serveur reste l'autorité : le web n'affiche simplement pas une action qui serait refusée.
+
+- **Connexion** : identifiant + PIN, puis code TOTP ; enrôlement (QR code + clé) imposé à tout compte web qui n'a pas encore la double authentification.
+- **File** : `/api/referrals/incoming/`, triée par urgence (rouge, orange, jaune) puis du plus ancien au plus récent ; « Patient arrivé » en un clic (avec confirmation) ; référencements en retard signalés.
+- **Fiche de référencement** : étapes Référé → Patient arrivé → Pris en charge → En suivi → Sortie, une action principale à la fois, sortie avec issue (guéri, transféré, non-répondant, abandon, décédé), consultations, contrôles et venue au contrôle.
 - **Fiche enfant** : âge calculé, historique des mesures, courbes (poids/âge, taille/âge, P/T en z-score, PB avec seuils MAS/MAM), table de données pour chaque courbe.
 - **Conflits** : les deux versions côte à côte, choix champ par champ, jamais d'écrasement automatique.
-- **Statistiques** : par période et zone, sans aucune donnée nominative ; tout chiffre portant sur moins de 5 cas (ou déductible par soustraction) est remplacé par « < 5 », à l'écran comme dans le CSV.
+- **Statistiques** : par période et par région (verrouillée pour un superviseur régional), par mois, issues de sortie ; tout chiffre portant sur moins de 5 cas (ou déductible par soustraction) est remplacé par « < 5 ». L'export CSV est celui du serveur, journalisé dans l'audit.
 
 ## Organisation du code
 
@@ -62,16 +64,17 @@ src/
 tests/          tests unitaires et de composants
 ```
 
-Les endpoints que le backend n'a pas encore sont marqués `proposed` dans `src/api/` et décrits dans `docs/API_ISSUES.md`. Tant qu'ils n'existent pas, l'écran concerné indique que la fonction n'est pas encore disponible sur le serveur.
+Les types de `src/api/types.ts` suivent `docs/openapi.yaml`. Les écarts et limites constatés sur l'API sont dans `docs/API_ISSUES.md`.
 
 ## Accessibilité
 
+- Règles de `.claude/skills/taste-design/SKILL.md` : fonds blanc et bleu clair, une couleur d'accent, rouge / orange / jaune réservés aux urgences, pas de dégradé ni d'icône décorative, tous les états (chargement, vide, erreur, succès, hors ligne).
 - Zones cliquables ≥ 48 px, contrastes AA (ratios notés dans `src/styles/tokens.css`), tailles en `rem` : le texte s'agrandit avec le navigateur.
 - Lien d'évitement, titre de page focalisé et annoncé à chaque navigation, `lang` du document mis à jour avec la langue.
 - Urgence jamais signalée par la couleur seule (forme + mot) ; « < 5 » expliqué aux lecteurs d'écran.
 - Dialogues natifs `<dialog>` (piège du focus, Échap, retour du focus), onglets ARIA au clavier, erreurs de formulaire reliées aux champs.
 - Graphiques : résumé texte, points focalisables avec infobulle, tableau des valeurs à la demande.
-- `prefers-reduced-motion` et `forced-colors` respectés ; mise en page responsive jusqu'à 320 px.
+- `prefers-reduced-motion` et `forced-colors` respectés ; mise en page vérifiée à 320, 360, 390, 768 et 1366 px, sans défilement horizontal ; tableaux larges présentés en fiches sur mobile.
 
 ## Traductions
 

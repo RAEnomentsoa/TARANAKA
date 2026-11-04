@@ -43,8 +43,10 @@ function decimal(value: string | null, digits: number): string {
           <td class="num" :data-label="t('measurements.age')">{{ m.age_mois }}</td>
           <td class="num" :data-label="t('measurements.weight')">{{ decimal(m.poids_kg, 2) }}</td>
           <td class="num" :data-label="t('measurements.height')">
-            {{ decimal(m.taille_corrigee_cm, 1) }}
-            <span class="muted">({{ t(`measurements.position.${m.position}`) }})</span>
+            <span>
+              {{ decimal(m.taille_corrigee_cm, 1) }}
+              <span class="muted">({{ t(`measurements.position.${m.position}`) }})</span>
+            </span>
           </td>
           <td class="num" :data-label="t('measurements.muac')">{{ m.pb_mm ?? t('measurements.notAvailable') }}</td>
           <td :data-label="t('measurements.oedema')">{{ m.oedemes_bilateraux === 'aucun' ? t('common.none') : m.oedemes_bilateraux }}</td>
@@ -52,10 +54,12 @@ function decimal(value: string | null, digits: number): string {
           <td class="num" :data-label="t('measurements.haz')">{{ decimal(m.haz, 2) }}</td>
           <td class="num" :data-label="t('measurements.waz')">{{ decimal(m.waz, 2) }}</td>
           <td :data-label="t('measurements.classification')">
-            <span class="tag" :class="m.classification ? `tag--${m.classification}` : ''">
-              {{ m.classification ? t(`measurements.classifications.${m.classification}`) : t('measurements.notClassified') }}
+            <span>
+              <span class="tag" :class="m.classification ? `tag--${m.classification}` : ''">
+                {{ m.classification ? t(`measurements.classifications.${m.classification}`) : t('measurements.notClassified') }}
+              </span>
+              <span v-if="m.flag_aberrant" class="flag">{{ t('measurements.flagged') }}</span>
             </span>
-            <span v-if="m.flag_aberrant" class="flag">{{ t('measurements.flagged') }}</span>
           </td>
         </tr>
       </tbody>
@@ -65,8 +69,14 @@ function decimal(value: string | null, digits: number): string {
 
 <style scoped>
 .measures {
-  min-width: 52rem;
   font-size: var(--text-sm);
+}
+
+/* Wide layout only: on phones the rows become cards (stack-on-mobile). */
+@media (min-width: 40.01rem) {
+  .measures {
+    min-width: 52rem;
+  }
 }
 
 .measures td,
