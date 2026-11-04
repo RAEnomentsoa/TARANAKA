@@ -34,4 +34,5 @@ urlpatterns = [
     path('api/', include('referencement.urls')),
     path('api/', include('synchro.urls')),
     path('api/', include('config_clinique.urls')),
+    path('api/', include('statistiques.urls')),
 ]

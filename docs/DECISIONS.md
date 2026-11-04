@@ -186,3 +186,22 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   kept, so every phone pulls the decision.
 - Known limit: an update pushed for a row that was deleted on the server meanwhile
   answers `introuvable`; the deletion is not put in the conflict queue.
+
+## D11. Supervisor statistics
+
+- `GET /api/stats/` and `GET /api/stats/export/` (CSV), for supervisors and
+  admins. Parameters: `date_debut`, `date_fin` (default: last 30 days),
+  `region` or `province`, `grouper_par=region|mois`.
+- A regional supervisor is locked to their region (`403` for another one).
+- Small counts: any count from 1 to 4 is replaced by `null` and listed in
+  `masques` (CSV: `<5`). 0 is shown: it reveals nobody. A rate or an average
+  computed on fewer than 5 cases is hidden too. The threshold is the setting
+  `TARANAKA_SEUIL_PETITS_EFFECTIFS` (a privacy rule, not a clinical one).
+- Zone of each indicator: screenings, MAS/MAM cases and missed appointments
+  use the **child's region**; referrals, arrivals and exits use the **region
+  of the destination centre** (what a district/region team supervises).
+- "Cas MAS / MAM" count **distinct children** with at least one such
+  measurement in the period; "dépistages" counts measurements.
+- Known limit: no complementary suppression. With `grouper_par`, a hidden
+  group value can sometimes be deduced from the total minus the other groups.
+- Each CSV export is written to the audit log (`export_csv`).

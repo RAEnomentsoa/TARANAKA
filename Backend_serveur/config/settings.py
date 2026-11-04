@@ -116,6 +116,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
+# Spec §10: no figure under this number is shown to a supervisor.
+TARANAKA_SEUIL_PETITS_EFFECTIFS = 5
+
 # A clinical config can only be published once validated in writing (spec §11).
 # Leave False for development and demos; set True in production.
 TARANAKA_CONFIG_VALIDEE_OBLIGATOIRE = (
