@@ -1,0 +1,158 @@
+{
+  "@@locale": "fr",
+  "appName": "TARANAKA",
+  "languageTitle": "Choisissez votre langue",
+  "languageFrench": "Français",
+  "languageMalagasy": "Malagasy",
+  "language": "Langue",
+  "continueLabel": "Continuer",
+  "back": "Retour",
+  "cancel": "Annuler",
+  "save": "Enregistrer",
+  "confirm": "Confirmer",
+  "close": "Fermer",
+  "skip": "Passer",
+  "yes": "Oui",
+  "no": "Non",
+  "loading": "Chargement…",
+  "errorGeneric": "Une erreur est survenue. Réessayez.",
+  "retry": "Réessayer",
+  "consentTitle": "Vos données, votre choix",
+  "consentWhatTitle": "Ce qui est enregistré",
+  "consentWhat": "Votre cycle, votre grossesse, la croissance, les repas et les vaccins de vos enfants. Seulement ce que vous saisissez.",
+  "consentWhereTitle": "Où sont vos données",
+  "consentWhere": "Seulement sur ce téléphone, chiffrées et protégées par votre code. Rien n'est envoyé sans votre accord. Le cycle n'est jamais envoyé, sauf si vous l'activez.",
+  "consentEraseTitle": "Effacer vos données",
+  "consentErase": "À tout moment : Paramètres → « Effacer toutes mes données ».",
+  "consentNotDiagnosis": "L'application oriente, elle ne remplace pas un professionnel de santé.",
+  "consentAgree": "J'ai compris et j'accepte",
+  "createProfileTitle": "Créer votre profil",
+  "nameLabel": "Prénom ou surnom",
+  "nameRequired": "Écrivez un prénom ou un surnom.",
+  "pinChoose": "Choisissez un code à 4 chiffres",
+  "pinConfirm": "Tapez le même code encore une fois",
+  "pinMismatch": "Les deux codes sont différents. Recommencez.",
+  "pinDigits": "Le code doit avoir 4 chiffres.",
+  "pinDeleteDigit": "Effacer le dernier chiffre",
+  "pinDigitsEntered": "{count} chiffres sur 4",
+  "@pinDigitsEntered": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recoveryTitle": "Question de secours (facultatif)",
+  "recoveryHelp": "Si vous oubliez votre code, la réponse permet d'en choisir un nouveau sans perdre vos données.",
+  "recoveryQuestionLabel": "Votre question",
+  "recoveryQuestionHint": "Ex. Nom de mon village natal",
+  "recoveryAnswerLabel": "Votre réponse",
+  "modeTitle": "Pour qui utilisez-vous l'application ?",
+  "modePersonal": "Pour moi et ma famille",
+  "modePersonalHint": "Cycle, grossesse, enfant. Sans compte.",
+  "modeAgent": "Je suis agent de santé",
+  "modeAgentHint": "Dépister et référer. Compte fourni par votre superviseur.",
+  "profilesTitle": "Qui utilise le téléphone ?",
+  "profileAgentBadge": "Agent de santé",
+  "profilePersonalBadge": "Personnel",
+  "addProfile": "Ajouter un profil",
+  "enterPin": "Entrez votre code",
+  "pinWrong": "Code incorrect.",
+  "pinWrongRemaining": "Code incorrect. Encore {count} essai(s) avant un délai.",
+  "@pinWrongRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pinLockedUntil": "Trop d'essais. Réessayez dans {time}.",
+  "@pinLockedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotPin": "Code oublié ?",
+  "forgotPinRecovery": "Répondez à votre question de secours, puis choisissez un nouveau code.",
+  "forgotPinNoRecovery": "Ce profil n'a pas de question de secours. Il faut le réinitialiser : toutes ses données sur ce téléphone seront effacées et ne pourront pas être récupérées.",
+  "forgotPinAgent": "Demandez à votre superviseur de réinitialiser votre code sur le serveur. Ensuite, supprimez ce profil et reconnectez-vous : les données synchronisées seront restaurées. Les données non synchronisées seront perdues.",
+  "resetProfile": "Supprimer ce profil et ses données",
+  "resetProfileConfirm": "Supprimer définitivement le profil « {name} » et toutes ses données sur ce téléphone ?",
+  "@resetProfileConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "answerWrong": "Réponse incorrecte.",
+  "newPin": "Nouveau code",
+  "currentPin": "Code actuel",
+  "pinChanged": "Votre code a été changé.",
+  "homeGreeting": "Bonjour {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileCycle": "Mon cycle",
+  "tilePregnancy": "Ma grossesse",
+  "tileChild": "Mon enfant",
+  "tileAgent": "Malnutrition & prise en charge",
+  "tileAgentHint": "Réservé aux agents de santé (identifiants requis)",
+  "settings": "Paramètres",
+  "lockNow": "Verrouiller",
+  "switchProfile": "Changer de profil",
+  "changePin": "Changer mon code",
+  "eraseAll": "Effacer toutes mes données",
+  "eraseAllConfirm": "Toutes les données de ce profil sur ce téléphone seront effacées définitivement, puis le profil sera supprimé. Les données déjà synchronisées restent sur le serveur.",
+  "erase": "Effacer",
+  "configToValidate": "Configuration clinique d'exemple – À VALIDER (v{version}). Ne pas utiliser pour soigner.",
+  "@configToValidate": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "configSource": "Source : {source}",
+  "@configSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutTitle": "À propos",
+  "aboutConfig": "Configuration clinique : version {version}",
+  "@aboutConfig": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyTitle": "Confidentialité",
+  "durationSeconds": "{count} s",
+  "@durationSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutes": "{count} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "comingNext": "Ce module arrive dans la prochaine étape.",
+  "malagasyReviewNote": "Textes malagasy à faire relire par des locuteurs natifs."
+}
