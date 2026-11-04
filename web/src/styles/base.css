@@ -115,6 +115,8 @@ caption {
 }
 
 .table-scroll {
+  /* relative: keeps visually hidden captions inside the scroll box. */
+  position: relative;
   overflow-x: auto;
   max-width: 100%;
 }

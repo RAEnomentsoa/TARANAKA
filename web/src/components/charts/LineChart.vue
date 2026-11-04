@@ -40,16 +40,17 @@ const id = useId()
 const showTable = ref(false)
 const active = ref<number | null>(null)
 
-const WIDTH = 640
+// A small viewBox keeps the text legible once the chart is scaled to its column.
+const WIDTH = 480
 const HEIGHT = 260
-const M = { top: 16, right: 24, bottom: 44, left: 56 }
+const M = { top: 34, right: 16, bottom: 46, left: 48 }
 
 const sorted = computed(() => [...props.points].sort((a, b) => a.x - b.x))
 const enough = computed(() => sorted.value.length >= props.minPoints)
 
 const xScale = computed(() => {
   const d = extent(sorted.value.map((p) => p.x))
-  return { domain: d, ticks: niceTicks(d, 6).ticks.filter((v) => v >= d.min && v <= d.max) }
+  return { domain: d, ticks: niceTicks(d, 4).ticks.filter((v) => v >= d.min && v <= d.max) }
 })
 const yScale = computed(() => niceTicks(extent(sorted.value.map((p) => p.y), props.thresholds.map((th) => th.value)), 5))
 
@@ -114,7 +115,7 @@ function onPointerMove(event: PointerEvent): void {
             {{ formatX(tick) }}
           </text>
           <text :x="WIDTH - M.right" :y="HEIGHT - 6" text-anchor="end" class="chart__axis-label">{{ xLabel }}</text>
-          <text :x="M.left - 48" :y="M.top - 4" class="chart__axis-label">{{ yLabel }}</text>
+          <text :x="M.left - 8" :y="M.top - 22" text-anchor="end" class="chart__axis-label">{{ yLabel }}</text>
         </g>
 
         <!-- Thresholds -->
@@ -225,7 +226,7 @@ function onPointerMove(event: PointerEvent): void {
 
 .chart__axis text {
   fill: var(--ink-muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .chart__axis-label {
@@ -238,7 +239,7 @@ function onPointerMove(event: PointerEvent): void {
 }
 
 .chart__threshold text {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 

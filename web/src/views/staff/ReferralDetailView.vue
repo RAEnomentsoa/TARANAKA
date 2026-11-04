@@ -250,6 +250,12 @@ watch(() => props.id, load)
   font-size: var(--text-lg);
 }
 
+@media (max-width: 36rem) {
+  .detail__head {
+    padding: var(--space-4);
+  }
+}
+
 @media (max-width: 60rem) {
   .detail__grid {
     grid-template-columns: minmax(0, 1fr);

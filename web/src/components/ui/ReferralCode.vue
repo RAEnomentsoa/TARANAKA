@@ -33,6 +33,8 @@ const groups = computed(() => props.code.split('-'))
 .code--xl {
   font-size: clamp(1.5rem, 5vw, var(--text-2xl));
   letter-spacing: 0.08em;
+  /* Very narrow screens: break between groups, never inside one. */
+  white-space: normal;
 }
 
 .code__dash {
