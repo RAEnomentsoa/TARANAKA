@@ -86,6 +86,14 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
+    'ENUM_NAME_OVERRIDES': {
+        'TypeCentreEnum': 'referentiel.models.TypeCentre',
+        'ResolutionEnum': 'synchro.models.Resolution',
+        'StatutRendezVousEnum': 'referencement.models.StatutRendezVous',
+        'StatutConflitEnum': 'synchro.models.StatutConflit',
+        'StatutPublicationEnum': 'config_clinique.models.StatutPublication',
+        'StatutOperationEnum': 'synchro.models.StatutOperation',
+    },
     # Open during development. Otherwise, only staff logged in to /admin/.
     'SERVE_AUTHENTICATION': ['rest_framework.authentication.SessionAuthentication'],
     'SERVE_PERMISSIONS': [

@@ -4,7 +4,12 @@ import gzip
 import json
 import uuid
 from datetime import date, timedelta
+from io import StringIO
+from pathlib import Path
 
+from django.conf import settings
+from django.core.management import call_command
+from django.test import SimpleTestCase
 from django.utils import timezone
 
 from comptes.models import CodeProfile
@@ -556,3 +561,14 @@ class PullTest(BaseSyncTest):
             [(conflit_id, "resolu", "telephone")],
         )
         self.assertEqual(donnees["tables"]["mesure"]["lignes"][0]["pb_mm"], 110)
+
+
+class SchemaOpenApiTest(SimpleTestCase):
+    """docs/openapi.yaml must match the code. To update it, from Backend_serveur/:
+    python manage.py spectacular --file ../docs/openapi.yaml --validate"""
+
+    def test_fichier_a_jour(self):
+        sortie = StringIO()
+        call_command("spectacular", "--validate", "--fail-on-warn", stdout=sortie)
+        fichier = Path(settings.BASE_DIR).parent / "docs" / "openapi.yaml"
+        self.assertEqual(sortie.getvalue(), fichier.read_text(encoding="utf-8"))

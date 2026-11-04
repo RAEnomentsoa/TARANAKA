@@ -42,6 +42,8 @@ class ConfigurationCliniqueViewSet(
 
     def get_queryset(self):
         configs = ConfigurationClinique.objects.order_by("-version")
+        if getattr(self, "swagger_fake_view", False):
+            return configs.none()
         if self.request.user.profile.code == CodeProfile.ADMIN:
             return configs
         return configs.exclude(statut=StatutPublication.BROUILLON)
