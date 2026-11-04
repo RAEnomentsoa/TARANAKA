@@ -140,3 +140,76 @@ Depuis, le code web est passé de TypeScript à JavaScript (types en JSDoc) : le
 | Soins | `GET/POST /api/consultations/?enfant=`, `GET/POST /api/appointments/?enfant=`, `PATCH /api/appointments/{id}/` (`honore`) |
 | Conflits | `GET /api/conflicts/?statut=a_verifier` (dont `expediteur`), `POST /api/conflicts/{id}/resolve/` |
 | Statistiques | `GET /api/regions/`, `GET /api/stats/?grouper_par=region|mois`, `GET /api/stats/export/` (`Accept: text/csv`) |
+
+---
+
+# Application mobile (`mobile/`) — problèmes relevés
+
+Constatés en branchant l'application Flutter sur l'API (`docs/openapi.yaml`) et
+vérifiés sur le vrai serveur Django + PostgreSQL 16 avec `charger_demo`
+(test `mobile/test/integration/real_backend_test.dart` : connexion de
+`ac.rasoa`, scénario 5 hors ligne puis synchronisé, renvoi forcé sans doublon,
+conflit visible par `inf.crenas`, « Patient arrivé » reçu par le téléphone).
+Le backend n'a pas été modifié.
+
+| # | Sujet | Gravité | Contournement mobile |
+|---|---|---|---|
+| M1 | Une bénéficiaire ne peut pas créer d'`enfant` ni de `mesure` | **bloquant** pour la synchronisation facultative de « Mon enfant » | Les données de « Mon enfant » restent sur le téléphone. |
+| M2 | Pas de code stable pour les erreurs de validation de `/sync/push/` | gênant | Le téléphone reconnaît un code de référencement déjà pris par la **clé** `code_unique` dans `erreurs`. |
+| M3 | Les centres (`/api/facilities/`) ne passent pas par `/sync/pull/` | mineur | Liste complète relue à chaque synchronisation (petite). |
+| M4 | Tables OMS non publiées pour le téléphone | mineur | Aucun z-score sur le téléphone tant que les fichiers OMS ne sont pas embarqués ; le serveur recalcule. |
+
+## M1. Une bénéficiaire ne peut pas créer d'enfant ni de mesure — bloquant (sync facultative)
+
+**Constat.** `EnfantViewSet` et `MesureViewSet` n'autorisent l'écriture qu'à
+`asc` et `admin` (`nutrition/views.py`, `PROFILS`). La spec §9 permet de
+synchroniser les données du mode personnel « si l'utilisatrice l'active » ;
+pour « Mon enfant », une mère ne peut donc rien envoyer pour un enfant qu'aucun
+agent n'a enregistré. Seul `journal_alimentaire` lui est ouvert, et seulement
+pour un enfant déjà visible sur le serveur.
+
+**Choix mobile.** Les enfants, mesures, journaux et vaccins du mode personnel
+restent sur le téléphone (chiffrés). La synchronisation facultative couvre la
+grossesse et, sur un second choix explicite, le cycle (tables ouvertes en
+écriture à la bénéficiaire).
+
+**Proposé.** Autoriser `beneficiaire` à créer un `enfant` dont elle est `mere_id`
+(et ses mesures), avec `asc_id` facultatif ; ou une table d'enfants « suivis
+par le parent ». Il n'existe pas non plus de table pour les vaccins faits
+(`BACKEND_STATUS.md` §5).
+
+## M2. Pas de code stable dans les erreurs de `/sync/push/` — gênant
+
+**Constat.** Une opération refusée renvoie `statut: "erreur"` et `erreurs` au
+format DRF (`{"code_unique": ["Ce code est déjà utilisé."]}`), sans code
+machine. Même remarque que le §9 côté web.
+
+**Choix mobile.** Le téléphone regarde seulement la clé `code_unique` : il tire
+un nouveau préfixe, donne un nouveau code au référencement (l'ancien reste
+affiché) et renvoie l'opération dans la même synchronisation.
+
+**Proposé.** Un code par erreur (`code_deja_utilise`, `parent_inconnu`…).
+
+## M3. Les centres ne passent pas par `/sync/pull/` — mineur
+
+**Constat.** La liste des centres (`/api/facilities/`, paginée) n'a ni
+`updated_since` ni place dans `/sync/pull/`. Le téléphone la relit en entier à
+chaque synchronisation.
+
+**Proposé.** Ajouter `csb` aux tables du pull (lecture seule), ou un filtre
+`updated_since`.
+
+## M4. Tables OMS pour le téléphone — mineur
+
+**Constat.** La spec §8 demande des courbes OMS embarquées. Les fichiers
+officiels ne sont pas dans le dépôt (GPL-3, D6). `GET /api/who-reference/`
+existe mais renvoie des courbes échantillonnées pour l'affichage web, pas les
+tables complètes, et seulement si le serveur les a chargées.
+
+**Choix mobile.** Formule LMS et méthode restreinte implémentées et testées ;
+aucun z-score ni courbe tant que `mobile/assets/who/` ne contient pas
+`weianthro.txt`, `lenanthro.txt`, `wflanthro.txt`, `wfhanthro.txt`. L'écran
+de résultat le dit. Le serveur recalcule `waz`/`haz`/`whz` s'il a ses tables.
+
+**Proposé.** Décider de la licence (GPL-3) pour embarquer les fichiers dans
+l'APK, ou un endpoint qui sert les tables LMS complètes à télécharger une fois.
