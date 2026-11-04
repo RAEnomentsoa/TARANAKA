@@ -362,6 +362,25 @@ class ConflitTest(BaseSyncTest):
         self.comme(superviseur)
         self.assertEqual(self.client.get(CONFLITS).status_code, 403)
 
+    def test_expediteur_visible_par_le_centre(self):
+        conflit_id = self.envoyer_conflit()["conflit_id"]
+        self.comme(self.agent)
+        conflit = self.client.get(f"{CONFLITS}{conflit_id}/").data
+        self.assertEqual(conflit["expediteur"], {"nom": "Admin", "prenom": "Test", "phone": ""})
+        self.assertEqual(conflit["donnees_telephone"], {"motif": "PB 110 mm"})
+        resolu = self.client.post(f"{CONFLITS}{conflit_id}/resolve/", {"choix": "serveur"}, format="json")
+        self.assertEqual(resolu.data["expediteur"]["nom"], "Admin")
+
+    def test_conflit_de_suppression_sans_donnees(self):
+        resultat = self.resultats(
+            self.pousser(
+                operation("referencement", "delete", self.ligne.pk, version=1),
+                user=self.admin,
+            )
+        )[0]
+        self.assertEqual(resultat["statut"], "conflit")
+        self.assertEqual(ConflitSync.objects.get(pk=resultat["conflit_id"]).donnees_telephone, {})
+
     def test_resolution_garder_le_serveur(self):
         conflit_id = self.envoyer_conflit()["conflit_id"]
         self.comme(self.agent)

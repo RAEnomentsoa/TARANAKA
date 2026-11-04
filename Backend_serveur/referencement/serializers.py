@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from comptes.models import CodeProfile
+from comptes.serializers import ContactAgentSerializer, contact_agent
 from comptes.services import asc_visibles
 from nutrition.services import enfants_visibles, mesures_visibles
 from referentiel.models import CSB
@@ -66,6 +67,7 @@ class ReferencementSerializer(SyncSerializer):
     date_referencement = serializers.DateTimeField(required=False)
     urgence = serializers.SerializerMethodField()
     en_retard = serializers.SerializerMethodField()
+    asc = serializers.SerializerMethodField()
 
     champs_fixes = ("code_unique", "origine", "enfant", "grossesse", "date_referencement")
 
@@ -79,6 +81,7 @@ class ReferencementSerializer(SyncSerializer):
             "grossesse_id",
             "mesure_id",
             "asc_id",
+            "asc",
             "csb_id",
             "priorite",
             "motif",
@@ -87,6 +90,7 @@ class ReferencementSerializer(SyncSerializer):
             "date_referencement",
             "date_reception",
             "date_prise_en_charge",
+            "date_suivi",
             "date_sortie",
             "issue_sortie",
             "en_retard",
@@ -97,6 +101,7 @@ class ReferencementSerializer(SyncSerializer):
             "status",
             "date_reception",
             "date_prise_en_charge",
+            "date_suivi",
             "date_sortie",
             "issue_sortie",
             *CHAMPS_SYNC_LECTURE,
@@ -105,6 +110,11 @@ class ReferencementSerializer(SyncSerializer):
     @extend_schema_field(serializers.ChoiceField(choices=["rouge", "orange", "jaune"]))
     def get_urgence(self, referencement):
         return urgence(referencement)
+
+    @extend_schema_field(ContactAgentSerializer(allow_null=True))
+    def get_asc(self, referencement):
+        """Who to call about this referral. Staff only (ASC, centre, admin)."""
+        return contact_agent(self, referencement.asc)
 
     @extend_schema_field(serializers.BooleanField())
     def get_en_retard(self, referencement):

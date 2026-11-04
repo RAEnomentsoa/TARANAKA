@@ -102,6 +102,11 @@ def masquer(brut):
     """Hide small counts and the rates/averages built on them."""
     limite = seuil()
     indicateurs, masques = {}, []
+    # Referrals that didn't arrive = referencements − arrives: a difference of
+    # 1 to 4 is a small count too, so the arrivals (and the rate, which gives
+    # them back) are hidden.
+    non_arrives = brut["referencements"] - brut["referencements_arrives"]
+    cacher_arrivees = 0 < non_arrives < limite
     for nom in INDICATEURS:
         valeur = brut[nom]
         if nom == "taux_arrivee_pct":
@@ -110,11 +115,52 @@ def masquer(brut):
             cache = brut["_denominateur_delai"] < limite
         else:
             cache = 0 < valeur < limite
+        if nom in ("referencements_arrives", "taux_arrivee_pct") and cacher_arrivees:
+            cache = True
+        if nom == "taux_arrivee_pct" and 0 < brut["referencements_arrives"] < limite:
+            cache = True
         if cache and valeur is not None:
             masques.append(nom)
             valeur = None
         indicateurs[nom] = valeur
-    return {"indicateurs": indicateurs, "masques": masques}
+    return {"indicateurs": indicateurs, "masques": masques, "_brut": brut}
+
+
+def suppression_complementaire(resultat):
+    """With groups, a hidden value must not come back as total − other groups.
+
+    For each count, if exactly one group is hidden while the total is shown,
+    the smallest other group is hidden too (a second unknown). With a single
+    group, the total is hidden instead. Groups split the total exactly
+    (regions of the zone, months of the period).
+    """
+    groupes = resultat["groupes"]
+    if not groupes:
+        return
+    total = resultat["total"]
+    for nom in INDICATEURS_COMPTES + tuple(f"sorties_{i}" for i in IssueSortie.values):
+        caches = [g for g in groupes if nom in g["masques"]]
+        if len(caches) != 1 or nom in total["masques"]:
+            continue
+        autres = [g for g in groupes if nom not in g["masques"]]
+        if not autres:
+            _cacher(total, nom)
+            continue
+        _cacher(min(autres, key=lambda g: (g["_brut"][nom] == 0, g["_brut"][nom])), nom)
+
+
+def _cacher(bloc, nom):
+    bloc["indicateurs"][nom] = None
+    if nom not in bloc["masques"]:
+        bloc["masques"].append(nom)
+    if nom == "referencements_arrives":
+        _cacher_taux(bloc)
+
+
+def _cacher_taux(bloc):
+    if "taux_arrivee_pct" not in bloc["masques"]:
+        bloc["indicateurs"]["taux_arrivee_pct"] = None
+        bloc["masques"].append("taux_arrivee_pct")
 
 
 def mois_de(date_debut, date_fin):
@@ -152,6 +198,9 @@ def statistiques(date_debut, date_fin, regions, grouper_par=None):
                     **masquer(calculer(debut, fin, regions)),
                 }
             )
+    suppression_complementaire(resultat)
+    for bloc in (resultat["total"], *resultat["groupes"]):
+        bloc.pop("_brut")
     return resultat
 
 

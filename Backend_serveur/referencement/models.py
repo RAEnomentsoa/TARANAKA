@@ -84,6 +84,7 @@ class Referencement(SyncModel):
     date_referencement = models.DateTimeField(default=timezone.now)
     date_reception = models.DateTimeField(null=True, blank=True)
     date_prise_en_charge = models.DateTimeField(null=True, blank=True)
+    date_suivi = models.DateTimeField(null=True, blank=True)
     date_sortie = models.DateTimeField(null=True, blank=True)
     issue_sortie = models.CharField(
         max_length=20,

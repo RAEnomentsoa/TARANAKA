@@ -44,6 +44,7 @@ TRANSITIONS = {
 DATE_PAR_STATUS = {
     Status.RECU: "date_reception",
     Status.PRIS_EN_CHARGE: "date_prise_en_charge",
+    Status.EN_SUIVI: "date_suivi",
     Status.SORTIE: "date_sortie",
 }
 STATUT_ENFANT_PAR_STATUS = {
@@ -64,7 +65,8 @@ MESSAGE_SORTIE_RESERVEE = (
 def referencements_visibles(user, inclure_supprimes=False):
     code = user.profile.code
     referencements = lignes(Referencement, inclure_supprimes).select_related(
-        "grossesse__user"
+        "grossesse__user",
+        "asc",
     )
     if code == CodeProfile.ADMIN:
         return referencements

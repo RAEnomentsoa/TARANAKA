@@ -4,6 +4,7 @@ from rest_framework.exceptions import PermissionDenied
 from referentiel.models import CSB, Region
 
 from .models import MESSAGE_CSB_OBLIGATOIRE, CodeProfile, Profile, User
+from .permissions import PROFILS_CONTACT_AGENT
 from .validators import valider_pin
 
 
@@ -227,3 +228,23 @@ class DonneesPersonnellesSerializer(serializers.Serializer):
     rendez_vous = serializers.ListField(child=serializers.DictField(), required=False)
     consultations = serializers.ListField(child=serializers.DictField(), required=False)
     journal = serializers.ListField(child=serializers.DictField())
+
+
+class ContactAgentSerializer(serializers.ModelSerializer):
+    """Name and phone of a health worker, for authorised staff only."""
+
+    class Meta:
+        model = User
+        fields = ("nom", "prenom", "phone")
+        read_only_fields = fields
+
+
+def contact_agent(serializer, agent):
+    """The agent's contact if the logged-in user may see it, else None."""
+    requete = serializer.context.get("request")
+    user = getattr(requete, "user", None)
+    if agent is None or user is None or not user.is_authenticated:
+        return None
+    if user.profile.code not in PROFILS_CONTACT_AGENT:
+        return None
+    return ContactAgentSerializer(agent).data

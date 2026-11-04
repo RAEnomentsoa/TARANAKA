@@ -13,6 +13,15 @@ PROFILS_DOSSIERS = (
 )
 
 
+# Health workers who may see a colleague's name and phone (to call the ASC of
+# a referral that didn't arrive, or the sender of a conflict).
+PROFILS_CONTACT_AGENT = (
+    CodeProfile.ASC,
+    CodeProfile.AGENT_CSB,
+    CodeProfile.ADMIN,
+)
+
+
 class ProfilRequis(BasePermission):
     """Allow only the logged-in users whose profile code is listed in codes."""
 

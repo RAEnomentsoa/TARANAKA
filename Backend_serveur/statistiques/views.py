@@ -1,6 +1,3 @@
-import csv
-
-from django.http import HttpResponse
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import serializers
@@ -14,6 +11,7 @@ from referentiel.models import Province, Region
 from synchro.models import JournalAudit
 
 from . import services
+from .renderers import CSVRenderer, ToujoursCsv
 
 
 class ParametresSerializer(serializers.Serializer):
@@ -93,20 +91,20 @@ class StatistiquesView(BaseStatistiquesView):
 class ExportCsvView(BaseStatistiquesView):
     """/stats/export/: the same indicators as CSV. Each export is audited."""
 
+    renderer_classes = [CSVRenderer]
+    content_negotiation_class = ToujoursCsv
+
     @extend_schema(
         parameters=[ParametresSerializer],
-        responses={200: OpenApiResponse(OpenApiTypes.STR, description="Fichier CSV")},
+        responses={
+            (200, "text/csv"): OpenApiResponse(
+                OpenApiTypes.STR,
+                description="Fichier CSV : groupe,indicateur,valeur",
+            )
+        },
     )
     def get(self, request):
         resultat = self.calculer(request)
-        reponse = HttpResponse(content_type="text/csv; charset=utf-8")
-        reponse["Content-Disposition"] = (
-            f'attachment; filename="taranaka_stats_{resultat["periode"]["date_debut"]}'
-            f'_{resultat["periode"]["date_fin"]}.csv"'
-        )
-        ecrivain = csv.writer(reponse)
-        for ligne in services.lignes_csv(resultat):
-            ecrivain.writerow(ligne)
         JournalAudit.objects.create(
             user=request.user,
             action="export_csv",
@@ -115,4 +113,11 @@ class ExportCsvView(BaseStatistiquesView):
                 "parametres": dict(request.query_params),
             },
         )
-        return reponse
+        nom = (
+            f'taranaka_stats_{resultat["periode"]["date_debut"]}'
+            f'_{resultat["periode"]["date_fin"]}.csv'
+        )
+        return Response(
+            list(services.lignes_csv(resultat)),
+            headers={"Content-Disposition": f'attachment; filename="{nom}"'},
+        )

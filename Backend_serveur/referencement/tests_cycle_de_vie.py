@@ -442,3 +442,78 @@ class TypeCentreTest(BaseApiTest):
         self.assertEqual([ligne["id"] for ligne in reponse.data["results"]], [crenas.pk])
         self.assertEqual(reponse.data["results"][0]["type_centre"], "crenas")
         self.assertEqual(Enfant.objects.count(), 0)
+
+
+class ContactAgentTest(BaseApiTest):
+    """Issue 4: who to call about a referral, for staff only."""
+
+    def setUp(self):
+        super().setUp()
+        self.asc.phone = "034 00 000 01"
+        self.asc.save()
+        self.ligne = self.referencement(enfant=self.enfant(mere=self.femme))
+
+    def contact(self, user):
+        self.comme(user)
+        return self.client.get(f"{REFERENCEMENTS}{self.ligne.pk}/").data["asc"]
+
+    def test_le_centre_voit_le_nom_et_le_telephone(self):
+        self.assertEqual(
+            self.contact(self.agent),
+            {"nom": "Asc", "prenom": "Test", "phone": "034 00 000 01"},
+        )
+
+    def test_asc_et_admin_aussi(self):
+        for user in (self.asc, self.admin):
+            with self.subTest(user=user.identifiant):
+                self.assertEqual(self.contact(user)["phone"], "034 00 000 01")
+
+    def test_pas_pour_la_beneficiaire(self):
+        self.assertIsNone(self.contact(self.femme))
+
+    def test_dans_la_file_et_a_la_synchronisation(self):
+        self.comme(self.agent)
+        file = self.client.get(f"{REFERENCEMENTS}incoming/").data["results"]
+        self.assertEqual(file[0]["asc"]["nom"], "Asc")
+        self.comme(self.femme)
+        lignes = self.client.get("/api/sync/pull/", {"tables": "referencement"}).data
+        self.assertIsNone(lignes["tables"]["referencement"]["lignes"][0]["asc"])
+
+
+class DateSuiviTest(BaseApiTest):
+    """Issue 5: the date of the « En suivi » step."""
+
+    def test_date_remplie_au_passage_en_suivi_seulement(self):
+        ligne = self.referencement(enfant=self.enfant())
+        self.comme(self.agent)
+        for version, status in enumerate(("recu", "pris_en_charge"), 1):
+            self.client.post(url_status(ligne), {"status": status, "version": version}, format="json")
+        sortie_directe = self.client.post(
+            url_status(ligne),
+            {"status": "sortie", "version": 3, "issue_sortie": "transfere"},
+            format="json",
+        )
+        self.assertIsNone(sortie_directe.data["date_suivi"])
+
+        autre = self.referencement(code="R-2", enfant=self.enfant(nom="Autre"))
+        for version, status in enumerate(("recu", "pris_en_charge", "en_suivi"), 1):
+            reponse = self.client.post(url_status(autre), {"status": status, "version": version}, format="json")
+        self.assertIsNotNone(reponse.data["date_suivi"])
+
+    def test_migration_retrouve_la_date_dans_le_journal(self):
+        from importlib import import_module
+
+        from django.apps import apps
+
+        from synchro.models import JournalAudit
+
+        ligne = self.referencement(enfant=self.enfant(), status="en_suivi")
+        passage = JournalAudit.objects.create(
+            action="status_change",
+            table_nom="referencement",
+            ligne_id=ligne.pk,
+            details={"ancien": "pris_en_charge", "nouveau": "en_suivi"},
+        )
+        import_module("referencement.migrations.0003_date_suivi").remplir_date_suivi(apps, None)
+        ligne.refresh_from_db()
+        self.assertEqual(ligne.date_suivi, passage.date_creation)

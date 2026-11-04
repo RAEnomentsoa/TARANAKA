@@ -189,4 +189,4 @@ class ConflitViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = ResolutionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         conflit = sync.resoudre(request, self.get_object(), **serializer.validated_data)
-        return Response(ConflitSerializer(conflit).data)
+        return Response(ConflitSerializer(conflit, context={"request": request}).data)

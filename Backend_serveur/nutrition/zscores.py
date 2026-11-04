@@ -27,15 +27,21 @@ def zscore_lms(y, l, m, s, ajuster=False):
     if ajuster and abs(z) > 3:
 
         def ecart(k):
-            if l == 0:
-                return m * math.exp(s * k)
-            return m * (1 + l * s * k) ** (1 / l)
+            return valeur_a_z(l, m, s, k)
 
         if z > 3:
             z = 3 + (y - ecart(3)) / (ecart(3) - ecart(2))
         else:
             z = -3 + (y - ecart(-3)) / (ecart(-2) - ecart(-3))
     return z
+
+
+def valeur_a_z(l, m, s, z):
+    """The measurement at z standard deviations (WHO's SD curves)."""
+    l, m, s = float(l), float(m), float(s)
+    if l == 0:
+        return m * math.exp(s * z)
+    return m * (1 + l * s * z) ** (1 / l)
 
 
 def _arrondi(z):

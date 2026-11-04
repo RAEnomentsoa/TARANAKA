@@ -13,6 +13,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -115,6 +117,7 @@ MIDDLEWARE = [
     # Spec §9: compressed batches, both ways.
     'django.middleware.gzip.GZipMiddleware',
     'synchro.middleware.DecompressionGzip',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -124,6 +127,20 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
+
+# Behind the production reverse proxy: build links (pagination `next`) with
+# the public host the proxy forwards, not Django's internal address.
+USE_X_FORWARDED_HOST = os.getenv("USE_X_FORWARDED_HOST", "False") == "True"
+
+# Web dashboard on another origin. Empty (default): no cross-origin access,
+# which is right when the dashboard and the API share one domain.
+CORS_ALLOWED_ORIGINS = [
+    origine.strip()
+    for origine in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origine.strip()
+]
+CORS_ALLOW_HEADERS = (*default_headers, "x-device-id", "content-encoding")
+CORS_EXPOSE_HEADERS = ["Content-Disposition", "ETag"]
 
 # Spec §2: web accounts (agent_csb, superviseur, admin) must use two-factor
 # login. Leave False for development and demos; set True in production.

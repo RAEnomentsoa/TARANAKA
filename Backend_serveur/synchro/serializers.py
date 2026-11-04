@@ -1,4 +1,7 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+
+from comptes.serializers import ContactAgentSerializer, contact_agent
 
 from .exceptions import MESSAGE_ID_UTILISE
 from .models import (
@@ -175,7 +178,16 @@ class PullReponseSerializer(serializers.Serializer):
 
 class ConflitSerializer(serializers.ModelSerializer):
     user_id = serializers.UUIDField(read_only=True)
+    expediteur = serializers.SerializerMethodField()
     resolu_par_id = serializers.UUIDField(read_only=True, allow_null=True)
+    # Objects: the row's fields. For a deletion, donnees_telephone is {}.
+    donnees_telephone = serializers.DictField(read_only=True)
+    donnees_serveur = serializers.DictField(read_only=True)
+
+    @extend_schema_field(ContactAgentSerializer(allow_null=True))
+    def get_expediteur(self, conflit):
+        """Who sent the phone's version. Staff only (ASC, centre, admin)."""
+        return contact_agent(self, conflit.user)
 
     class Meta:
         model = ConflitSync
@@ -189,6 +201,7 @@ class ConflitSerializer(serializers.ModelSerializer):
             "donnees_telephone",
             "donnees_serveur",
             "user_id",
+            "expediteur",
             "device_id",
             "statut",
             "resolution",

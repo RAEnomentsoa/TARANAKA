@@ -3347,10 +3347,10 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            text/csv:
               schema:
                 type: string
-          description: Fichier CSV
+          description: 'Fichier CSV : groupe,indicateur,valeur'
   /api/sync/pull/:
     get:
       operationId: sync_pull_retrieve
@@ -3420,6 +3420,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PushReponse'
+          description: ''
+  /api/who-reference/:
+    get:
+      operationId: who_reference_retrieve
+      description: |-
+        /who-reference/: WHO 2006 growth standards, from the loaded tables only.
+
+        Each point gives the official LMS values and the -3, -2, 0, +2, +3 SD
+        curves computed from them (WHO formula). Nothing is served for a table
+        that was not imported with `importer_tables_oms`.
+      parameters:
+      - in: query
+        name: cle_max
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+      - in: query
+        name: cle_min
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+      - in: query
+        name: indicateur
+        schema:
+          enum:
+          - wfa
+          - lhfa
+          - wfl
+          - wfh
+          type: string
+          minLength: 1
+        description: |-
+          * `wfa` - Poids pour âge
+          * `lhfa` - Taille pour âge
+          * `wfl` - Poids pour longueur
+          * `wfh` - Poids pour hauteur
+        required: true
+      - in: query
+        name: pas
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+        description: Garder une clé sur `pas` (par exemple 30 jours, ou 1 cm).
+      - in: query
+        name: sexe
+        schema:
+          enum:
+          - M
+          - F
+          type: string
+          minLength: 1
+        description: |-
+          * `M` - Masculin
+          * `F` - Féminin
+        required: true
+      tags:
+      - who-reference
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceOms'
           description: ''
 components:
   schemas:
@@ -3787,12 +3855,21 @@ components:
           type: integer
           readOnly: true
         donnees_telephone:
+          type: object
+          additionalProperties: {}
           readOnly: true
         donnees_serveur:
+          type: object
+          additionalProperties: {}
           readOnly: true
         user_id:
           type: string
           format: uuid
+          readOnly: true
+        expediteur:
+          allOf:
+          - $ref: '#/components/schemas/ContactAgent'
+          nullable: true
           readOnly: true
         device_id:
           type: string
@@ -3836,6 +3913,7 @@ components:
       - device_id
       - donnees_serveur
       - donnees_telephone
+      - expediteur
       - id
       - ligne_id
       - operation
@@ -3980,6 +4058,23 @@ components:
       - decision
       - diagnostic
       - enfant_id
+    ContactAgent:
+      type: object
+      description: Name and phone of a health worker, for authorised staff only.
+      properties:
+        nom:
+          type: string
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+      required:
+      - nom
+      - phone
+      - prenom
     Cycle:
       type: object
       description: 'A row that belongs to a woman: she is the logged-in beneficiaire
@@ -5847,6 +5942,39 @@ components:
         version:
           type: integer
           minimum: 1
+    PointOms:
+      type: object
+      properties:
+        cle:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+        l:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,4})?$
+        m:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,4})?$
+        s:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,5})?$
+        mesure_type:
+          type: string
+        courbes:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+      required:
+      - cle
+      - courbes
+      - l
+      - m
+      - mesure_type
+      - s
     PositionEnum:
       enum:
       - couche
@@ -5948,6 +6076,30 @@ components:
           minItems: 1
       required:
       - operations
+    ReferenceOms:
+      type: object
+      properties:
+        source:
+          type: string
+        indicateur:
+          type: string
+        sexe:
+          type: string
+        unite_cle:
+          type: string
+        unite_valeur:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointOms'
+      required:
+      - indicateur
+      - points
+      - sexe
+      - source
+      - unite_cle
+      - unite_valeur
     Referencement:
       type: object
       description: Rules shared by the synced tables, also meant for the future /sync.
@@ -5975,6 +6127,11 @@ components:
         asc_id:
           type: string
           format: uuid
+        asc:
+          allOf:
+          - $ref: '#/components/schemas/ContactAgent'
+          nullable: true
+          readOnly: true
         csb_id:
           type: integer
         priorite:
@@ -5998,6 +6155,11 @@ components:
           readOnly: true
           nullable: true
         date_prise_en_charge:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        date_suivi:
           type: string
           format: date-time
           readOnly: true
@@ -6039,11 +6201,13 @@ components:
           readOnly: true
           nullable: true
       required:
+      - asc
       - created_at
       - csb_id
       - date_prise_en_charge
       - date_reception
       - date_sortie
+      - date_suivi
       - deleted_at
       - device_id
       - en_retard

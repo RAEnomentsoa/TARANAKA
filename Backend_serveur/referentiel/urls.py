@@ -1,8 +1,10 @@
+from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from .views import (
     CSBViewSet,
     ProvinceViewSet,
+    ReferenceOmsView,
     RegionViewSet,
     TypeDangerGrossesseViewSet,
 )
@@ -13,4 +15,7 @@ router.register("regions", RegionViewSet, basename="region")
 router.register("facilities", CSBViewSet, basename="facility")
 router.register("danger-types", TypeDangerGrossesseViewSet, basename="danger-type")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path("who-reference/", ReferenceOmsView.as_view(), name="who-reference"),
+    *router.urls,
+]
