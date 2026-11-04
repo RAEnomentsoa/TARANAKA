@@ -43,6 +43,15 @@ android {
         }
     }
 
+    // Native libraries (Flutter engine, app code, SQLCipher) are stored
+    // compressed: the APK file shared by Bluetooth/WhatsApp is about half
+    // the size (spec §12: APK < 30 MB). See mobile/README.md, "Taille".
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     buildTypes {
         release {
             // Signed with the key described in android/key.properties when present
