@@ -39,8 +39,9 @@ class _PersonalRemindersState extends State<PersonalReminders> {
           ? calc.postnatal(pregnancy.dates, await repo.contactsDone(pregnancy.id, 'pn'), today)
           : calc.antenatal(pregnancy.dates, await repo.contactsDone(pregnancy.id, 'cpn'), today);
       final next = contacts.where((c) => c.status == ContactStatus.next).firstOrNull;
-      if (next != null && daysBetween(today, next.date) <= 7)
+      if (next != null && daysBetween(today, next.date) <= 7) {
         out.add(l10n.reminderNextAnc(formatDate(next.date)));
+      }
     }
     final children = ChildRepository(db);
     for (final c in await children.children()) {
