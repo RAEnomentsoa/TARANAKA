@@ -123,7 +123,7 @@ the demo in `docs/DEMO.md`.
 | Malnutrition classification | ✅ MAS / MAM / normal / at-risk infant and CRENI / CRENAS / CRENAM / CSB orientation, recomputed by the server from the published config | `nutrition/classification.py`, `config_clinique/regles.py` |
 | WHO z-scores | ✅ LMS with WHO's restricted method, from `reference_oms`; `importer_tables_oms` loads WHO's official files | `nutrition/zscores.py` |
 | Food log, consultations | ✅ The two existing tables now have an API | `nutrition/views.py` |
-| Tests | ✅ 316 tests, all passing (see §4) | |
+| Tests | ✅ 317 tests, all passing (see §4) | |
 | OpenAPI | ✅ `docs/openapi.yaml`, no warnings, a test fails if it drifts from the code | |
 | Demo data | ✅ `python manage.py charger_demo`, acceptance tests replaying the scenarios | `demo/`, `docs/DEMO.md` |
 
@@ -157,12 +157,12 @@ Run on PostgreSQL 16, Python 3.13, from `Backend_serveur/`:
 python manage.py test
 ```
 
-Result on 4 Nov 2026: **316 tests, OK** (174 before this work).
+Result on 4 Nov 2026: **317 tests, OK** (174 before this work).
 
 | App | Tests | Covers |
 |---|---|---|
 | `comptes` | 73 | Login, lockout, PIN, accounts, supervisor, audit log, **permission matrix** (19 reads × 5 profiles, 11 writes × 5 profiles, no token) |
-| `nutrition` | 79 | Children, measurements, **classification** (WHO reference cases, MAS/MAM limits, orientation, under 6 months, config-driven thresholds, plausibility) |
+| `nutrition` | 80 | Children, measurements, **classification** (WHO reference cases, MAS/MAM limits, orientation, under 6 months, config-driven thresholds, plausibility) |
 | `referencement` | 61 | Referrals, lifecycle and discharge, queue order, appointments, consultations, food logs, follow-ups |
 | `synchro` | 35 | **Sync**: forced resend, idempotency key, order, errors, rights, conflicts and arbitration, pull with deletions, cursor, gzip, OpenAPI file |
 | `sante_femme` | 32 | Cycles, pregnancies, danger signs |

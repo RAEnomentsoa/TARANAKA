@@ -96,7 +96,9 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   behaviour). When it is loaded, the server's value wins, and is empty outside
   the table (for example a length under 45 cm).
 - `flag_aberrant`: the phone's flag is kept; the server adds one when a z-score
-  is outside the config's `plausibilite` range.
+  is outside the config's `plausibilite` range. On an update the server
+  re-evaluates it, so a corrected measurement loses the flag: the phone resends
+  `flag_aberrant: true` if its own check still applies.
 
 ## D7. Referral lifecycle follows the spec
 

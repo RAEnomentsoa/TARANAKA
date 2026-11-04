@@ -143,7 +143,7 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 
 - `waz`, `haz`, `whz`: WHO 2006 LMS formula (WHO's restricted method beyond ±3 SD for weight-based indicators), from `reference_oms`. Weight-for-length under 731 days, weight-for-height from 731 days, both on `taille_corrigee_cm`. Rounded to 2 decimals. **Only when the WHO table of the indicator is loaded**; otherwise the phone's value is kept. Empty when the child is outside the table.
 - `classification`, `orientation_centre`, `urgence`, `date_prochain_controle`: rules of the published clinical config (`malnutrition` section), saved with its `config_version`. Empty when no config is published.
-- `flag_aberrant`: the phone's value is kept; the server sets it to `true` when a z-score is outside `malnutrition.plausibilite` of the config.
+- `flag_aberrant`: the phone's value is kept; the server sets it to `true` when a z-score is outside `malnutrition.plausibilite` of the config. On an update the server re-evaluates it: resend `flag_aberrant: true` if the phone's own check still applies.
 - `alerte` and `motif_alerte` are kept as the phone sends them.
 
 ### journal_alimentaire

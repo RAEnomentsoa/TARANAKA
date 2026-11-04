@@ -157,6 +157,9 @@ def modifier_mesure(mesure, donnees, contexte):
             champ: donnees.get(champ, getattr(courante, champ))
             for champ in CHAMPS_CALCUL
         }
+        # The stored flag may be the server's own: re-evaluate it. The phone
+        # resends flag_aberrant if its own check still applies.
+        valeurs["flag_aberrant"] = donnees.get("flag_aberrant", False)
         calculs = calculer_mesure(enfant, valeurs)
         return enregistrer_modification(courante, {**donnees, **calculs}, contexte)
 
@@ -199,7 +202,10 @@ def _recalculer_mesures(enfant, contexte):
         try:
             calculs = calculer_mesure(
                 enfant,
-                {champ: getattr(mesure, champ) for champ in CHAMPS_CALCUL},
+                {
+                    **{champ: getattr(mesure, champ) for champ in CHAMPS_CALCUL},
+                    "flag_aberrant": False,
+                },
             )
         except ValidationError as erreur:
             raise ValidationError(

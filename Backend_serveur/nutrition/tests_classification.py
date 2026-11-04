@@ -314,6 +314,28 @@ class ClassificationApiTest(BaseApiTest):
         self.assertIsNone(reponse.data["waz"])
         self.assertEqual(Mesure.objects.get().whz, whz)
 
+    def test_le_drapeau_du_serveur_disparait_apres_correction(self):
+        self.publier_config()
+        l, m, s = OMS_GARCON_LONGUEUR_75["lms"]
+        ReferenceOms.objects.create(
+            indicateur="wfl",
+            sexe="M",
+            cle=Decimal("75.0"),
+            valeur_l=Decimal(l),
+            valeur_m=Decimal(m),
+            valeur_s=Decimal(s),
+        )
+        # 4.0 kg at 75 cm: far below -5 SD, a typo.
+        creee = self.creer(poids_kg="4.00", pb_mm=130)
+        self.assertTrue(creee.data["flag_aberrant"])
+        corrigee = self.client.patch(
+            f"/api/measurements/{creee.data['id']}/",
+            {"poids_kg": "9.40", "version": 1},
+            format="json",
+        )
+        self.assertEqual(corrigee.status_code, 200, corrigee.data)
+        self.assertFalse(corrigee.data["flag_aberrant"])
+
     def test_hors_table_oms_le_score_est_vide(self):
         ReferenceOms.objects.create(
             indicateur="wfl",
