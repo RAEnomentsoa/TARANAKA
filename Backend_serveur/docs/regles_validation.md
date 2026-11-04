@@ -35,12 +35,18 @@ These matter most, because the database refuses the whole record if they fail.
 | mesure | `poids_kg` | Inside the limits | 0.3–40 kg | Le poids doit être compris entre 0,3 et 40 kg. **(same on server)** |
 | mesure | `taille_cm` | Inside the limits | 25–130 cm | La taille doit être comprise entre 25 et 130 cm. **(same on server)** |
 | mesure | `pb_mm` | Inside the limits, if filled | 70–250 mm, or `null` | Le périmètre brachial doit être compris entre 70 et 250 mm. **(same on server)** |
-| mesure | `pb_mm`, `age_mois` | `pb_mm` must be `null` unless `age_mois` is from 6 to 59. Hide the field outside that age. | `age_mois` 6–59 | Le périmètre brachial ne peut être saisi qu'entre 6 et 59 mois. **(same on server)** |
+| mesure | `pb_mm`, `age_mois` | `pb_mm` must be `null` unless `age_mois` is from 6 to 59. Hide the field outside that age. The server works out `age_mois` itself: see "Calculated by the server". | `age_mois` 6–59 | Le périmètre brachial ne peut être saisi qu'entre 6 et 59 mois. **(same on server)** |
 | journal_alimentaire | `enfant_id`, `date_jour` | Only one row per child per day. Soft-deleted rows don't count. | – | Un journal existe déjà pour cet enfant à cette date. **(same on server)** |
 | journal_alimentaire | `score_diversite` | Stays in range. It equals the number of `g1`–`g8` fields that are true. The server recalculates it on every save. | 0–8 | Le score de diversité doit être compris entre 0 et 8. **(same on server)** |
 | referencement | `origine`, `enfant_id` | If `origine` = `enfant`, `enfant_id` is required | – | Un référencement enfant doit indiquer l'enfant, et un référencement grossesse doit indiquer la grossesse. **(same on server)** |
 | referencement | `origine`, `grossesse_id` | If `origine` = `grossesse`, `grossesse_id` is required | – | Same message as above **(same on server)** |
 | referencement | `code_unique` | Unique across all rows, including soft-deleted rows | – | Ce code de référencement existe déjà. **(same on server)** |
+| referencement | `origine`, `enfant_id`, `grossesse_id` | Only the link that matches `origine` may be filled | – | Un référencement enfant ne peut pas indiquer de grossesse. / Un référencement grossesse ne peut pas indiquer d'enfant. **(same on server)** |
+| referencement | `mesure_id`, `enfant_id` | The visit must belong to that child | – | Cette mesure ne correspond pas à cet enfant. **(same on server)** |
+| referencement | `status` | One step forward at a time: `envoye` → `recu` → `vu` → `pris_en_charge` → `clos` | – | Le statut ne peut pas revenir en arrière. / Le statut suivant doit être « … ». **(same on server)** |
+| mesure | `date_mesure`, `date_naissance` | The visit can't be before the birth date | – | La date de mesure ne peut pas être avant la date de naissance. **(same on server)** |
+| enfant | `date_naissance` | A new birth date is refused if it makes a saved visit invalid | – | Cette date de naissance rend une mesure déjà enregistrée invalide. **(same on server)** |
+| enfant | `grossesse_id`, `mere_id` | The pregnancy must be the mother's | – | Cette grossesse n'est pas celle de la mère indiquée. **(same on server)** |
 
 ## Fields of the synced tables
 
@@ -48,16 +54,16 @@ These matter most, because the database refuses the whole record if they fail.
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `id` | Required | UUID | OBLIGATOIRE |
-| `version` | Whole number, starts at 1 | 0–2147483647 | NOMBRE |
-| `device_id` | Optional (empty text) | Up to 100 characters | LONGUEUR |
-| `deleted_at` | Optional (null) | Date and time | DATE |
+| `id` | Optional on create: the server creates one if it's missing. Can't change. | UUID | Cet identifiant est déjà utilisé. **(same on server)** |
+| `version` | Starts at 1. Ignored on create. **Required on every update**, and must match the server, or the answer is 409. | 1–2147483647 | OBLIGATOIRE, NOMBRE |
+| `device_id` | Read from the `X-Device-Id` header. A value in the body is ignored. Longer text is cut at 100 characters. | Up to 100 characters | – |
+| `deleted_at` | Set by the server. A value in the body is ignored. | Date and time | – |
 
 ### cycle
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `user_id` | Required | User UUID | OBLIGATOIRE |
+| `user_id` | A beneficiaire leaves it out. An admin must send it. Can't change. | User UUID | OBLIGATOIRE |
 | `date_debut` | Required | Date | OBLIGATOIRE |
 | `date_fin` | Optional (null) | Date | DATE |
 | `intensite` | Required | `faible`, `moyenne`, `forte` | CHOIX |
@@ -70,7 +76,7 @@ These matter most, because the database refuses the whole record if they fail.
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `user_id` | Required | User UUID | OBLIGATOIRE |
+| `user_id` | A beneficiaire leaves it out. An ASC must send a beneficiaire of their region, and an admin any beneficiaire. Can't change. | User UUID | OBLIGATOIRE |
 | `ddr` | Required | Date | OBLIGATOIRE |
 | `dpa` | Required | Date | OBLIGATOIRE |
 
@@ -78,18 +84,19 @@ These matter most, because the database refuses the whole record if they fail.
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `grossesse_id` | Required | Pregnancy UUID | OBLIGATOIRE |
+| `grossesse_id` | Taken from the address | Pregnancy UUID | – |
 | `type_danger_grossesse_id` | Required | Id from `type_danger_grossesse` | OBLIGATOIRE |
-| `date_signalement` | Required | Date and time | OBLIGATOIRE |
+| `date_signalement` | Optional: the server uses the current time if it's missing | Date and time | DATE |
+| `csb_id` | Optional, only used when an ASC creates the sign. A missing or wrong value never refuses the sign: it's saved with a warning and without a referral. | Id from `csb` | – |
 
 ### enfant
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
 | `nom` | Required | Up to 150 characters | OBLIGATOIRE, LONGUEUR |
-| `mere_id` | Optional (null) | User UUID | – |
-| `asc_id` | Required | User UUID | OBLIGATOIRE |
-| `grossesse_id` | Optional (null) | Pregnancy UUID | – |
+| `mere_id` | Optional (null). For an ASC, a beneficiaire of their region. | User UUID | – |
+| `asc_id` | An ASC leaves it out. An admin must send it. | User UUID | OBLIGATOIRE |
+| `grossesse_id` | Optional (null). See the linked rule above. | Pregnancy UUID | – |
 | `region_id` | Required | Id from `region` | OBLIGATOIRE |
 | `date_naissance` | Required | Date | OBLIGATOIRE |
 | `sexe` | Required | `M`, `F` | CHOIX |
@@ -101,17 +108,17 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `enfant_id` | Required | Child UUID | OBLIGATOIRE |
-| `asc_id` | Required | User UUID | OBLIGATOIRE |
+| `enfant_id` | Required, or taken from the address. Can't change. | Child UUID | OBLIGATOIRE |
+| `asc_id` | Optional: it defaults to the child's ASC | User UUID | – |
 | `date_mesure` | Required | Date | OBLIGATOIRE |
 | `poids_kg` | Required, 2 decimals | See limits above | OBLIGATOIRE, NOMBRE |
 | `taille_cm` | Required, 1 decimal | See limits above | OBLIGATOIRE, NOMBRE |
 | `position` | Required | `couche`, `debout` | CHOIX |
 | `pb_mm` | Optional (null), whole number | See limits above | NOMBRE |
 | `oedemes_bilateraux` | Default `aucun` | `aucun`, `+`, `++`, `+++` | CHOIX |
-| `age_jour` | Required, whole number | 0–2147483647 | OBLIGATOIRE, NOMBRE |
-| `age_mois` | Required, whole number | 0–32767 | OBLIGATOIRE, NOMBRE |
-| `taille_corrigee_cm` | Required, 1 decimal | Up to 9999.9 | OBLIGATOIRE, NOMBRE |
+| `age_jour` | Calculated by the server. A value in the body is ignored. | – | – |
+| `age_mois` | Calculated by the server. A value in the body is ignored. | – | – |
+| `taille_corrigee_cm` | Calculated by the server. A value in the body is ignored. | – | – |
 | `waz` | Optional (null), 2 decimals | -999.99 to 999.99 | NOMBRE |
 | `haz` | Optional (null), 2 decimals | -999.99 to 999.99 | NOMBRE |
 | `whz` | Optional (null), 2 decimals | -999.99 to 999.99 | NOMBRE |
@@ -119,6 +126,14 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `alerte` | Required | `vert`, `orange`, `rouge` | CHOIX |
 | `motif_alerte` | Optional (empty text) | Any text | – |
 | `ref_oms` | Default `WHO2006` | Up to 20 characters | LONGUEUR |
+
+**Calculated by the server** (the app must use the same formulas offline):
+
+- `age_jour` = `date_mesure` – `date_naissance`, in days.
+- `age_mois` = `age_jour / 30.4375`, rounded down.
+- `taille_corrigee_cm`: under 731 days and `debout`, `taille_cm + 0.7`. From 731 days and `couche`, `taille_cm - 0.7`. Otherwise `taille_cm`.
+
+`waz`, `haz`, `whz`, `alerte`, `motif_alerte` and `flag_aberrant` are kept as the phone sends them for now. The server will recalculate them in the Z-score step.
 
 ### journal_alimentaire
 
@@ -134,16 +149,16 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `code_unique` | Required | Up to 30 characters | OBLIGATOIRE, LONGUEUR |
+| `code_unique` | Optional: the server creates `R-<first 4 chars of the ASC id>-<MMDD>-<n>` if it's missing. Can't change. | Up to 30 characters | LONGUEUR |
 | `origine` | Required | `enfant`, `grossesse` | CHOIX |
 | `enfant_id` | Optional (null), see linked rule above | Child UUID | – |
 | `grossesse_id` | Optional (null), see linked rule above | Pregnancy UUID | – |
-| `mesure_id` | Optional (null) | Visit UUID | – |
-| `asc_id` | Required | User UUID | OBLIGATOIRE |
+| `mesure_id` | Optional (null), see linked rule above | Visit UUID | – |
+| `asc_id` | An ASC leaves it out. An admin must send it for a pregnancy. | User UUID | OBLIGATOIRE |
 | `csb_id` | Required | Id from `csb` | OBLIGATOIRE |
 | `priorite` | Required | `urgente`, `haute`, `normale` | CHOIX |
 | `motif` | Required | Any text | OBLIGATOIRE |
-| `status` | Default `envoye` | `envoye`, `recu`, `vu`, `pris_en_charge`, `clos` | CHOIX |
+| `status` | Starts at `envoye`. Only changes through `/api/referrals/{id}/status/`. | `envoye`, `recu`, `vu`, `pris_en_charge`, `clos` | CHOIX |
 
 ### consultation_nutritionnelle
 
@@ -170,9 +185,11 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `prenom` | Required | Up to 100 characters | OBLIGATOIRE, LONGUEUR |
 | `email` | Optional (empty text), valid email format | Up to 254 characters | Saisissez une adresse e-mail valide. |
 | `phone` | Optional (empty text), **not unique** | Up to 20 characters | LONGUEUR |
-| `profile_id` | Required | Id from `profile` | OBLIGATOIRE |
+| `profile_code` | An ASC leaves it out and can only create `beneficiaire`. An admin must send it. | Code from `profile` | OBLIGATOIRE |
 | `consentement` | Default `false` | `true`, `false` | – |
-| `region_id` | Optional (null) | Id from `region` | – |
+| `region_id` | Required for a beneficiaire. An ASC can't choose it: the account takes the ASC's region. Optional (null) for the other profiles. | Id from `region` | La région est obligatoire pour une bénéficiaire. **(same on server)** |
+| `csb_id` | Required for an agent_csb. Always empty for the other profiles. | Id from `csb` | Le CSB est obligatoire pour un agent de CSB. **(same on server)** |
+| `pin` | Required on create only, same format as `nouveau_pin` below | 4 to 6 digits | Le PIN doit contenir de 4 à 6 chiffres. **(same on server)** |
 
 ### PIN
 
@@ -233,6 +250,4 @@ The phone reads these tables and never changes them, so it doesn't need to apply
 The models don't enforce these. If the app needs them, they have to be added on the app side:
 
 - `date_fin` is on or after `date_debut`, or `dpa` is after `ddr`.
-- `age_jour` and `age_mois` match `date_naissance` and `date_mesure`.
-- A referral has only the link that matches its `origine`. For example, a child referral can also have a `grossesse_id`.
 - When `flag_aberrant` should be set. The rule for unusual values is not in the models.

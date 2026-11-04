@@ -38,6 +38,31 @@ class IsAdmin(ProfilRequis):
     codes = (CodeProfile.ADMIN,)
 
 
+class AccesParAction(ProfilRequis):
+    """Each ViewSet lists the profiles allowed per action; any other action is refused."""
+
+    def has_permission(self, request, view):
+        if view.action in (None, "metadata"):
+            # Unsupported method: let DRF answer 405 to any known profile.
+            self.codes = tuple(CodeProfile.values)
+        else:
+            self.codes = view.profils_par_action.get(view.action, ())
+        return super().has_permission(request, view)
+
+
+def acces(lecture=(), ecriture=(), **actions):
+    """Build profils_par_action; actions overrides one action, such as create=(...)."""
+    return {
+        "list": lecture,
+        "retrieve": lecture,
+        "create": ecriture,
+        "update": ecriture,
+        "partial_update": ecriture,
+        "destroy": ecriture,
+        **actions,
+    }
+
+
 def profil_requis(*codes):
     """Allow several profiles, for example profil_requis("asc", "agent_csb")."""
     return type("ProfilRequisMultiple", (ProfilRequis,), {"codes": codes})

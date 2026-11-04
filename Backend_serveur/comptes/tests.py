@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from synchro.models import JournalAudit
+from synchro.outils_tests import BaseApiTest
 
 from . import services
 from .models import CodeProfile, Profile, User
@@ -98,6 +99,7 @@ class LoginTests(BaseAuthTest):
                     "libelle": "Agent de santé communautaire",
                 },
                 "region_id": None,
+                "csb_id": None,
             },
         )
         ligne = JournalAudit.objects.get(action="login_succes")
@@ -373,3 +375,220 @@ class ValidateurPinTests(SimpleTestCase):
             with self.subTest(pin=pin):
                 with self.assertRaises(ValidationError):
                     valider_pin(pin)
+
+
+class ComptesApiTest(BaseApiTest):
+    URL = "/api/profiles/"
+
+    def donnees(self, **extra):
+        return {
+            "identifiant": "0340000000",
+            "nom": "Rasoa",
+            "prenom": "Vola",
+            "pin": "4321",
+            **extra,
+        }
+
+    def creer(self, **extra):
+        return self.client.post(self.URL, self.donnees(**extra), format="json")
+
+    def test_asc_cree_une_beneficiaire_dans_sa_region(self):
+        self.comme(self.asc)
+        reponse = self.creer()
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(reponse.data["profile"]["code"], "beneficiaire")
+        self.assertEqual(reponse.data["region_id"], self.region.pk)
+        self.assertNotIn("pin", reponse.data)
+        self.assertNotIn("password", reponse.data)
+        compte = User.objects.get(identifiant="0340000000")
+        self.assertTrue(compte.check_password("4321"))
+        self.assertNotEqual(compte.password, "4321")
+        ligne = JournalAudit.objects.get(action="create", table_nom="utilisateur")
+        self.assertEqual(ligne.user, self.asc)
+        self.assertNotIn("4321", str(ligne.details))
+
+    def test_asc_ne_choisit_pas_une_autre_region(self):
+        self.comme(self.asc)
+        reponse = self.creer(region_id=self.autre_region.pk)
+        self.assertEqual(reponse.data["region_id"], self.region.pk)
+
+    def test_asc_ne_cree_ni_asc_ni_admin_ni_agent(self):
+        self.comme(self.asc)
+        for code in ("asc", "admin", "agent_csb"):
+            with self.subTest(code=code):
+                reponse = self.creer(profile_code=code, csb_id=self.csb.pk)
+                self.assertEqual(reponse.status_code, 403)
+        self.assertFalse(User.objects.filter(identifiant="0340000000").exists())
+
+    def test_asc_sans_region_ne_cree_pas(self):
+        self.comme(self.asc_sans_region)
+        reponse = self.creer()
+        self.assertEqual(reponse.status_code, 400)
+        self.assertIn("region_id", reponse.data)
+
+    def test_admin_cree_chaque_profil(self):
+        self.comme(self.admin)
+        cas = {
+            "beneficiaire": {"region_id": self.region.pk},
+            "asc": {},
+            "agent_csb": {"csb_id": self.csb.pk},
+            "admin": {},
+        }
+        for numero, (code, extra) in enumerate(cas.items()):
+            with self.subTest(code=code):
+                reponse = self.creer(
+                    identifiant=f"id{numero}",
+                    profile_code=code,
+                    **extra,
+                )
+                self.assertEqual(reponse.status_code, 201, reponse.data)
+                self.assertEqual(reponse.data["profile"]["code"], code)
+
+    def test_compte_admin_de_l_api_sans_acces_a_l_administration(self):
+        self.comme(self.admin)
+        reponse = self.creer(
+            profile_code="admin",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        compte = User.objects.get(pk=reponse.data["id"])
+        self.assertFalse(compte.is_staff)
+        self.assertFalse(compte.is_superuser)
+
+    def test_agent_sans_csb_refuse(self):
+        self.comme(self.admin)
+        reponse = self.creer(profile_code="agent_csb")
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(
+            reponse.data["csb_id"],
+            ["Le CSB est obligatoire pour un agent de CSB."],
+        )
+
+    def test_beneficiaire_sans_region_refusee(self):
+        self.comme(self.admin)
+        reponse = self.creer(profile_code="beneficiaire")
+        self.assertEqual(reponse.status_code, 400)
+        self.assertIn("region_id", reponse.data)
+
+    def test_le_csb_est_reserve_aux_agents(self):
+        self.comme(self.admin)
+        reponse = self.creer(profile_code="asc", csb_id=self.csb.pk)
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertIsNone(reponse.data["csb_id"])
+
+    def test_identifiant_en_double(self):
+        self.comme(self.asc)
+        reponse = self.creer(identifiant="femme")
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(
+            reponse.data["identifiant"],
+            ["Cet identifiant est déjà utilisé."],
+        )
+
+    def test_pin_invalide_ou_absent(self):
+        self.comme(self.asc)
+        self.assertEqual(
+            self.creer(pin="12")
+            .data["pin"],
+            ["Le PIN doit contenir de 4 à 6 chiffres."],
+        )
+        donnees = self.donnees()
+        del donnees["pin"]
+        reponse = self.client.post(self.URL, donnees, format="json")
+        self.assertEqual(reponse.data["pin"], ["Ce champ est obligatoire."])
+
+    def test_beneficiaire_ne_lit_qu_elle_meme(self):
+        self.comme(self.femme)
+        self.assertEqual(self.ids(self.client.get(self.URL)), {str(self.femme.pk)})
+        self.assertEqual(
+            self.client.get(f"{self.URL}{self.autre_femme.pk}/").status_code,
+            404,
+        )
+        self.assertEqual(self.creer().status_code, 403)
+        self.assertEqual(
+            self.client.patch(
+                f"{self.URL}{self.femme.pk}/",
+                {"nom": "X"},
+                format="json",
+            ).status_code,
+            403,
+        )
+
+    def test_asc_lit_les_beneficiaires_de_sa_region_seulement(self):
+        self.comme(self.asc)
+        self.assertEqual(self.ids(self.client.get(self.URL)), {str(self.femme.pk)})
+        self.assertEqual(
+            self.client.get(f"{self.URL}{self.autre_femme.pk}/").status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(f"{self.URL}{self.asc_meme_region.pk}/").status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.patch(
+                f"{self.URL}{self.femme.pk}/",
+                {"nom": "X"},
+                format="json",
+            ).status_code,
+            403,
+        )
+
+    def test_asc_sans_region_ne_voit_pas_les_femmes_sans_region(self):
+        self.comme(self.asc_sans_region)
+        self.assertEqual(self.client.get(self.URL).data["results"], [])
+
+    def test_agent_refuse(self):
+        self.comme(self.agent)
+        self.assertEqual(self.client.get(self.URL).status_code, 403)
+        self.assertEqual(self.creer().status_code, 403)
+
+    def test_admin_modifie_et_desactive(self):
+        self.comme(self.admin)
+        reponse = self.client.patch(
+            f"{self.URL}{self.femme.pk}/",
+            {"nom": "Nouveau", "is_active": False, "pin": "9999"},
+            format="json",
+        )
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.femme.refresh_from_db()
+        self.assertEqual(self.femme.nom, "Nouveau")
+        self.assertFalse(self.femme.is_active)
+        self.assertTrue(self.femme.check_password("1234"))
+
+    def test_admin_ne_retire_pas_le_csb_d_un_agent(self):
+        self.comme(self.admin)
+        reponse = self.client.patch(
+            f"{self.URL}{self.agent.pk}/",
+            {"csb_id": None},
+            format="json",
+        )
+        self.assertEqual(reponse.status_code, 400)
+        self.assertIn("csb_id", reponse.data)
+
+    def test_pas_de_suppression(self):
+        self.comme(self.admin)
+        self.assertEqual(self.client.delete(f"{self.URL}{self.femme.pk}/").status_code, 405)
+
+    def test_me_renvoie_le_csb(self):
+        self.comme(self.agent)
+        self.assertEqual(self.client.get(ME).data["csb_id"], self.csb.pk)
+
+
+class ValidationCsbModeleTest(BaseApiTest):
+    def test_clean_exige_le_csb(self):
+        agent = User(
+            identifiant="x",
+            nom="X",
+            prenom="X",
+            profile=Profile.objects.get(code=CodeProfile.AGENT_CSB),
+        )
+        with self.assertRaises(ValidationError) as contexte:
+            agent.clean()
+        self.assertEqual(
+            contexte.exception.message_dict["csb"],
+            ["Le CSB est obligatoire pour un agent de CSB."],
+        )
+        agent.csb = self.csb
+        agent.clean()

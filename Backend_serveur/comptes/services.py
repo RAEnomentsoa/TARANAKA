@@ -1,8 +1,9 @@
 import math
 from datetime import timedelta
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
@@ -11,6 +12,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from synchro.models import JournalAudit
+from synchro.services import journaliser_ligne
 
 from .exceptions import (
     AncienPinIncorrect,
@@ -26,6 +28,71 @@ DUREES_BLOCAGE = {
     10: timedelta(hours=1),
 }
 SEUIL_BLOCAGE_ADMIN = 15
+MESSAGE_IDENTIFIANT_UTILISE = "Cet identifiant est déjà utilisé."
+
+
+def beneficiaires_visibles(user):
+    """The women this user may link a row to."""
+    beneficiaires = User.objects.filter(profile__code=CodeProfile.BENEFICIAIRE)
+    code = user.profile.code
+    if code == CodeProfile.ADMIN:
+        return beneficiaires
+    if code == CodeProfile.BENEFICIAIRE:
+        return beneficiaires.filter(pk=user.pk)
+    # Guard against filter(region_id=None), which would match every empty region.
+    if code == CodeProfile.ASC and user.region_id is not None:
+        return beneficiaires.filter(region_id=user.region_id)
+    return User.objects.none()
+
+
+def asc_visibles(user):
+    """The ASCs this user may name on a row: an ASC can only name themself."""
+    code = user.profile.code
+    if code == CodeProfile.ADMIN:
+        return User.objects.filter(profile__code=CodeProfile.ASC)
+    if code == CodeProfile.ASC:
+        return User.objects.filter(pk=user.pk)
+    return User.objects.none()
+
+
+def comptes_visibles(user):
+    if user.profile.code == CodeProfile.ADMIN:
+        return User.objects.all()
+    return beneficiaires_visibles(user)
+
+
+def creer_compte(donnees, contexte):
+    donnees = dict(donnees)
+    pin = donnees.pop("pin")
+    user = User(**donnees)
+    user.set_password(pin)
+    return _enregistrer_compte(
+        user,
+        "create",
+        contexte,
+        force_insert=True,
+        profil=user.profile.code,
+    )
+
+
+def modifier_compte(user, donnees, contexte):
+    with transaction.atomic():
+        courant = User.objects.select_for_update(of=("self",)).get(pk=user.pk)
+        for champ, valeur in donnees.items():
+            setattr(courant, champ, valeur)
+        return _enregistrer_compte(courant, "update", contexte, champs=sorted(donnees))
+
+
+def _enregistrer_compte(user, action, contexte, force_insert=False, **details):
+    try:
+        with transaction.atomic():
+            user.save(force_insert=force_insert)
+    except IntegrityError as erreur:
+        raise ValidationError(
+            {"identifiant": [MESSAGE_IDENTIFIANT_UTILISE]}
+        ) from erreur
+    journaliser_ligne(action, user, contexte, **details)
+    return user
 
 
 def est_bloque(user):

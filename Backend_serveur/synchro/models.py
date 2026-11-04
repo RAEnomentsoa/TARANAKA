@@ -28,13 +28,15 @@ class SyncModel(models.Model):
     class Meta:
         abstract = True
 
-    def soft_delete(self):
+    def soft_delete(self, device_id=None):
         """Mark the row as deleted so the deletion can reach the other phones."""
         if self.deleted_at is not None:
             return
         self.deleted_at = timezone.now()
         self.version += 1
-        self.save(update_fields=["deleted_at", "version", "updated_at"])
+        if device_id is not None:
+            self.device_id = device_id
+        self.save(update_fields=["deleted_at", "version", "device_id", "updated_at"])
 
 
 class JournalAudit(models.Model):

@@ -37,6 +37,13 @@ Version 2, 3 Nov 2026. This version follows the Django plan from Claude Code, wi
 23. `journal_audit.action` also records `login_succes`, `login_echec`, `login_bloque`, `login_refuse`, `changer_pin_succes`, `changer_pin_echec`, `changer_pin_bloque` and `compte_debloque`.
 24. Two Django tables are added for logging out and token rotation: `token_blacklist_outstandingtoken` and `token_blacklist_blacklistedtoken`.
 
+## What changed for the main API (4 Nov 2026)
+
+25. `utilisateur` gets `csb_id`, a link to `csb` that can be empty and is protected: a CSB that has agents can't be deleted. It is required when the profile is `agent_csb`. The API and the admin check this, because the database can't: the profile code is in another table.
+26. No other table changes. An ASC's access to beneficiaires and pregnancies comes from `region_id`, and server-generated referral codes use the first 4 characters of the ASC id: `R-<4 chars>-<MMDD>-<n>`. The example in table 13 follows this format.
+27. `journal_audit.action` also records `status_change`.
+28. A soft delete now also saves `device_id`.
+
 ---
 
 ## Types used
@@ -106,6 +113,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | updated_at | TIMESTAMP | Last change |
 | profile_id | INTEGER, FK → profile (protected) | Profile: decides what the user can do |
 | region_id | INTEGER, FK → region, can be empty | Region |
+| csb_id | INTEGER, FK → csb, can be empty (protected) | **NEW**: the CSB of an agent_csb |
 | is_active, is_staff, is_superuser | BOOLEAN | **NEW**: needed by Django |
 | last_login | TIMESTAMP, can be empty | **NEW**: needed by Django |
 | tentatives_echouees | INTEGER, default 0 | **NEW**: wrong PINs in a row |
@@ -220,7 +228,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | Column | Type | What it's for |
 |---|---|---|
 | id | UUID, PK | Referral id |
-| code_unique | TEXT, unique | Short code, for example R-4-1102-07 |
+| code_unique | TEXT, unique | Short code, for example R-712d-1102-07 |
 | origine | ENUM (enfant, grossesse) | Child or pregnancy alert |
 | enfant_id | UUID, FK → enfant, can be empty (protected) | Child |
 | grossesse_id | UUID, FK → grossesse, can be empty (protected) | Pregnancy |
@@ -267,7 +275,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 |---|---|---|
 | id | INTEGER, PK, automatic | Line id |
 | user_id | UUID, FK → utilisateur, can be empty | Who (empty for a failed login) |
-| action | TEXT | login, create, update, delete, export_csv… |
+| action | TEXT | login, create, update, delete, status_change, export_csv… |
 | table_nom | TEXT, can be empty | Which table |
 | ligne_id | UUID, can be empty | Which row |
 | details | JSON | Extra info |

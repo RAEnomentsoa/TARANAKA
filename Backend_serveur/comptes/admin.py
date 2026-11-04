@@ -9,7 +9,7 @@ from .models import Profile, User
 class UtilisateurCreationForm(AdminUserCreationForm):
     class Meta:
         model = User
-        fields = ("identifiant", "nom", "prenom", "profile")
+        fields = ("identifiant", "nom", "prenom", "profile", "csb")
 
 
 class UtilisateurChangeForm(UserChangeForm):
@@ -40,6 +40,7 @@ class UserAdmin(BaseUserAdmin):
                     "phone",
                     "profile",
                     "region",
+                    "csb",
                     "consentement",
                 ),
             },
@@ -69,6 +70,7 @@ class UserAdmin(BaseUserAdmin):
                     "nom",
                     "prenom",
                     "profile",
+                    "csb",
                     "usable_password",
                     "password1",
                     "password2",

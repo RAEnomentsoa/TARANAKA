@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'django_filters',
+    'drf_spectacular',
     'referentiel',
     'comptes',
     'synchro',
@@ -68,6 +70,26 @@ REST_FRAMEWORK = {
         'login': '10/minute',
     },
     'EXCEPTION_HANDLER': 'comptes.exceptions.gestionnaire_exceptions',
+    'DEFAULT_PAGINATION_CLASS': 'synchro.pagination.Pagination',
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'TARANAKA API',
+    'DESCRIPTION': 'API du serveur central TARANAKA.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    # Open during development. Otherwise, only staff logged in to /admin/.
+    'SERVE_AUTHENTICATION': ['rest_framework.authentication.SessionAuthentication'],
+    'SERVE_PERMISSIONS': [
+        'rest_framework.permissions.AllowAny'
+        if DEBUG
+        else 'rest_framework.permissions.IsAdminUser'
+    ],
 }
 
 SIMPLE_JWT = {

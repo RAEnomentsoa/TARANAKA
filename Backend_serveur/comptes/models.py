@@ -5,7 +5,11 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from django.core.exceptions import ValidationError
 from django.db import models
+
+
+MESSAGE_CSB_OBLIGATOIRE = "Le CSB est obligatoire pour un agent de CSB."
 
 
 class CodeProfile(models.TextChoices):
@@ -87,6 +91,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         related_name="utilisateurs",
     )
+    csb = models.ForeignKey(
+        "referentiel.CSB",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="agents",
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     tentatives_echouees = models.PositiveSmallIntegerField(default=0)
@@ -105,3 +116,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.prenom} {self.nom} ({self.identifiant})"
+
+    def clean(self):
+        super().clean()
+        if (
+            self.profile_id
+            and self.profile.code == CodeProfile.AGENT_CSB
+            and not self.csb_id
+        ):
+            raise ValidationError({"csb": MESSAGE_CSB_OBLIGATOIRE})
