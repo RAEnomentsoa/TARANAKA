@@ -464,6 +464,7 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 | `/api/clinical-config/current/` | GET | Version à utiliser par les applications |
 | `/api/clinical-config/{version}/publish/`, `/retire/` | POST | Publier ou retirer une version (admin) |
 | `/api/stats/`, `/api/stats/export/` | GET | Statistiques agrégées et anonymes, export CSV |
+| `/api/who-reference/` | GET | Courbes de croissance OMS 2006 (tables chargées) |
 | `/api/audit/` | GET | Journal d'audit (admin) |
 | `/api/profiles/{id}/reset-pin/` | POST | Réinitialiser le PIN (superviseur, admin) |
 
@@ -951,6 +952,7 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 - `code_unique` : le téléphone envoie le code créé hors ligne (par exemple `TRK-7F3K-92`).
 - `date_referencement` : date et heure du référencement sur le téléphone. Sans elle, l'heure du serveur.
 - En lecture : `urgence` (`urgente` = `rouge`, `haute` = `orange`, `normale` = `jaune`) et `en_retard` (toujours `envoye` après le délai de la configuration, 48 h dans l'exemple).
+- `asc` : `{ "nom", "prenom", "phone" }` de l'agent communautaire, pour savoir qui appeler. Visible par l'ASC, l'agent de CSB et l'admin ; `null` pour une bénéficiaire.
 
 **Créer :** `POST`
 
@@ -976,6 +978,7 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
   "grossesse_id": null,
   "mesure_id": "e4951e35-b4a0-428a-8aaf-1515fb39e005",
   "asc_id": "712da08f-311e-437d-84e4-020c47329ef4",
+  "asc": { "nom": "Rasoanirina", "prenom": "Rasoa", "phone": "034 00 000 01" },
   "csb_id": 1,
   "priorite": "haute",
   "motif": "PB bas",
@@ -984,6 +987,7 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
   "date_referencement": "2026-11-04T05:12:15.487541Z",
   "date_reception": null,
   "date_prise_en_charge": null,
+  "date_suivi": null,
   "date_sortie": null,
   "issue_sortie": "",
   "en_retard": false,
@@ -1008,7 +1012,7 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 
 `envoye` (Référé) → `recu` (patient arrivé) → `pris_en_charge` → `en_suivi` → `sortie`
 
-La sortie est aussi possible depuis `recu` et `pris_en_charge` (transfert, décès…). Le serveur remplit `date_reception`, `date_prise_en_charge` et `date_sortie`. Pour un enfant, `statut_prise_en_charge` suit : `pris_en_charge`, `suivi`, puis l'issue de sortie, et la `version` de l'enfant augmente.
+La sortie est aussi possible depuis `recu` et `pris_en_charge` (transfert, décès…). Le serveur remplit `date_reception`, `date_prise_en_charge`, `date_suivi` et `date_sortie`. Un dossier sorti avec `date_suivi` à `null` n'est pas passé par le suivi. Pour un enfant, `statut_prise_en_charge` suit : `pris_en_charge`, `suivi`, puis l'issue de sortie, et la `version` de l'enfant augmente.
 
 **Patient arrivé :**
 
@@ -1220,6 +1224,8 @@ Sans configuration publiée, `delai_non_arrivee_heures` vaut `null` et la liste 
 { "choix": "fusion", "donnees": { "nom": "Soa Nirina" }, "commentaire": "Nom vérifié avec la mère" }
 ```
 
+`expediteur` : `{ "nom", "prenom", "phone" }` de la personne qui a envoyé la version du téléphone (visible par l'ASC, l'agent de CSB et l'admin, `null` pour une bénéficiaire). Pour une suppression, `donnees_telephone` vaut `{}`.
+
 `choix` : `serveur` (garder la version du serveur), `telephone` (appliquer celle du téléphone) ou `fusion` (`donnees` obligatoire). La ligne reçoit toujours une nouvelle version, pour que chaque téléphone récupère la décision. `400` si le conflit est déjà résolu ou si les données sont refusées. L'arbitrage est journalisé (`conflit_resolu`).
 
 ---
@@ -1244,7 +1250,7 @@ Le fichier d'exemple, marqué « À VALIDER », est `config_clinique/exemples/co
 
 ## GET `/api/stats/` et `/api/stats/export/`
 
-**Ce qu'il fait :** statistiques **agrégées et sans identité** (spec §10), pour le superviseur (limité à sa région s'il en a une) et l'admin. `export/` renvoie le même contenu en CSV (`groupe,indicateur,valeur`) et chaque export est journalisé.
+**Ce qu'il fait :** statistiques **agrégées et sans identité** (spec §10), pour le superviseur (limité à sa région s'il en a une) et l'admin. `export/` renvoie le même contenu en CSV (`groupe,indicateur,valeur`, `Content-Type: text/csv; charset=utf-8`, quel que soit l'en-tête `Accept`) et chaque export est journalisé.
 
 | Paramètre | Rôle |
 |---|---|
@@ -1270,7 +1276,43 @@ Le fichier d'exemple, marqué « À VALIDER », est `config_clinique/exemples/co
 }
 ```
 
-Un effectif de 1 à 4 est remplacé par `null` et cité dans `masques` (`<5` dans le CSV). Un taux ou un délai moyen calculé sur moins de 5 cas est masqué aussi.
+Avec `grouper_par`, `groupes` contient un élément par région ou par mois : `{ "cle": "2026-11", "libelle": "11/2026", "indicateurs": { … }, "masques": [ … ] }`, avec les mêmes indicateurs que `total`.
+
+Règles de masquage, identiques à l'écran et dans le CSV :
+
+- Un effectif de 1 à 4 est remplacé par `null` et cité dans `masques` (`<5` dans le CSV). 0 reste affiché.
+- Un taux ou un délai moyen calculé sur moins de 5 cas est masqué.
+- Si 1 à 4 référencements ne sont pas arrivés, `referencements_arrives` et `taux_arrivee_pct` sont masqués (sinon la différence le révélerait).
+- **Suppression complémentaire :** avec des groupes, si une seule valeur d'un indicateur est masquée alors que le total est visible, la plus petite autre valeur est masquée aussi, pour qu'on ne puisse pas la retrouver par soustraction.
+
+## GET `/api/who-reference/`
+
+**Ce qu'il fait :** les standards de croissance OMS 2006, **depuis les tables officielles chargées seulement** (`python manage.py importer_tables_oms`). Pour tout profil connecté.
+
+| Paramètre | Rôle |
+|---|---|
+| `indicateur` | `wfa` (poids/âge), `lhfa` (taille/âge), `wfl` (poids/longueur), `wfh` (poids/taille) — obligatoire |
+| `sexe` | `M` ou `F` — obligatoire |
+| `cle_min`, `cle_max` | Bornes de la clé (jours pour `wfa`/`lhfa`, cm pour `wfl`/`wfh`) |
+| `pas` | Garder une clé sur `pas`, par exemple `30` (jours) ou `1` (cm) |
+
+```json
+{
+  "source": "OMS 2006, tables LMS officielles chargées (reference_oms)",
+  "indicateur": "wfl",
+  "sexe": "M",
+  "unite_cle": "cm",
+  "unite_valeur": "kg",
+  "points": [
+    {
+      "cle": "75.0", "l": "-0.3521", "m": "9.5032", "s": "0.08295", "mesure_type": "L",
+      "courbes": { "-3": 7.486, "-2": 8.088, "0": 9.503, "2": 11.275, "3": 12.33 }
+    }
+  ]
+}
+```
+
+Les courbes sont calculées à partir des valeurs LMS avec la formule OMS. `404` si la table n'est pas chargée : aucune valeur n'est inventée.
 
 ## GET `/api/audit/`
 
@@ -1288,5 +1330,7 @@ python manage.py createsuperuser
 
 2. Connectez-vous à `/api/auth/login/` avec son identifiant et son mot de passe dans le champ `pin`.
 3. Créez les autres comptes avec `POST /api/profiles/`.
+
+Pour la production, voir `deployment.md` (réglages `TOTP_OBLIGATOIRE`, `CONFIG_VALIDEE_OBLIGATOIRE`, `USE_X_FORWARDED_HOST`, `CORS_ALLOWED_ORIGINS`) et `.env.production.example`.
 
 Pour une démonstration, `python manage.py charger_demo` remplit une base vide avec des données fictives et la configuration d'exemple (voir `docs/DEMO.md` à la racine). Les tables OMS se chargent avec `python manage.py importer_tables_oms <dossier>`.

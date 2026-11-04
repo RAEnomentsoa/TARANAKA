@@ -56,10 +56,11 @@ Version 3, 4 Nov 2026: MVP backend finished (see "What changed for the MVP backe
 36. `historique_version` is now written: both versions of each sync conflict, with `conflit = true`.
 37. `journal_audit` is append-only (the code refuses to change or delete a line). New actions: `reinitialiser_pin`, `conflit_sync`, `conflit_resolu`, `config_creee`, `config_modifiee`, `config_publiee`, `config_retiree`, `export_csv`. Login lines also store `device_id` in `details`.
 
-## What changed for 2FA and data protection (4 Nov 2026, second pass)
+## What changed for 2FA, data protection and the dashboard's API fixes (4 Nov 2026)
 
 38. `utilisateur` gets `totp_secret` (TEXT, can be empty), `totp_active` (BOOLEAN), `totp_dernier_pas` (INTEGER, can be empty: last TOTP step used, against replay) and `efface_le` (TIMESTAMP, can be empty: data erased under loi 2014-038, account anonymised).
-39. `journal_audit.action` also records `login_totp_requis`, `totp_preparation`, `totp_active`, `totp_desactive`, `totp_desactivation_echec`, `totp_reinitialise`, `acces_donnees`, `effacement_donnees` and `effacement_echec`.
+39. `referencement` gets `date_suivi` (TIMESTAMP, can be empty), set by the server when the status becomes `en_suivi`. The migration filled it for existing rows from the `status_change` lines of `journal_audit`.
+40. `journal_audit.action` also records `login_totp_requis`, `totp_preparation`, `totp_active`, `totp_desactive`, `totp_desactivation_echec`, `totp_reinitialise`, `acces_donnees`, `effacement_donnees` and `effacement_echec`.
 
 ---
 
@@ -272,6 +273,7 @@ These go on the 9 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | date_referencement | TIMESTAMP | **NEW**: when the ASC referred, on the phone |
 | date_reception | TIMESTAMP, can be empty | **NEW**: patient arrived |
 | date_prise_en_charge | TIMESTAMP, can be empty | **NEW** |
+| date_suivi | TIMESTAMP, can be empty | **NEW**: status became en_suivi |
 | date_sortie | TIMESTAMP, can be empty | **NEW**: required when status = sortie |
 | issue_sortie | ENUM (gueri, transfere, non_repondant, abandon, decede), can be empty | **NEW**: exit outcome, only with sortie |
 | + sync columns | | |

@@ -208,8 +208,13 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   of the destination centre** (what a district/region team supervises).
 - "Cas MAS / MAM" count **distinct children** with at least one such
   measurement in the period; "dépistages" counts measurements.
-- Known limit: no complementary suppression. With `grouper_par`, a hidden
-  group value can sometimes be deduced from the total minus the other groups.
+- Complementary suppression (added after the web dashboard's review, issue 2
+  of `docs/API_ISSUES.md`): for each count, if exactly one group is hidden
+  while the total is shown, the smallest other group is hidden too (a 0 only
+  if nothing else is left); with a single group, the total is hidden. The
+  arrivals and the arrival rate are hidden when 1 to 4 referrals didn't
+  arrive, since "referrals − arrivals" would reveal that small count. The
+  screen and the CSV hide exactly the same values.
 - Each CSV export is written to the audit log (`export_csv`).
 
 ## D12. Two-factor login (TOTP) for web accounts
@@ -275,3 +280,30 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   the anonymised account. The erasure itself is audited with counts only
   (`effacement_donnees`), never names or health values.
 - Statistics already computed are anonymous and unaffected.
+
+## D14. Fixes asked by the web dashboard (`docs/API_ISSUES.md`)
+
+- **CSV export:** the view always answers CSV (`text/csv; charset=utf-8`)
+  whatever the `Accept` header, so `text/csv` no longer gets `406` and the
+  clients that send `application/json` or `*/*` keep working. Errors (`403`…)
+  are also written as CSV lines.
+- **Who to call:** referrals get `asc` and conflicts `expediteur`
+  (`nom`, `prenom`, `phone`), read only, **for staff only**: `asc`,
+  `agent_csb`, `admin`. A beneficiary gets `null`; a supervisor has no access
+  to these endpoints. The ASC's phone is professional contact data that the
+  centre needs to follow up a referral that didn't arrive.
+- **`date_suivi`:** set when the status becomes `en_suivi`. For existing rows
+  the migration takes the exact date from the audit log (`status_change` to
+  `en_suivi`), never a guess.
+- **WHO curves:** `GET /api/who-reference/` serves only rows of the loaded
+  official tables (`reference_oms`) with the -3/-2/0/+2/+3 SD curves computed
+  from their LMS values (WHO formula). No table loaded: `404`, nothing
+  invented. Readable by every logged-in profile (reference data, not personal).
+- **Deployment:** `USE_X_FORWARDED_HOST` and `CORS_ALLOWED_ORIGINS` are
+  environment variables (default off / empty), documented with
+  `TOTP_OBLIGATOIRE=True` in `Backend_serveur/docs/deployment.md` and
+  `Backend_serveur/.env.production.example`. CORS uses `django-cors-headers`
+  (new dependency); a single domain for the dashboard and the API remains the
+  recommended setup.
+- Left for later, as asked: TOTP backup codes, and server error messages in
+  Malagasy (issue 9).

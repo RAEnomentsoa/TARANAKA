@@ -107,7 +107,7 @@ stores what the phone syncs and serves the configuration these screens read.
 ## 2. What was done
 
 The decisions taken where the spec was ambiguous are in `docs/DECISIONS.md`
-(D1–D13). The API is described in `Backend_serveur/docs/endpoint.md` and
+(D1–D14). The API is described in `Backend_serveur/docs/endpoint.md` and
 `docs/openapi.yaml`; the schema in `Backend_serveur/database/taranaka_tables_serveur.md`;
 the demo in `docs/DEMO.md`.
 
@@ -125,7 +125,8 @@ the demo in `docs/DEMO.md`.
 | Food log, consultations | ✅ The two existing tables now have an API | `nutrition/views.py` |
 | **Two-factor login (TOTP)** for `agent_csb`, `superviseur`, `admin` | ✅ RFC 6238, enrolment under `/api/auth/2fa/`, optional `code_totp` at login, lockout shared with the PIN, no replay, mandatory mode (`TOTP_OBLIGATOIRE`), admin reset (added 4 Nov 2026, second pass) | `comptes/totp.py`, `comptes/services.py` |
 | **Rights of access and erasure** (loi 2014-038) | ✅ Export for oneself or by an admin, erasure by anonymisation for beneficiaries, propagated to phones by the usual pull, audited (added 4 Nov 2026, second pass) | `comptes/donnees_personnelles.py` |
-| Tests | ✅ 352 tests, all passing (see §4) | |
+| **Fixes asked by the web dashboard** (`docs/API_ISSUES.md` 1, 2, 4, 5, 6, plus deployment settings for 3, 7, 8) | ✅ CSV export negotiation, complementary suppression (screen = CSV), ASC/sender contact for staff, `date_suivi`, `GET /api/who-reference/` from the loaded WHO tables, `USE_X_FORWARDED_HOST` and `CORS_ALLOWED_ORIGINS`, production env example and deployment guide (third pass, D14) | `statistiques/`, `referencement/`, `synchro/`, `referentiel/`, `Backend_serveur/docs/deployment.md` |
+| Tests | ✅ 375 tests, all passing (see §4) | |
 | OpenAPI | ✅ `docs/openapi.yaml`, no warnings, a test fails if it drifts from the code | |
 | Demo data | ✅ `python manage.py charger_demo`, acceptance tests replaying the scenarios | `demo/`, `docs/DEMO.md` |
 
@@ -149,6 +150,10 @@ Everything else is additive (new fields in responses, new endpoints).
 | `POST /api/auth/login/` | New optional input `code_totp`; new answers `401 totp_requis` / `401 totp_invalide` **only for accounts that turned 2FA on**; new response field `totp_a_configurer` (always `false` unless `TOTP_OBLIGATOIRE=True`). Accounts without 2FA log in exactly as before. | Spec §2, D12. The login is the one place 2FA has to act. |
 | All endpoints except `/me/`, `/changer-pin/`, `/2fa/` | Unchanged, except with `TOTP_OBLIGATOIRE=True`: a token marked `totp_a_configurer` gets `403` until 2FA is set up. | Spec §2, D12. Off by default. |
 | `/api/profiles/` (ASC's list, `mere_id` links) | An erased account no longer appears in the beneficiaries an ASC lists or links. | Loi 2014-038, D13. Only affects erased accounts. |
+| `GET /api/stats/export/` | Always answers `text/csv`, whatever `Accept` (before: `406` for `Accept: text/csv`). Errors are written as CSV lines. | Bug, `API_ISSUES.md` §1. D14. |
+| `GET /api/stats/`, `/export/` | More values hidden: complementary suppression with `grouper_par`, and arrivals/rate hidden when 1–4 referrals didn't arrive. | Anonymity leak, `API_ISSUES.md` §2. D11. |
+| `/api/referrals/` (and `/incoming/`, `/sync/pull/`) | New read-only `asc` (`nom`, `prenom`, `phone`; `null` for a beneficiary) and `date_suivi`. | `API_ISSUES.md` §4, §5. Additive. D14. |
+| `/api/conflicts/` | New read-only `expediteur`; `donnees_telephone` / `donnees_serveur` typed as objects in OpenAPI. | `API_ISSUES.md` §4. Additive. |
 
 No existing endpoint was removed or renamed. One existing test was adapted to
 the new lifecycle (`referencement/tests.py`, `StatusTest`), and one to the 5th
@@ -162,19 +167,19 @@ Run on PostgreSQL 16, Python 3.13, from `Backend_serveur/`:
 python manage.py test
 ```
 
-Result on 4 Nov 2026: **352 tests, OK** (174 before this work, 317 after the first pass).
+Result on 4 Nov 2026: **375 tests, OK** (174 before this work, 317 after the first pass, 352 after 2FA and data protection).
 
 | App | Tests | Covers |
 |---|---|---|
 | `comptes` | 108 | Login, lockout, PIN, accounts, supervisor, audit log, **TOTP** (RFC 6238 reference vectors, enrolment, two-step login, replay, lockout, mandatory mode, admin reset), **access and erasure** (export content and scope, erasure rules, propagation to the ASC's phone, audit), **permission matrix** (21 reads × 5 profiles, 13 writes × 5 profiles, no token) |
 | `nutrition` | 80 | Children, measurements, **classification** (WHO reference cases, MAS/MAM limits, orientation, under 6 months, config-driven thresholds, plausibility) |
-| `referencement` | 61 | Referrals, lifecycle and discharge, queue order, appointments, consultations, food logs, follow-ups |
-| `synchro` | 35 | **Sync**: forced resend, idempotency key, order, errors, rights, conflicts and arbitration, pull with deletions, cursor, gzip, OpenAPI file |
+| `referencement` | 67 | Referrals, lifecycle and discharge, `date_suivi` (and its migration from the audit log), ASC contact visibility, queue order, appointments, consultations, food logs, follow-ups |
+| `synchro` | 37 | **Sync**: forced resend, idempotency key, order, errors, rights, conflicts and arbitration (sender contact, delete conflict data `{}`), pull with deletions, cursor, gzip, OpenAPI file |
 | `sante_femme` | 32 | Cycles, pregnancies, danger signs |
 | `config_clinique` | 12 | Versions, schema, publication, validation in production, ETag, sample "À VALIDER" |
-| `statistiques` | 12 | Counts, small-count masking, zones, months, CSV, scenario 8 counter |
+| `statistiques` | 19 | Counts, small-count masking, **complementary suppression**, non-arrived difference, zones, months, CSV (same masking as the screen, every `Accept` header), scenario 8 counter |
 | `demo` | 7 | Acceptance: scenarios 1–5, 7, 8 on the demo data through real PIN logins |
-| `referentiel` | 5 | Reference lists |
+| `referentiel` | 13 | Reference lists, **WHO curves** (official LMS, WHO's published SD weights, table not loaded = 404), CORS and forwarded host |
 
 Not covered here (outside the backend): real devices, offline behaviour on the
 phone, field tests (spec §12).
@@ -183,16 +188,17 @@ phone, field tests (spec §12).
 
 | Item | State | Note |
 |---|---|---|
-| Two-factor authentication for web accounts (spec §2) | ✅ | Done (D12). Remaining: no recovery codes (admin reset instead), TOTP secret stored in clear in the database, Django `/admin/` not covered. Set `TOTP_OBLIGATOIRE=True` in production. |
+| Two-factor authentication for web accounts (spec §2) | ✅ | Done (D12). `TOTP_OBLIGATOIRE=True` is in the production env example and `deployment.md`. Remaining: **no backup codes** (deferred; admin reset instead), TOTP secret stored in clear in the database, Django `/admin/` not covered. |
 | Server-side check of the personal-data sync opt-in (spec §4, §9) | 🟡 | The server stores what the phone sends; the opt-in is the phone's job. There is a single `consentement` flag, not one per module. |
 | Right of access / erasure (loi 2014-038) | ✅ | Done (D13). Remaining: the audit log is kept (traceability); records with a referral are kept anonymised; copies on phones that never sync again can't be reached. A CMIL declaration and a retention policy are still to be written (not code). |
 | Vaccination records, ANC attendance, pregnancy follow-up (weight, movements, delivery) | ⏭️ | Personal-mode data with no server table; the calendars are in the config. Add tables if these must be synced. |
 | Measurements recorded by the centre | 🟡 | Only ASCs/admins write measurements; centre agents record consultations. |
 | Update pushed for a row deleted on the server | 🟡 | Answers `introuvable`, not put in the conflict queue (D10). |
-| Complementary suppression in stats | 🟡 | A hidden group value can sometimes be deduced from the total (D11). |
+| Complementary suppression in stats | ✅ | Done (D11): screen and CSV hide the same values. |
+| Server error messages in Malagasy (`API_ISSUES.md` §9) | ❌ | Deferred. Validation errors have no stable `code`; Malagasy texts need native-speaker review. |
 | District level | ❌ | No district table: supervisors are regional or national (D1). |
 | Malagasy texts in the config | ❌ | `"mg": null` in the sample: to be written and reviewed by native speakers. |
 | Clinical validation of the config | ❌ | Everything is "À VALIDER" until the Ministry / ONN / medical committee signs it. |
 | DHIS2 / FHIR export | ⏭️ | Post-MVP (spec §14). The stats service is the natural place for a DHIS2 aggregate export. |
 | Anonymous usage analytics (spec §12) | ❌ | Not started. |
-| Hosting, TLS, encrypted backups | ⏭️ | Deployment, not code. |
+| Hosting, TLS, encrypted backups | ⏭️ | Deployment, not code. Settings and steps in `Backend_serveur/docs/deployment.md` and `.env.production.example` (TOTP, config validation, proxy host, CORS). |

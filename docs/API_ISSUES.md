@@ -2,12 +2,28 @@
 
 Ce document liste ce que le tableau de bord web (`web/`) a constaté en utilisant l'API décrite dans `docs/openapi.yaml`, `docs/BACKEND_STATUS.md` et `Backend_serveur/docs/endpoint.md` (branche `Backend_Serveur`, 4 nov. 2026).
 
-Le backend n'a **pas** été modifié. Tout a été vérifié de deux façons :
+Au moment du constat, le backend n'avait pas été modifié ; ce qui a été corrigé depuis est indiqué dans chaque section (« ✅ Corrigé ») et dans le tableau d'état ci-dessous. Les constats ont été vérifiés de deux façons :
 
 - tests unitaires du client ;
 - parcours de bout en bout dans un navigateur, sur le vrai serveur Django + PostgreSQL 16 avec `python manage.py charger_demo` : enrôlement TOTP, connexion avec code, file entrante, « Patient arrivé », prise en charge, consultation, contrôle, sortie, fiche enfant, conflits, statistiques, export CSV, refus d'accès du superviseur.
 
 Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (contournement côté web), **mineur**.
+
+## État au 4 nov. 2026 (après correction côté backend)
+
+| # | Sujet | État |
+|---|---|---|
+| 1 | Export CSV et `Accept: text/csv` | ✅ Corrigé |
+| 2 | Suppression complémentaire | ✅ Corrigé (serveur, écran et CSV) |
+| 3 | Double authentification non imposée par défaut | 🟡 Documenté : `TOTP_OBLIGATOIRE=True` en production. Codes de secours : **ouvert** |
+| 4 | Nom de l'agent communautaire | ✅ Corrigé |
+| 5 | Date de l'étape « En suivi » | ✅ Corrigé |
+| 6 | Courbes de référence OMS | ✅ Corrigé |
+| 7 | Liens de pagination absolus | ✅ Réglage `USE_X_FORWARDED_HOST` (déploiement) |
+| 8 | CORS | ✅ Réglage `CORS_ALLOWED_ORIGINS` (déploiement) |
+| 9 | Messages d'erreur seulement en français | ❌ **Ouvert** (reporté) |
+
+Le guide de déploiement est `Backend_serveur/docs/deployment.md`, avec l'exemple `Backend_serveur/.env.production.example`. Les contournements côté web (`Accept: */*`, suppression complémentaire, identifiant tronqué de l'agent…) peuvent maintenant être retirés.
 
 ---
 
@@ -19,6 +35,8 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 
 **Proposé.** Déclarer un renderer CSV sur la vue (`renderer_classes = [CSVRenderer]` ou un renderer texte minimal), ou désactiver la négociation pour cette action. Documenter l'en-tête attendu dans `endpoint.md` et `openapi.yaml` (aujourd'hui : `type: string`, sans `text/csv`).
 
+**✅ Corrigé.** La vue a un renderer `text/csv` et choisit toujours le CSV : `Accept: text/csv`, `*/*` et `application/json` renvoient tous le fichier (`200`, `text/csv; charset=utf-8`). `openapi.yaml` décrit la réponse en `text/csv`.
+
 ## 2. Pas de suppression complémentaire dans les statistiques — gênant (anonymat)
 
 **Constat.** Limite connue (D11). Avec `grouper_par=region` ou `mois`, une valeur masquée peut se retrouver par soustraction : total − autres groupes. Exemple : total MAS = 9 (visible), région A = 6 (visible), région B = `null` → B = 3.
@@ -26,6 +44,8 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 **Contournement web.** L'écran applique une suppression complémentaire : dans une colonne dont le total est visible et où un seul groupe est masqué, il masque aussi la plus petite autre valeur (`web/src/utils/privacy.ts`). Il masque aussi un taux d'arrivée dont le complément (référencements non arrivés) est de 1 à 4.
 
 **Reste ouvert.** L'export CSV vient du serveur, parce qu'il est **journalisé** (`export_csv`), ce qu'un export côté navigateur ne serait pas. Il contient donc les valeurs que l'écran masque en plus. Il faut appliquer la même suppression complémentaire dans `statistiques/services.py`, pour l'écran comme pour le CSV.
+
+**✅ Corrigé côté serveur** (`statistiques/services.py`, D11). Pour chaque effectif, si un seul groupe est masqué alors que le total est visible, la plus petite autre valeur est masquée aussi (s'il n'y a pas d'autre groupe, le total est masqué). Les arrivées et le taux d'arrivée sont masqués quand 1 à 4 référencements ne sont pas arrivés. L'écran (`/api/stats/`) et le CSV masquent maintenant exactement les mêmes valeurs ; le web peut garder sa règle sans effet supplémentaire, ou la retirer.
 
 ## 3. La double authentification n'est pas imposée par défaut — gênant (sécurité)
 
@@ -35,6 +55,8 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 
 **Proposé.** `TOTP_OBLIGATOIRE=True` en production, comme le recommande `BACKEND_STATUS.md` §5. Prévoir des codes de secours : aujourd'hui, un téléphone perdu demande l'intervention d'un admin (`reset-2fa`).
 
+**🟡 Réglage gardé, documenté.** `TOTP_OBLIGATOIRE=True` figure dans `Backend_serveur/.env.production.example` et `Backend_serveur/docs/deployment.md`. Avec ce réglage, c'est l'API elle-même qui refuse un compte web sans 2FA, pas seulement le tableau de bord. **Ouvert :** codes de secours (reportés).
+
 ## 4. Nom de l'agent communautaire absent du référencement — mineur
 
 **Constat.** Le référencement ne donne que `asc_id`, et `agent_csb` ne peut pas lire `/api/profiles/`. L'infirmier ne sait pas qui appeler pour un patient non arrivé.
@@ -42,6 +64,8 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 **Contournement web.** « Agent n° 68fc8307 » (8 premiers caractères de l'identifiant).
 
 **Proposé.** Un champ imbriqué en lecture seule `asc: { nom, prenom, phone }` dans `ReferencementSerializer`. Même besoin pour `user_id` dans `/api/conflicts/` (qui a envoyé la version du téléphone).
+
+**✅ Corrigé.** Les référencements ont `asc: { nom, prenom, phone }` (aussi dans `/incoming/` et `/sync/pull/`) et les conflits `expediteur: { nom, prenom, phone }`. Visibles seulement par le personnel (`asc`, `agent_csb`, `admin`) ; `null` pour une bénéficiaire. Le superviseur n'a pas accès à ces endpoints.
 
 ## 5. Pas de date pour l'étape « En suivi » — mineur
 
@@ -51,11 +75,15 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 
 **Proposé.** Ajouter `date_suivi`, ou exposer l'historique des statuts (il existe dans `journal_audit`).
 
+**✅ Corrigé.** Nouveau champ `date_suivi`, rempli par le serveur au passage en `en_suivi`. Pour les lignes existantes, la migration l'a retrouvé dans le journal d'audit. Un dossier sorti avec `date_suivi` à `null` n'est pas passé par le suivi.
+
 ## 6. Courbes de référence OMS non exposées — mineur
 
 **Constat.** La table `reference_oms` (LMS) est utilisée pour calculer les z-scores, mais aucun endpoint ne la sert. Le web trace donc les mesures de l'enfant et les seuils MAS / MAM (z = −3 / −2, PB 115 / 125 mm), sans les courbes −3, −2, 0, +2 z.
 
 **Proposé.** `GET /api/who-reference/?indicateur=wfa&sexe=F`. Il servirait aussi au téléphone.
+
+**✅ Corrigé.** `GET /api/who-reference/?indicateur=wfl&sexe=M&cle_min=45&cle_max=110&pas=1` renvoie, pour chaque clé, les valeurs LMS officielles et les courbes `-3`, `-2`, `0`, `2`, `3` z calculées avec la formule OMS. Seules les tables OMS chargées (`importer_tables_oms`) sont servies : `404` si la table n'est pas chargée, jamais de valeurs inventées. `pas` échantillonne (par exemple `30` jours pour `wfa`/`lhfa`).
 
 ## 7. Liens de pagination absolus — mineur
 
@@ -65,11 +93,15 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 
 **Proposé.** `USE_X_FORWARDED_HOST = True` derrière le proxy de production, ou des liens relatifs.
 
+**✅ Réglage ajouté.** Variable d'environnement `USE_X_FORWARDED_HOST=True` derrière le proxy (qui doit transmettre `X-Forwarded-Host`). Voir `deployment.md`. Le contournement du web (`?page=n`) reste valable.
+
 ## 8. CORS non configuré — mineur (déploiement)
 
 **Constat.** Aucun `django-cors-headers`. En développement, le web passe par le proxy Vite (`/api` → `VITE_API_PROXY_TARGET`).
 
 **Proposé.** Servir le web et l'API sur le même domaine en production (le plus simple), ou ajouter une liste d'origines autorisées.
+
+**✅ Réglage ajouté.** `django-cors-headers` avec `CORS_ALLOWED_ORIGINS` (vide par défaut = aucun accès d'une autre origine). En-têtes autorisés : `Authorization`, `Content-Type`, `X-Device-Id`, `Content-Encoding` ; exposés : `Content-Disposition`, `ETag`. Le même domaine reste recommandé (`deployment.md`).
 
 ## 9. Messages d'erreur seulement en français — mineur
 
@@ -79,15 +111,17 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 
 **Proposé.** Un `code` par erreur de validation, ou des messages traduits en malagasy côté serveur.
 
+**❌ Ouvert** (reporté). Les traductions en malagasy devront être relues par des locuteurs natifs.
+
 ---
 
 ## Écarts de documentation
 
-| Sujet | Constat |
-|---|---|
-| `openapi.yaml`, `/api/stats/export/` | Réponse décrite comme `application/json` `type: string` ; c'est du `text/csv` (voir §1). |
-| `openapi.yaml`, `Conflit.donnees_telephone` / `donnees_serveur` | Sans type (`{}`) ; ce sont des objets, et `donnees_telephone` vaut `null` pour une suppression. |
-| `endpoint.md`, `/api/stats/` | L'exemple de réponse est juste, mais `groupes[]` (`cle`, `libelle`, `indicateurs`, `masques`) n'est décrit que dans `openapi.yaml`. |
+| Sujet | Constat | État |
+|---|---|---|
+| `openapi.yaml`, `/api/stats/export/` | Réponse décrite comme `application/json` `type: string` ; c'est du `text/csv` (voir §1). | ✅ Corrigé : `text/csv` |
+| `openapi.yaml`, `Conflit.donnees_telephone` / `donnees_serveur` | Sans type (`{}`) ; ce sont des objets. **Correction :** pour une suppression, `donnees_telephone` vaut `{}` (objet vide), pas `null` (vérifié dans `synchro/sync.py` et par un test). | ✅ Corrigé : `type: object` |
+| `endpoint.md`, `/api/stats/` | L'exemple de réponse est juste, mais `groupes[]` (`cle`, `libelle`, `indicateurs`, `masques`) n'est décrit que dans `openapi.yaml`. | ✅ Décrit dans `endpoint.md` |
 
 ## Ce que le tableau de bord utilise
 

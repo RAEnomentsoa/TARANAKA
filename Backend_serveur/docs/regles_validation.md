@@ -171,7 +171,8 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `motif` | Required | Any text | OBLIGATOIRE |
 | `status` | Starts at `envoye`. Only changes through `/api/referrals/{id}/status/`. | `envoye`, `recu`, `pris_en_charge`, `en_suivi`, `sortie` | CHOIX |
 | `date_referencement` | Optional: when the ASC referred, on the phone. Default: the server's time. Can't change. | Date and time | DATE |
-| `date_reception`, `date_prise_en_charge`, `date_sortie`, `issue_sortie` | Set by the server when the status changes. A value in the body is ignored. | – | – |
+| `date_reception`, `date_prise_en_charge`, `date_suivi`, `date_sortie`, `issue_sortie` | Set by the server when the status changes. A value in the body is ignored. | – | – |
+| `asc` | Read only: `{nom, prenom, phone}` of the ASC, for ASC, agent_csb and admin; `null` for a beneficiary. | – | – |
 | `urgence`, `en_retard` | Calculated, read only: `urgence` from `priorite` (`urgente` = `rouge`, `haute` = `orange`, `normale` = `jaune`); `en_retard` = still `envoye` after the config's delay. | – | – |
 
 ### consultation_nutritionnelle
