@@ -23,9 +23,9 @@ class ProfilePickerScreen extends StatelessWidget {
       automaticallyImplyLeading: false,
       bottomAction: OutlinedButton.icon(
         key: const ValueKey('add-profile'),
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const CreateProfileScreen(canCancel: true),
-        )),
+        onPressed: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => const CreateProfileScreen(canCancel: true))),
         icon: const Icon(Icons.person_add_alt),
         label: Text(l10n.addProfile),
       ),
@@ -33,16 +33,12 @@ class ProfilePickerScreen extends StatelessWidget {
         for (final profile in session.profiles) ...[
           BigTile(
             key: ValueKey('profile-${profile.id}'),
-            icon: profile.mode == ProfileMode.agent
-                ? Icons.medical_services_outlined
-                : Icons.person_outline,
+            icon: profile.mode == ProfileMode.agent ? Icons.medical_services_outlined : Icons.person_outline,
             title: profile.displayName,
-            subtitle: profile.mode == ProfileMode.agent
-                ? l10n.profileAgentBadge
-                : l10n.profilePersonalBadge,
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => UnlockScreen(profileId: profile.id),
-            )),
+            subtitle: profile.mode == ProfileMode.agent ? l10n.profileAgentBadge : l10n.profilePersonalBadge,
+            onTap: () =>
+                Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => UnlockScreen(profileId: profile.id))),
           ),
           const Gap(Space.m),
         ],

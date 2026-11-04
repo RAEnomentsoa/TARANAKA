@@ -60,9 +60,7 @@ class BigTile extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: text.titleMedium?.copyWith(
-                            color: emphasis ? Colors.white : AppColors.text,
-                          ),
+                          style: text.titleMedium?.copyWith(color: emphasis ? Colors.white : AppColors.text),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: Space.xs),
@@ -76,9 +74,7 @@ class BigTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  trailing ??
-                      Icon(Icons.chevron_right,
-                          color: emphasis ? Colors.white : AppColors.textMuted),
+                  trailing ?? Icon(Icons.chevron_right, color: emphasis ? Colors.white : AppColors.textMuted),
                 ],
               ),
             ),

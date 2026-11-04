@@ -21,8 +21,7 @@ String formatDateTime(DateTime d) {
 }
 
 /// Decimal with a comma in French and Malagasy ("8,6 kg").
-String formatDecimal(num value, {int digits = 1}) =>
-    value.toStringAsFixed(digits).replaceAll('.', ',');
+String formatDecimal(num value, {int digits = 1}) => value.toStringAsFixed(digits).replaceAll('.', ',');
 
 /// Parses "8,6" or "8.6".
 double? parseDecimal(String text) => double.tryParse(text.trim().replaceAll(',', '.'));

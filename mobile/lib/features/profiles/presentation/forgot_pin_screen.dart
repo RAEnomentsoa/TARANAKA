@@ -65,8 +65,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
       return;
     }
     final navigator = Navigator.of(context);
-    final result =
-        await AppScope.read(context).session.recover(widget.profileId, _answer.text, confirmPin);
+    final result = await AppScope.read(context).session.recover(widget.profileId, _answer.text, confirmPin);
     if (!mounted) return;
     switch (result) {
       case Unlocked():
@@ -99,18 +98,24 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     );
 
     if (profile.mode == ProfileMode.agent) {
-      return AppScreen(title: l10n.forgotPin, children: [
-        NoticeBox(icon: Icons.support_agent, text: l10n.forgotPinAgent),
-        const Gap(Space.xl),
-        resetButton,
-      ]);
+      return AppScreen(
+        title: l10n.forgotPin,
+        children: [
+          NoticeBox(icon: Icons.support_agent, text: l10n.forgotPinAgent),
+          const Gap(Space.xl),
+          resetButton,
+        ],
+      );
     }
     if (!profile.hasRecovery) {
-      return AppScreen(title: l10n.forgotPin, children: [
-        NoticeBox(icon: Icons.warning_amber, tone: Tone.warning, text: l10n.forgotPinNoRecovery),
-        const Gap(Space.xl),
-        resetButton,
-      ]);
+      return AppScreen(
+        title: l10n.forgotPin,
+        children: [
+          NoticeBox(icon: Icons.warning_amber, tone: Tone.warning, text: l10n.forgotPinNoRecovery),
+          const Gap(Space.xl),
+          resetButton,
+        ],
+      );
     }
 
     final title = Theme.of(context).textTheme.titleLarge;
@@ -146,8 +151,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
             decoration: InputDecoration(labelText: l10n.recoveryAnswerLabel),
           ),
         ] else ...[
-          Text(_newPin == null ? l10n.newPin : l10n.pinConfirm,
-              style: title, textAlign: TextAlign.center),
+          Text(_newPin == null ? l10n.newPin : l10n.pinConfirm, style: title, textAlign: TextAlign.center),
           const Gap(Space.l),
           PinPad(
             key: ValueKey(_newPin == null ? 'new' : 'confirm'),

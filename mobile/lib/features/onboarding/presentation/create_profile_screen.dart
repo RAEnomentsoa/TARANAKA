@@ -50,9 +50,9 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   }
 
   void _go(_Step step) => setState(() {
-        _step = step;
-        _error = null;
-      });
+    _step = step;
+    _error = null;
+  });
 
   void _back() {
     switch (_step) {
@@ -108,48 +108,44 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         title: l10n.createProfileTitle,
         automaticallyImplyLeading: false,
         leading: canGoBack
-            ? IconButton(
-                tooltip: l10n.back,
-                icon: const Icon(Icons.arrow_back),
-                onPressed: _back,
-              )
+            ? IconButton(tooltip: l10n.back, icon: const Icon(Icons.arrow_back), onPressed: _back)
             : null,
         bottomAction: switch (_step) {
           _Step.name => FilledButton(
-              key: const ValueKey('name-continue'),
-              onPressed: () {
-                if (_name.text.trim().isEmpty) {
-                  setState(() => _error = l10n.nameRequired);
-                } else {
-                  _go(_Step.pin);
-                }
-              },
-              child: Text(l10n.continueLabel),
-            ),
+            key: const ValueKey('name-continue'),
+            onPressed: () {
+              if (_name.text.trim().isEmpty) {
+                setState(() => _error = l10n.nameRequired);
+              } else {
+                _go(_Step.pin);
+              }
+            },
+            child: Text(l10n.continueLabel),
+          ),
           _Step.recovery => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FilledButton(
-                  key: const ValueKey('recovery-save'),
-                  onPressed: _busy
-                      ? null
-                      : () {
-                          if (_question.text.trim().isEmpty || _answer.text.trim().isEmpty) {
-                            _create();
-                          } else {
-                            _create(withRecovery: true);
-                          }
-                        },
-                  child: Text(l10n.save),
-                ),
-                const Gap(Space.s),
-                TextButton(
-                  key: const ValueKey('recovery-skip'),
-                  onPressed: _busy ? null : _create,
-                  child: Text(l10n.skip),
-                ),
-              ],
-            ),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FilledButton(
+                key: const ValueKey('recovery-save'),
+                onPressed: _busy
+                    ? null
+                    : () {
+                        if (_question.text.trim().isEmpty || _answer.text.trim().isEmpty) {
+                          _create();
+                        } else {
+                          _create(withRecovery: true);
+                        }
+                      },
+                child: Text(l10n.save),
+              ),
+              const Gap(Space.s),
+              TextButton(
+                key: const ValueKey('recovery-skip'),
+                onPressed: _busy ? null : _create,
+                child: Text(l10n.skip),
+              ),
+            ],
+          ),
           _ => null,
         },
         children: [

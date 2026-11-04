@@ -57,9 +57,9 @@ class SettingsScreen extends StatelessWidget {
                 leading: const Icon(Icons.password),
                 title: Text(l10n.changePin),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const ChangePinScreen()),
-                ),
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute<void>(builder: (_) => const ChangePinScreen())),
               ),
               const Divider(),
               ListTile(
@@ -83,10 +83,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         SectionTitle(l10n.aboutTitle),
         Text(l10n.aboutConfig(config.version)),
-        if (config.toValidate) ...[
-          const Gap(Space.xs),
-          Text(l10n.configToValidate(config.version)),
-        ],
+        if (config.toValidate) ...[const Gap(Space.xs), Text(l10n.configToValidate(config.version))],
       ],
     );
   }

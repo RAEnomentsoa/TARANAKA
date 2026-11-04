@@ -18,8 +18,7 @@ void main() {
   tearDown(() => dir.deleteSync(recursive: true));
 
   Future<Map<String, Object?>> bundled() async =>
-      (jsonDecode(await rootBundle.loadString(ConfigRepository.bundledAsset)) as Map)
-          .cast<String, Object?>();
+      (jsonDecode(await rootBundle.loadString(ConfigRepository.bundledAsset)) as Map).cast<String, Object?>();
 
   test('offline: the bundled sample loads, marked À VALIDER', () async {
     final config = await repo.load();
@@ -31,8 +30,7 @@ void main() {
 
   test('the bundled file is the backend sample, unchanged', () async {
     final backend = jsonDecode(
-      File('../Backend_serveur/config_clinique/exemples/config_clinique_exemple.json')
-          .readAsStringSync(),
+      File('../Backend_serveur/config_clinique/exemples/config_clinique_exemple.json').readAsStringSync(),
     );
     expect((await bundled())['contenu'], backend);
   });

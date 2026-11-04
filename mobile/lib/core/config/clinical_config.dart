@@ -25,8 +25,7 @@ class ClinicalConfig {
 
   Map<String, Object?> get meta => section('meta');
 
-  Map<String, Object?> section(String name) =>
-      (contenu[name] as Map?)?.cast<String, Object?>() ?? const {};
+  Map<String, Object?> section(String name) => (contenu[name] as Map?)?.cast<String, Object?>() ?? const {};
 
   Map<String, Object?> get malnutrition => section('malnutrition');
   Map<String, Object?> get croissance => section('croissance');
@@ -46,18 +45,18 @@ class ClinicalConfig {
   }
 
   factory ClinicalConfig.fromJson(Map<String, Object?> json) => ClinicalConfig(
-        version: json['version']! as int,
-        statutValidation: (json['statut_validation'] as String?) ?? 'a_valider',
-        libelle: (json['libelle'] as String?) ?? '',
-        contenu: (json['contenu']! as Map).cast<String, Object?>(),
-      );
+    version: json['version']! as int,
+    statutValidation: (json['statut_validation'] as String?) ?? 'a_valider',
+    libelle: (json['libelle'] as String?) ?? '',
+    contenu: (json['contenu']! as Map).cast<String, Object?>(),
+  );
 
   Map<String, Object?> toJson() => {
-        'version': version,
-        'statut_validation': statutValidation,
-        'libelle': libelle,
-        'contenu': contenu,
-      };
+    'version': version,
+    'statut_validation': statutValidation,
+    'libelle': libelle,
+    'contenu': contenu,
+  };
 
   /// Minimal shape check before a downloaded version replaces the current one,
   /// so a broken file can't silently disable the alerts.

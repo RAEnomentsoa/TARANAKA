@@ -24,8 +24,7 @@ void main() {
     final mg = read('mg');
     final placeholder = RegExp(r'\{(\w+)\}');
     for (final key in fr.keys.where((k) => !k.startsWith('@'))) {
-      Set<String> names(Object? s) =>
-          placeholder.allMatches(s! as String).map((m) => m.group(1)!).toSet();
+      Set<String> names(Object? s) => placeholder.allMatches(s! as String).map((m) => m.group(1)!).toSet();
       expect(names(mg[key]), names(fr[key]), reason: key);
     }
   });
@@ -38,7 +37,11 @@ void main() {
       if (!file.path.endsWith('.dart') || file.path.endsWith('language_screen.dart')) continue;
       final src = file.readAsStringSync();
       for (final m in RegExp(r"""Text\(\s*'([^']*[A-Za-zÀ-ÿ][^']*)'""").allMatches(src)) {
-        offenders.add('${file.path}: ${m.group(1)}');
+        final literal = m.group(1)!;
+        // Interpolated data (names, codes, dates) is not translatable text.
+        final words = literal.replaceAll(RegExp(r'\$\{[^}]*\}?|\$\w+'), '');
+        if (literal.startsWith(r'$') || !RegExp('[A-Za-zÀ-ÿ]{2,}').hasMatch(words)) continue;
+        offenders.add('${file.path}: $literal');
       }
     }
     expect(offenders, isEmpty);

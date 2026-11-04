@@ -8,8 +8,7 @@ import 'package:taranaka/core/security/profile.dart';
 import '../../helpers/test_env.dart';
 
 void main() {
-  testWidgets('scenario 1: first launch in Malagasy, offline, to the home tiles',
-      (tester) async {
+  testWidgets('scenario 1: first launch in Malagasy, offline, to the home tiles', (tester) async {
     final env = await TestEnv.create();
     final session = await pumpApp(tester, env);
 

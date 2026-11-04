@@ -52,37 +52,35 @@ class ProfileInfo {
     int? failedAttempts,
     DateTime? lockedUntil,
     bool clearLock = false,
-  }) =>
-      ProfileInfo(
-        id: id,
-        displayName: displayName ?? this.displayName,
-        mode: mode ?? this.mode,
-        salt: salt,
-        pinVerifier: pinVerifier ?? this.pinVerifier,
-        wrappedKeyByPin: wrappedKeyByPin ?? this.wrappedKeyByPin,
-        createdAt: createdAt,
-        failedAttempts: failedAttempts ?? this.failedAttempts,
-        lockedUntil: clearLock ? null : (lockedUntil ?? this.lockedUntil),
-        recoveryQuestion: recoveryQuestion,
-        recoveryVerifier: recoveryVerifier,
-        wrappedKeyByRecovery: wrappedKeyByRecovery,
-      );
+  }) => ProfileInfo(
+    id: id,
+    displayName: displayName ?? this.displayName,
+    mode: mode ?? this.mode,
+    salt: salt,
+    pinVerifier: pinVerifier ?? this.pinVerifier,
+    wrappedKeyByPin: wrappedKeyByPin ?? this.wrappedKeyByPin,
+    createdAt: createdAt,
+    failedAttempts: failedAttempts ?? this.failedAttempts,
+    lockedUntil: clearLock ? null : (lockedUntil ?? this.lockedUntil),
+    recoveryQuestion: recoveryQuestion,
+    recoveryVerifier: recoveryVerifier,
+    wrappedKeyByRecovery: wrappedKeyByRecovery,
+  );
 
   Map<String, Object?> toJson() => {
-        'id': id,
-        'display_name': displayName,
-        'mode': mode.name,
-        'salt': base64Encode(salt),
-        'pin_verifier': base64Encode(pinVerifier),
-        'wrapped_key_pin': base64Encode(wrappedKeyByPin),
-        'created_at': createdAt.toUtc().toIso8601String(),
-        'failed_attempts': failedAttempts,
-        'locked_until': lockedUntil?.toUtc().toIso8601String(),
-        'recovery_question': recoveryQuestion,
-        'recovery_verifier': recoveryVerifier == null ? null : base64Encode(recoveryVerifier!),
-        'wrapped_key_recovery':
-            wrappedKeyByRecovery == null ? null : base64Encode(wrappedKeyByRecovery!),
-      };
+    'id': id,
+    'display_name': displayName,
+    'mode': mode.name,
+    'salt': base64Encode(salt),
+    'pin_verifier': base64Encode(pinVerifier),
+    'wrapped_key_pin': base64Encode(wrappedKeyByPin),
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'failed_attempts': failedAttempts,
+    'locked_until': lockedUntil?.toUtc().toIso8601String(),
+    'recovery_question': recoveryQuestion,
+    'recovery_verifier': recoveryVerifier == null ? null : base64Encode(recoveryVerifier!),
+    'wrapped_key_recovery': wrappedKeyByRecovery == null ? null : base64Encode(wrappedKeyByRecovery!),
+  };
 
   factory ProfileInfo.fromJson(Map<String, Object?> json) {
     List<int>? bytes(String key) {

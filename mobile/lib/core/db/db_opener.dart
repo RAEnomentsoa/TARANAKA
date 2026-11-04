@@ -25,15 +25,14 @@ class SqlCipherOpener implements DbOpener {
     required int version,
     required OnDatabaseCreateFn onCreate,
     required OnDatabaseVersionChangeFn onUpgrade,
-  }) =>
-      cipher.openDatabase(
-        path,
-        password: passphrase,
-        version: version,
-        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
-        onCreate: onCreate,
-        onUpgrade: onUpgrade,
-      );
+  }) => cipher.openDatabase(
+    path,
+    password: passphrase,
+    version: version,
+    onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
+    onCreate: onCreate,
+    onUpgrade: onUpgrade,
+  );
 
   @override
   Future<void> delete(String path) => cipher.deleteDatabase(path);

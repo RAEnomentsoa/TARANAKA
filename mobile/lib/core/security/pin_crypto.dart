@@ -29,13 +29,7 @@ class PinCrypto {
 
   Uint8List _hmac(List<int> secret, String purpose, List<int> salt, String value) {
     final mac = Hmac(sha256, secret);
-    final message = <int>[
-      ...utf8.encode('taranaka-$purpose-v1'),
-      0,
-      ...salt,
-      0,
-      ...utf8.encode(value),
-    ];
+    final message = <int>[...utf8.encode('taranaka-$purpose-v1'), 0, ...salt, 0, ...utf8.encode(value)];
     return Uint8List.fromList(mac.convert(message).bytes);
   }
 
@@ -49,8 +43,7 @@ class PinCrypto {
       _xor(wrapped, _hmac(deviceSecret, 'wrap', salt, secret));
 
   /// Recovery answers are compared case- and space-insensitively.
-  static String normaliseAnswer(String answer) =>
-      answer.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  static String normaliseAnswer(String answer) => answer.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   /// Constant-time comparison.
   static bool sameBytes(List<int> a, List<int> b) {

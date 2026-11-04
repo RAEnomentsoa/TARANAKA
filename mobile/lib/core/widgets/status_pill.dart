@@ -44,10 +44,8 @@ class StatusPill extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: tone.foreground,
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(context).textTheme.labelMedium
+                    ?.copyWith(color: tone.foreground, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -59,13 +57,7 @@ class StatusPill extends StatelessWidget {
 
 /// A coloured message block: icon + text, for warnings and notices.
 class NoticeBox extends StatelessWidget {
-  const NoticeBox({
-    super.key,
-    required this.icon,
-    required this.text,
-    this.tone = Tone.info,
-    this.title,
-  });
+  const NoticeBox({super.key, required this.icon, required this.text, this.tone = Tone.info, this.title});
 
   final IconData icon;
   final String text;
@@ -91,8 +83,7 @@ class NoticeBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (title != null)
-                  Text(title!, style: theme.titleSmall?.copyWith(color: tone.foreground)),
+                if (title != null) Text(title!, style: theme.titleSmall?.copyWith(color: tone.foreground)),
                 Text(text, style: theme.bodyMedium?.copyWith(color: AppColors.text)),
               ],
             ),

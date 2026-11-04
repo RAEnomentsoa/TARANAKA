@@ -103,8 +103,7 @@ class _UnlockScreenState extends State<UnlockScreen> {
     return AppScreen(
       title: profile.displayName,
       children: [
-        Text(l10n.enterPin,
-            style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+        Text(l10n.enterPin, style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
         const Gap(Space.l),
         if (locked)
           NoticeBox(
@@ -119,9 +118,9 @@ class _UnlockScreenState extends State<UnlockScreen> {
         const Gap(Space.l),
         TextButton(
           key: const ValueKey('forgot-pin'),
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => ForgotPinScreen(profileId: profile.id),
-          )),
+          onPressed: () =>
+              Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: (_) => ForgotPinScreen(profileId: profile.id))),
           child: Text(l10n.forgotPin),
         ),
       ],

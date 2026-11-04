@@ -9,8 +9,7 @@ abstract interface class SecretStore {
 }
 
 class KeystoreSecretStore implements SecretStore {
-  KeystoreSecretStore([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+  KeystoreSecretStore([FlutterSecureStorage? storage]) : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 

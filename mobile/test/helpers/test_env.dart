@@ -9,7 +9,9 @@ import 'package:taranaka/app/session_controller.dart';
 import 'package:taranaka/core/config/config_repository.dart';
 import 'package:taranaka/core/db/db_opener.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
+import 'package:http/http.dart' as http;
 import 'package:taranaka/core/security/secret_store.dart';
+import 'package:taranaka/core/sync/network_status.dart';
 import 'package:taranaka/core/util/clock.dart';
 
 /// SQLCipher on the host (system libsqlcipher, see pubspec `hooks`), opened
@@ -26,20 +28,19 @@ class FfiCipherOpener implements DbOpener {
     required int version,
     required OnDatabaseCreateFn onCreate,
     required OnDatabaseVersionChangeFn onUpgrade,
-  }) =>
-      databaseFactoryFfi.openDatabase(
-        path,
-        options: OpenDatabaseOptions(
-          version: version,
-          singleInstance: false,
-          onConfigure: (db) async {
-            await db.execute("PRAGMA key = '$passphrase'");
-            await db.execute('PRAGMA foreign_keys = ON');
-          },
-          onCreate: onCreate,
-          onUpgrade: onUpgrade,
-        ),
-      );
+  }) => databaseFactoryFfi.openDatabase(
+    path,
+    options: OpenDatabaseOptions(
+      version: version,
+      singleInstance: false,
+      onConfigure: (db) async {
+        await db.execute("PRAGMA key = '$passphrase'");
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
+      onCreate: onCreate,
+      onUpgrade: onUpgrade,
+    ),
+  );
 
   @override
   Future<void> delete(String path) => databaseFactoryFfi.deleteDatabase(path);
@@ -53,7 +54,13 @@ class TestEnv {
   final MemorySecretStore secrets;
   final FixedClock clock;
 
-  static Future<TestEnv> create({MemorySecretStore? secrets, Directory? dir, String? apiBaseUrl}) async {
+  static Future<TestEnv> create({
+    MemorySecretStore? secrets,
+    Directory? dir,
+    String? apiBaseUrl,
+    http.Client? httpClient,
+    NetworkStatus? network,
+  }) async {
     final directory = dir ?? Directory.systemTemp.createTempSync('taranaka_test');
     final store = secrets ?? MemorySecretStore();
     final clock = FixedClock(DateTime(2026, 11, 4, 9));
@@ -65,6 +72,8 @@ class TestEnv {
       dataDirectory: () async => directory,
       device: DeviceIdentity(store),
       clock: clock,
+      network: network ?? FakeNetworkStatus(),
+      httpClient: httpClient,
       defaultApiBaseUrl: apiBaseUrl ?? 'http://localhost:8000',
     );
     return TestEnv._(directory, services, store, clock);

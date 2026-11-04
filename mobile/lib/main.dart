@@ -8,6 +8,7 @@ import 'core/config/config_repository.dart';
 import 'core/db/db_opener.dart';
 import 'core/security/profile_registry.dart';
 import 'core/security/secret_store.dart';
+import 'core/sync/network_status.dart';
 import 'core/util/clock.dart';
 
 Future<void> main() async {
@@ -21,6 +22,7 @@ Future<void> main() async {
     dataDirectory: getApplicationSupportDirectory,
     device: DeviceIdentity(secrets),
     clock: const SystemClock(),
+    network: DeviceNetworkStatus(),
   );
   final session = SessionController(services);
   await session.init();

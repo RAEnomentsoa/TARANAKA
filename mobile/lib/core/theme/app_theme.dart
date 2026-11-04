@@ -5,10 +5,7 @@ import 'tokens.dart';
 /// The single Material 3 theme of the app (light only: a dark theme is not
 /// shipped until it has been tested for readability, as the skill asks).
 ThemeData buildAppTheme() {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: AppColors.accent,
-    brightness: Brightness.light,
-  ).copyWith(
+  final scheme = ColorScheme.fromSeed(seedColor: AppColors.accent, brightness: Brightness.light).copyWith(
     primary: AppColors.accent,
     onPrimary: Colors.white,
     primaryContainer: AppColors.accentSoft,
@@ -36,24 +33,12 @@ ThemeData buildAppTheme() {
   );
 
   final text = base.textTheme.copyWith(
-    headlineSmall: base.textTheme.headlineSmall?.copyWith(
-      fontWeight: FontWeight.w700,
-      color: AppColors.text,
-    ),
-    titleLarge: base.textTheme.titleLarge?.copyWith(
-      fontWeight: FontWeight.w700,
-      color: AppColors.text,
-    ),
-    titleMedium: base.textTheme.titleMedium?.copyWith(
-      fontWeight: FontWeight.w600,
-      color: AppColors.text,
-    ),
+    headlineSmall: base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700, color: AppColors.text),
+    titleLarge: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: AppColors.text),
+    titleMedium: base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: AppColors.text),
     bodyLarge: base.textTheme.bodyLarge?.copyWith(fontSize: 17, height: 1.4),
     bodyMedium: base.textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.4),
-    labelLarge: base.textTheme.labelLarge?.copyWith(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-    ),
+    labelLarge: base.textTheme.labelLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
   );
 
   final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.m));
@@ -96,9 +81,7 @@ ThemeData buildAppTheme() {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(minimumSize: minButton, textStyle: text.labelLarge),
     ),
-    iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(minimumSize: minButton),
-    ),
+    iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(minimumSize: minButton)),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surface,

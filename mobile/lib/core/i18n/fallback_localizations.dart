@@ -16,8 +16,7 @@ class MgMaterialLocalizationsDelegate extends LocalizationsDelegate<MaterialLoca
   bool isSupported(Locale locale) => _isMalagasy(locale);
 
   @override
-  Future<MaterialLocalizations> load(Locale locale) =>
-      GlobalMaterialLocalizations.delegate.load(_fallback);
+  Future<MaterialLocalizations> load(Locale locale) => GlobalMaterialLocalizations.delegate.load(_fallback);
 
   @override
   bool shouldReload(MgMaterialLocalizationsDelegate old) => false;
@@ -30,8 +29,7 @@ class MgCupertinoLocalizationsDelegate extends LocalizationsDelegate<CupertinoLo
   bool isSupported(Locale locale) => _isMalagasy(locale);
 
   @override
-  Future<CupertinoLocalizations> load(Locale locale) =>
-      GlobalCupertinoLocalizations.delegate.load(_fallback);
+  Future<CupertinoLocalizations> load(Locale locale) => GlobalCupertinoLocalizations.delegate.load(_fallback);
 
   @override
   bool shouldReload(MgCupertinoLocalizationsDelegate old) => false;
@@ -44,8 +42,7 @@ class MgWidgetsLocalizationsDelegate extends LocalizationsDelegate<WidgetsLocali
   bool isSupported(Locale locale) => _isMalagasy(locale);
 
   @override
-  Future<WidgetsLocalizations> load(Locale locale) =>
-      GlobalWidgetsLocalizations.delegate.load(_fallback);
+  Future<WidgetsLocalizations> load(Locale locale) => GlobalWidgetsLocalizations.delegate.load(_fallback);
 
   @override
   bool shouldReload(MgWidgetsLocalizationsDelegate old) => false;

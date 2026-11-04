@@ -91,26 +91,26 @@ class PinPadState extends State<PinPad> {
   }
 
   Widget _row(List<Widget> children) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: Space.xs),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: children),
-      );
+    padding: const EdgeInsets.symmetric(vertical: Space.xs),
+    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: children),
+  );
 
   Widget _key(String digit) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Space.s),
-        child: SizedBox(
-          width: Space.touchLarge + Space.s,
-          height: Space.touchLarge,
-          child: OutlinedButton(
-            key: ValueKey('pin-$digit'),
-            onPressed: widget.enabled ? () => _tap(digit) : null,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(Space.touchLarge, Space.touchLarge),
-              padding: EdgeInsets.zero,
-              backgroundColor: AppColors.surface,
-              side: const BorderSide(color: AppColors.accentSoftBorder),
-            ),
-            child: Text(digit, style: Theme.of(context).textTheme.headlineSmall),
-          ),
+    padding: const EdgeInsets.symmetric(horizontal: Space.s),
+    child: SizedBox(
+      width: Space.touchLarge + Space.s,
+      height: Space.touchLarge,
+      child: OutlinedButton(
+        key: ValueKey('pin-$digit'),
+        onPressed: widget.enabled ? () => _tap(digit) : null,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(Space.touchLarge, Space.touchLarge),
+          padding: EdgeInsets.zero,
+          backgroundColor: AppColors.surface,
+          side: const BorderSide(color: AppColors.accentSoftBorder),
         ),
-      );
+        child: Text(digit, style: Theme.of(context).textTheme.headlineSmall),
+      ),
+    ),
+  );
 }

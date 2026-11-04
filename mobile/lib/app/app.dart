@@ -70,28 +70,27 @@ class _TaranakaAppState extends State<TaranakaApp> with WidgetsBindingObserver {
     return AppScope(
       services: widget.services,
       session: widget.session,
-      child: Builder(builder: (context) {
-        final session = AppScope.of(context).session;
-        return MaterialApp(
-          navigatorKey: _navigatorKey,
-          onGenerateTitle: (context) => context.l10n.appName,
-          debugShowCheckedModeBanner: false,
-          theme: buildAppTheme(),
-          locale: Locale(session.languageCode ?? 'mg'),
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            ...frameworkDelegates,
-          ],
-          // Any touch counts as activity for the 2-minute lock.
-          builder: (context, child) => Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) => session.markActivity(),
-            child: child,
-          ),
-          home: const AppGate(),
-        );
-      }),
+      child: Builder(
+        builder: (context) {
+          final session = AppScope.of(context).session;
+          return MaterialApp(
+            navigatorKey: _navigatorKey,
+            onGenerateTitle: (context) => context.l10n.appName,
+            debugShowCheckedModeBanner: false,
+            theme: buildAppTheme(),
+            locale: Locale(session.languageCode ?? 'mg'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [AppLocalizations.delegate, ...frameworkDelegates],
+            // Any touch counts as activity for the 2-minute lock.
+            builder: (context, child) => Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => session.markActivity(),
+              child: child,
+            ),
+            home: const AppGate(),
+          );
+        },
+      ),
     );
   }
 }
@@ -109,9 +108,10 @@ class AppGate extends StatelessWidget {
       SessionStage.consent => const ConsentScreen(),
       SessionStage.createFirstProfile => const CreateProfileScreen(),
       SessionStage.locked => const ProfilePickerScreen(),
-      SessionStage.unlocked => session.active!.info.mode == ProfileMode.agent
-          ? ModuleRoutes.agentHome()
-          : const PersonalHomeScreen(),
+      SessionStage.unlocked =>
+        session.active!.info.mode == ProfileMode.agent
+            ? ModuleRoutes.agentHome()
+            : const PersonalHomeScreen(),
     };
   }
 }

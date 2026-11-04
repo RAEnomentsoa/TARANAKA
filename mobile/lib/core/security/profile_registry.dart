@@ -34,13 +34,9 @@ class LockedOut extends UnlockResult {
 /// Stored in the Keystore-backed [SecretStore]. Holds names and wrapped keys,
 /// never health data.
 class ProfileRegistry {
-  ProfileRegistry(
-    this._store, {
-    PinCrypto? crypto,
-    Clock? clock,
-    this.lockout = const PinLockoutPolicy(),
-  })  : _crypto = crypto ?? PinCrypto(),
-        _clock = clock ?? const SystemClock();
+  ProfileRegistry(this._store, {PinCrypto? crypto, Clock? clock, this.lockout = const PinLockoutPolicy()})
+    : _crypto = crypto ?? PinCrypto(),
+      _clock = clock ?? const SystemClock();
 
   final SecretStore _store;
   final PinCrypto _crypto;
@@ -56,9 +52,7 @@ class ProfileRegistry {
     if (_cache != null) return List.unmodifiable(_cache!);
     final raw = await _store.read(_profilesKey);
     final decoded = raw == null ? const <Object?>[] : jsonDecode(raw) as List<Object?>;
-    _cache = decoded
-        .map((e) => ProfileInfo.fromJson((e! as Map).cast<String, Object?>()))
-        .toList();
+    _cache = decoded.map((e) => ProfileInfo.fromJson((e! as Map).cast<String, Object?>())).toList();
     return List.unmodifiable(_cache!);
   }
 
@@ -103,8 +97,8 @@ class ProfileRegistry {
     final secret = await _deviceSecret();
     final salt = _crypto.randomBytes(16);
     final master = _crypto.randomBytes();
-    final withRecovery = (recoveryQuestion?.trim().isNotEmpty ?? false) &&
-        (recoveryAnswer?.trim().isNotEmpty ?? false);
+    final withRecovery =
+        (recoveryQuestion?.trim().isNotEmpty ?? false) && (recoveryAnswer?.trim().isNotEmpty ?? false);
     final answer = withRecovery ? PinCrypto.normaliseAnswer(recoveryAnswer!) : null;
     final profile = ProfileInfo(
       id: newUuid(),
@@ -133,7 +127,9 @@ class ProfileRegistry {
       final failures = profile.failedAttempts + 1;
       final delay = lockout.delayAfter(failures);
       final until = delay == Duration.zero ? null : now.add(delay);
-      await _replace(profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null));
+      await _replace(
+        profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null),
+      );
       return WrongPin(failures: failures, lockedUntil: until);
     }
     final unlocked = profile.copyWith(failedAttempts: 0, clearLock: true);
@@ -148,12 +144,14 @@ class ProfileRegistry {
     }
     final profile = (await find(profileId))!;
     final secret = await _deviceSecret();
-    await _replace(profile.copyWith(
-      pinVerifier: _crypto.verifier(secret, profile.salt, newPin),
-      wrappedKeyByPin: _crypto.wrap(secret, profile.salt, newPin, masterKey),
-      failedAttempts: 0,
-      clearLock: true,
-    ));
+    await _replace(
+      profile.copyWith(
+        pinVerifier: _crypto.verifier(secret, profile.salt, newPin),
+        wrappedKeyByPin: _crypto.wrap(secret, profile.salt, newPin, masterKey),
+        failedAttempts: 0,
+        clearLock: true,
+      ),
+    );
   }
 
   /// Forgotten PIN, personal mode: the recovery answer gives back the master
@@ -167,12 +165,13 @@ class ProfileRegistry {
     }
     final secret = await _deviceSecret();
     final normalised = 'answer:${PinCrypto.normaliseAnswer(answer)}';
-    if (!PinCrypto.sameBytes(
-        _crypto.verifier(secret, profile.salt, normalised), profile.recoveryVerifier!)) {
+    if (!PinCrypto.sameBytes(_crypto.verifier(secret, profile.salt, normalised), profile.recoveryVerifier!)) {
       final failures = profile.failedAttempts + 1;
       final delay = lockout.delayAfter(failures);
       final until = delay == Duration.zero ? null : now.add(delay);
-      await _replace(profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null));
+      await _replace(
+        profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null),
+      );
       return WrongPin(failures: failures, lockedUntil: until);
     }
     final master = _crypto.unwrap(secret, profile.salt, normalised, profile.wrappedKeyByRecovery!);

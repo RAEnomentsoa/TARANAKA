@@ -52,8 +52,7 @@ class AppDatabase {
     if (value == null) {
       await db.delete('meta', where: 'key = ?', whereArgs: [key]);
     } else {
-      await db.insert('meta', {'key': key, 'value': value},
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('meta', {'key': key, 'value': value}, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 

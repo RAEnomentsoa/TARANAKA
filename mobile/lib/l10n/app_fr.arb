@@ -154,5 +154,244 @@
     }
   },
   "comingNext": "Ce module arrive dans la prochaine étape.",
-  "malagasyReviewNote": "Textes malagasy à faire relire par des locuteurs natifs."
+  "malagasyReviewNote": "Textes malagasy à faire relire par des locuteurs natifs.",
+  "syncSaved": "Enregistré",
+  "syncPending": "À synchroniser",
+  "syncSynced": "Synchronisé",
+  "syncConflict": "Conflit",
+  "agentLoginTitle": "Connexion agent de santé",
+  "agentLoginHelp": "Utilisez le compte et le code fournis par votre superviseur. La première connexion demande Internet ; ensuite tout fonctionne hors ligne.",
+  "identifiantLabel": "Identifiant",
+  "serverPinLabel": "Code du compte",
+  "serverUrlLabel": "Adresse du serveur",
+  "loginButton": "Se connecter",
+  "loginErrorOffline": "Pas de réseau. La première connexion demande Internet.",
+  "loginErrorCredentials": "Identifiant ou code incorrect.",
+  "loginErrorBlocked": "Compte bloqué après trop d'essais. Réessayez plus tard ou appelez votre superviseur.",
+  "loginErrorNotAgent": "Ce compte n'est pas un compte d'agent communautaire.",
+  "loginErrorOtherAccount": "Ce profil est déjà lié à un autre compte. Créez un nouveau profil pour cet agent.",
+  "loginErrorServer": "Le serveur a répondu par une erreur. Réessayez plus tard.",
+  "agentScreen": "Dépister un enfant",
+  "agentScreenHint": "Mesurer, classer, référer",
+  "agentReferrals": "Mes référencements",
+  "agentFollowUps": "Rendez-vous à relancer",
+  "agentSync": "Synchronisation",
+  "agentAccessText": "Ce module est réservé aux agents de santé communautaires, avec un compte nominatif créé par leur superviseur. Créez un profil « agent de santé » protégé par son propre code.",
+  "agentAccessCreate": "Créer un profil agent de santé",
+  "searchChild": "Rechercher un enfant (nom)",
+  "newChild": "Nouvel enfant",
+  "noChildren": "Aucun enfant trouvé. Ajoutez-le avec « Nouvel enfant ».",
+  "childName": "Nom et prénom de l'enfant",
+  "childSex": "Sexe",
+  "sexF": "Fille",
+  "sexM": "Garçon",
+  "birthDate": "Date de naissance",
+  "chooseDate": "Choisir la date",
+  "birthDateRequired": "Choisissez la date de naissance.",
+  "sexRequired": "Choisissez fille ou garçon.",
+  "ageMonths": "{months} mois",
+  "@ageMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "measureTitle": "Mesures",
+  "measureDate": "Date de la mesure",
+  "weightKg": "Poids (kg)",
+  "lengthCm": "Taille (cm)",
+  "position": "Position",
+  "positionLying": "Couché",
+  "positionStanding": "Debout",
+  "muacMm": "Périmètre brachial – PB (mm)",
+  "muacOnlyFrom6": "Le PB se mesure à partir de 6 mois.",
+  "oedema": "Œdèmes bilatéraux (les deux pieds)",
+  "oedemaNone": "Aucun",
+  "dangerSigns": "Signes de danger",
+  "appetite": "Test de l'appétit",
+  "appetiteNotTested": "Non testé",
+  "appetiteGood": "Bon",
+  "appetitePoor": "Mauvais",
+  "complications": "Complication médicale",
+  "feedingDifficulties": "Difficultés d'allaitement",
+  "fieldRequired": "Obligatoire",
+  "numberInvalid": "Écrivez un nombre (ex. 8,6).",
+  "computeResult": "Enregistrer et voir le résultat",
+  "checkMeasureTitle": "Vérifiez la mesure",
+  "checkMeasureText": "Une valeur semble inhabituelle : {fields}. Mesurez à nouveau si possible.",
+  "@checkMeasureText": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "checkMeasureKeep": "La mesure est juste",
+  "checkMeasureFix": "Corriger",
+  "problemBeforeBirth": "La date de mesure est avant la naissance.",
+  "problemFuture": "La date de mesure est dans le futur.",
+  "problemMuacAge": "Le PB ne se saisit qu'entre 6 et 59 mois.",
+  "problemAgeRange": "Cet enfant a plus de 59 mois : ce dépistage ne s'applique pas.",
+  "resultTitle": "Résultat du dépistage",
+  "classMas": "MAS – malnutrition aiguë sévère",
+  "classMam": "MAM – malnutrition aiguë modérée",
+  "classNormal": "Pas de malnutrition aiguë",
+  "classInfantRisk": "Nourrisson à risque",
+  "classNone": "Non classé",
+  "urgencyRed": "Urgence rouge",
+  "urgencyOrange": "Urgence orange",
+  "urgencyYellow": "Urgence jaune",
+  "orientationTo": "Orienter vers : {centre}",
+  "@orientationTo": {
+    "placeholders": {
+      "centre": {
+        "type": "String"
+      }
+    }
+  },
+  "noReferralNeeded": "Pas de référencement : conseils et prochain dépistage.",
+  "nextCheck": "Prochain contrôle : {date}",
+  "@nextCheck": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "zscoresTitle": "Z-scores (OMS 2006)",
+  "zscoresMissing": "Z-scores non calculés : tables OMS absentes de l'application ({files}). Le serveur les calculera s'il a ses tables.",
+  "@zscoresMissing": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "zWfh": "Poids pour taille",
+  "zWfa": "Poids pour âge",
+  "zHfa": "Taille pour âge",
+  "createReferral": "Créer la fiche de référencement",
+  "done": "Terminer",
+  "chooseCentre": "Choisir le centre de destination",
+  "noCentre": "Aucun centre enregistré. Synchronisez une fois pour charger la liste.",
+  "otherCentres": "Autres centres",
+  "referralTitle": "Fiche de référencement",
+  "notTransmitted": "Non transmise — à montrer au centre",
+  "transmitted": "Transmise au serveur",
+  "refStatusEnvoye": "Référé",
+  "refStatusRecu": "Reçu par le centre",
+  "refStatusPris": "Pris en charge",
+  "refStatusSuivi": "En suivi",
+  "refStatusSortie": "Sortie",
+  "referralCode": "Code",
+  "referralChild": "Enfant",
+  "referralMeasures": "Mesures",
+  "referralDestination": "Centre de destination",
+  "referralAgent": "Agent référent",
+  "referralDate": "Date et heure",
+  "referralReason": "Motif",
+  "referralOldCode": "Ancien code, déjà utilisé et remplacé : {code}",
+  "@referralOldCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "copyReferral": "Copier la fiche",
+  "copied": "Copié.",
+  "noReferrals": "Aucun référencement pour le moment.",
+  "followNotArrived": "Non arrivés au centre après {hours} h",
+  "@followNotArrived": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "followDue": "Enfants à revoir",
+  "followMissed": "Rendez-vous manqués",
+  "followNone": "Rien à relancer aujourd'hui.",
+  "syncNow": "Synchroniser maintenant",
+  "syncRunning": "Synchronisation…",
+  "syncLast": "Dernière synchronisation : {date}",
+  "@syncLast": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncNever": "Jamais synchronisé",
+  "syncPendingCount": "{count} enregistrement(s) à synchroniser",
+  "@syncPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncConflictCount": "{count} conflit(s) : le centre choisira la bonne version",
+  "@syncConflictCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncWifiOnly": "Wi-Fi uniquement",
+  "syncWifiOnlyHint": "La synchronisation automatique attend le Wi-Fi. Le bouton fonctionne toujours.",
+  "syncProblemOffline": "Pas de réseau. Tout est enregistré sur le téléphone et partira au retour du réseau.",
+  "syncProblemWifi": "En attente du Wi-Fi.",
+  "syncProblemAuth": "Session expirée. Reconnectez-vous avec le code de votre compte.",
+  "syncProblemServer": "Le serveur a refusé ou n'a pas répondu. Réessayez plus tard.",
+  "syncDone": "Synchronisation terminée : {sent} envoyé(s), {received} reçu(s).",
+  "@syncDone": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "received": {
+        "type": "int"
+      }
+    }
+  },
+  "syncErrorsCount": "{count} envoi(s) refusé(s) par le serveur : ils restent à synchroniser.",
+  "@syncErrorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reconnect": "Se reconnecter",
+  "childHistory": "Historique des mesures",
+  "agentAccount": "Compte : {name}",
+  "@agentAccount": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "configUpdated": "Configuration clinique mise à jour (v{version}).",
+  "@configUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictExplain": "Une autre version existe sur le serveur. Rien n'est écrasé : le centre choisira.",
+  "measureSaved": "Mesure enregistrée.",
+  "adviceSource": "Conseil – {source}",
+  "@adviceSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "alertDisclaimer": "Cette alerte ne remplace pas un diagnostic."
 }

@@ -19,8 +19,7 @@ class PersonalHomeScreen extends StatelessWidget {
     final l10n = context.l10n;
     final session = AppScope.of(context).session;
     final name = session.active?.info.displayName ?? '';
-    void open(Widget screen) =>
-        Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    void open(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
     return AppScreen(
       title: l10n.appName,
@@ -75,8 +74,8 @@ List<Widget> homeActions(BuildContext context) {
       key: const ValueKey('open-settings'),
       tooltip: l10n.settings,
       icon: const Icon(Icons.settings_outlined),
-      onPressed: () => Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
+      onPressed: () =>
+          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
     ),
     IconButton(
       key: const ValueKey('lock-now'),

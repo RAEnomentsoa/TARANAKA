@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
+
 import '../core/config/config_repository.dart';
 import '../core/db/db_opener.dart';
 import '../core/security/profile_registry.dart';
 import '../core/security/secret_store.dart';
+import '../core/sync/network_status.dart';
 import '../core/util/clock.dart';
 import '../core/util/ids.dart';
 
@@ -37,6 +40,8 @@ class AppServices {
     required this.dataDirectory,
     required this.device,
     required this.clock,
+    required this.network,
+    this.httpClient,
     this.defaultApiBaseUrl = const String.fromEnvironment(
       'TARANAKA_API',
       defaultValue: 'https://api.taranaka.example',
@@ -52,6 +57,10 @@ class AppServices {
   final Future<Directory> Function() dataDirectory;
   final DeviceIdentity device;
   final Clock clock;
+  final NetworkStatus network;
+
+  /// Null on the phone (default client); a fake one in tests.
+  final http.Client? httpClient;
 
   /// Server used by agent mode; can be changed on the agent login screen.
   final String defaultApiBaseUrl;

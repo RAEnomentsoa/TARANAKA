@@ -23,6 +23,5 @@ class AppScope extends InheritedNotifier<SessionController> {
   }
 
   /// Without rebuilding when the session changes (for callbacks).
-  static AppScope read(BuildContext context) =>
-      context.getInheritedWidgetOfExactType<AppScope>()!;
+  static AppScope read(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>()!;
 }

@@ -8,14 +8,11 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Semantics(
-          label: context.l10n.loading,
-          child: const Padding(
-            padding: EdgeInsets.all(Space.xl),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      );
+    child: Semantics(
+      label: context.l10n.loading,
+      child: const Padding(padding: EdgeInsets.all(Space.xl), child: CircularProgressIndicator()),
+    ),
+  );
 }
 
 class EmptyView extends StatelessWidget {
@@ -27,20 +24,20 @@ class EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: Space.xxl, horizontal: Space.l),
-        child: Column(
-          children: [
-            Icon(icon, size: 48, color: AppColors.accent),
-            const SizedBox(height: Space.m),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
-            ),
-            if (action != null) ...[const SizedBox(height: Space.l), action!],
-          ],
+    padding: const EdgeInsets.symmetric(vertical: Space.xxl, horizontal: Space.l),
+    child: Column(
+      children: [
+        Icon(icon, size: 48, color: AppColors.accent),
+        const SizedBox(height: Space.m),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
         ),
-      );
+        if (action != null) ...[const SizedBox(height: Space.l), action!],
+      ],
+    ),
+  );
 }
 
 class ErrorView extends StatelessWidget {
@@ -51,16 +48,16 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyView(
-        icon: Icons.error_outline,
-        message: message ?? context.l10n.errorGeneric,
-        action: onRetry == null
-            ? null
-            : OutlinedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: Text(context.l10n.retry),
-              ),
-      );
+    icon: Icons.error_outline,
+    message: message ?? context.l10n.errorGeneric,
+    action: onRetry == null
+        ? null
+        : OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: Text(context.l10n.retry),
+          ),
+  );
 }
 
 /// Asks before an irreversible action (skill: confirmation required).

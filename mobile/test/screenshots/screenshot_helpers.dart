@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,7 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 final bool screenshotsEnabled = Platform.environment['TARANAKA_SCREENSHOTS'] == '1';
 
 Future<void> loadRealFonts() async {
-  final flutterRoot = Platform.environment['FLUTTER_ROOT'] ??
+  final flutterRoot =
+      Platform.environment['FLUTTER_ROOT'] ??
       File(Platform.resolvedExecutable).parent.parent.parent.parent.parent.parent.path;
   final fonts = Directory('$flutterRoot/bin/cache/artifacts/material_fonts');
   final roboto = FontLoader('Roboto');

@@ -12,10 +12,7 @@ import 'clinical_config.dart';
 /// private folder), else the version bundled in the APK. The config is not
 /// personal data, so it is shared by all profiles of the phone.
 class ConfigRepository extends ChangeNotifier {
-  ConfigRepository({
-    required this.directory,
-    AssetBundle? bundle,
-  }) : _bundle = bundle ?? rootBundle;
+  ConfigRepository({required this.directory, AssetBundle? bundle}) : _bundle = bundle ?? rootBundle;
 
   static const bundledAsset = 'assets/config/clinical_config_v1.json';
   static const fileName = 'clinical_config.json';

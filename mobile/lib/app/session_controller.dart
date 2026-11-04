@@ -55,10 +55,8 @@ class SessionController extends ChangeNotifier {
     _refreshStage();
   }
 
-  Future<void> _savePrefs() => services.secrets.write(
-        _prefsKey,
-        jsonEncode({'language': _languageCode, 'consent_v1': _consent}),
-      );
+  Future<void> _savePrefs() =>
+      services.secrets.write(_prefsKey, jsonEncode({'language': _languageCode, 'consent_v1': _consent}));
 
   void _refreshStage() {
     if (_active != null) {
@@ -87,12 +85,11 @@ class SessionController extends ChangeNotifier {
     _refreshStage();
   }
 
-  Future<AppDatabase> _openDb(String profileId, Uint8List masterKey) async =>
-      AppDatabase.open(
-        services.dbOpener,
-        await services.profileDbPath(profileId),
-        PinCrypto.passphrase(masterKey),
-      );
+  Future<AppDatabase> _openDb(String profileId, Uint8List masterKey) async => AppDatabase.open(
+    services.dbOpener,
+    await services.profileDbPath(profileId),
+    PinCrypto.passphrase(masterKey),
+  );
 
   Future<void> _activate(Unlocked unlocked) async {
     await _closeActive();
