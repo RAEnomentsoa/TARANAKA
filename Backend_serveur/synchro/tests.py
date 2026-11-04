@@ -482,16 +482,27 @@ class PullTest(BaseSyncTest):
         self.assertEqual(set(donnees["tables"]), {"enfant", "mesure"})
 
     def test_pagination_par_table(self):
-        for numero in range(3):
+        for numero in range(5):
             self.enfant(nom=f"Enfant {numero}")
+        # Same timestamp for every row: the cursor must still move forward.
+        meme_instant = timezone.now() - timedelta(minutes=1)
+        Enfant.all_objects.update(updated_at=meme_instant)
         self.comme(self.asc)
-        page = self.tirer(tables="enfant", limite=2)["tables"]["enfant"]
-        self.assertTrue(page["suite"])
-        self.assertEqual(len(page["lignes"]), 2)
-        suite = self.tirer(tables="enfant", limite=2, depuis=page["prochain_depuis"])["tables"]["enfant"]
-        self.assertFalse(suite["suite"])
-        vus = {ligne["id"] for ligne in page["lignes"] + suite["lignes"]}
-        self.assertEqual(len(vus), 3)
+        vus, parametres = [], {"tables": "enfant", "limite": 2}
+        for _ in range(5):
+            page = self.tirer(**parametres)["tables"]["enfant"]
+            vus += [ligne["id"] for ligne in page["lignes"]]
+            if not page["suite"]:
+                break
+            parametres.update(depuis=page["prochain_depuis"], apres_id=page["apres_id"])
+        self.assertFalse(page["suite"])
+        self.assertEqual(len(vus), 5)
+        self.assertEqual(len(set(vus)), 5)
+
+    def test_apres_id_sans_depuis(self):
+        self.comme(self.asc)
+        reponse = self.client.get(PULL, {"apres_id": str(uuid.uuid4())})
+        self.assertEqual(reponse.status_code, 400)
 
     def test_table_inconnue(self):
         self.comme(self.asc)

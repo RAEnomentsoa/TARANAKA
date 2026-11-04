@@ -160,6 +160,10 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   `config_version` is older. `horodatage_serveur` is the request time minus
   5 seconds, so a row committed during the pull is sent again next time rather
   than missed (receiving a row twice is harmless).
+- When a table has more rows than `limite`, the answer says `suite: true` with
+  a cursor `prochain_depuis` + `apres_id` (keyset on `updated_at`, `id`), so
+  rows sharing the same timestamp are never skipped nor repeated forever.
+  Datetimes keep their microseconds in the answer for that reason.
 - Gzip request bodies are accepted (`Content-Encoding: gzip`, size capped) and
   responses are gzipped when the phone accepts it. TLS is the reverse proxy's
   job (deployment).

@@ -12,7 +12,6 @@ import copy
 import json
 from datetime import timedelta
 
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import Http404
@@ -24,6 +23,7 @@ from rest_framework.exceptions import (
     ValidationError,
 )
 from rest_framework.request import Request
+from rest_framework.utils.encoders import JSONEncoder
 
 from comptes.models import CodeProfile
 from config_clinique.serializers import ConfigSerializer
@@ -58,7 +58,9 @@ MARGE_PULL = timedelta(seconds=5)
 
 
 def en_json(donnees):
-    return json.loads(json.dumps(donnees, cls=DjangoJSONEncoder))
+    # DRF's encoder keeps the microseconds of a datetime (Django's cuts them to
+    # milliseconds), which the pull cursor needs.
+    return json.loads(json.dumps(donnees, cls=JSONEncoder))
 
 
 def vue_pour(table, requete, action):
@@ -285,7 +287,12 @@ def _historiser(table_nom, ligne_id, version, device_id, donnees):
 # ---------------------------------------------------------------- pull
 
 
-def tirer(requete, depuis=None, noms=None, limite=500, config_version=None):
+def tirer(requete, depuis=None, noms=None, limite=500, config_version=None, apres_id=None):
+    """apres_id continues a page: rows at exactly `depuis` with a greater id.
+
+    The cursor is (updated_at, id), so rows sharing the same updated_at are
+    never skipped nor repeated forever.
+    """
     debut = timezone.now()
     user = requete.user
     resultat = {"tables": {}}
@@ -295,7 +302,11 @@ def tirer(requete, depuis=None, noms=None, limite=500, config_version=None):
         if not peut(table, user, "list"):
             continue
         lignes = table.visibles(user, True)
-        if depuis is not None:
+        if depuis is not None and apres_id is not None:
+            lignes = lignes.filter(
+                Q(updated_at__gt=depuis) | Q(updated_at=depuis, id__gt=apres_id)
+            )
+        elif depuis is not None:
             lignes = lignes.filter(updated_at__gte=depuis)
         lignes = list(lignes.order_by("updated_at", "id")[: limite + 1])
         suite = len(lignes) > limite
@@ -305,6 +316,7 @@ def tirer(requete, depuis=None, noms=None, limite=500, config_version=None):
             "lignes": [vue.serialiser(ligne) for ligne in lignes],
             "suite": suite,
             "prochain_depuis": lignes[-1].updated_at if suite else debut - MARGE_PULL,
+            "apres_id": lignes[-1].pk if suite else None,
         }
 
     conflits = ConflitSync.objects.filter(user=user)

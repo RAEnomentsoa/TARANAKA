@@ -156,6 +156,7 @@ class PullView(APIView):
                     noms=donnees.get("tables"),
                     limite=donnees["limite"],
                     config_version=donnees.get("config_version"),
+                    apres_id=donnees.get("apres_id"),
                 )
             )
         )

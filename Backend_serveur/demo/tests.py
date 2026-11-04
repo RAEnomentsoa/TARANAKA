@@ -8,6 +8,7 @@ server part they rely on (config download, idempotent resend) is covered here.
 import uuid
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient, APITestCase
@@ -21,6 +22,10 @@ class ScenariosDemoTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.demo = donnees.charger(sortie=lambda *args: None)
+
+    def setUp(self):
+        # The login rate limit (10/minute) is kept in the cache between tests.
+        cache.clear()
 
     def connecter(self, identifiant, appareil="tel-demo"):
         pin = next(c[2] for c in donnees.COMPTES if c[0] == identifiant)

@@ -134,6 +134,12 @@ class PullParametresSerializer(serializers.Serializer):
     tables = serializers.CharField(required=False)
     limite = serializers.IntegerField(required=False, min_value=1, max_value=1000, default=500)
     config_version = serializers.IntegerField(required=False, min_value=0)
+    apres_id = serializers.UUIDField(required=False)
+
+    def validate(self, attrs):
+        if "apres_id" in attrs and "depuis" not in attrs:
+            raise serializers.ValidationError({"apres_id": ["À utiliser avec depuis."]})
+        return attrs
 
     def validate_tables(self, valeur):
         noms = {nom.strip() for nom in valeur.split(",") if nom.strip()}
@@ -147,6 +153,7 @@ class TablePullSerializer(serializers.Serializer):
     lignes = serializers.ListField(child=serializers.DictField())
     suite = serializers.BooleanField()
     prochain_depuis = serializers.DateTimeField()
+    apres_id = serializers.UUIDField(allow_null=True)
 
 
 class ConflitResumeSerializer(serializers.Serializer):
