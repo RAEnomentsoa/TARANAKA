@@ -44,11 +44,11 @@ const { t } = useI18n()
   background: var(--ink);
   color: var(--white);
   font-weight: 700;
-  box-shadow: 0 0.75rem 2rem rgb(15 42 61 / 0.2);
+  box-shadow: var(--shadow-float);
 }
 
 .notice--success {
-  border-left: 6px solid #5fd08f;
+  border-left: 6px solid var(--success-on-dark);
 }
 
 .notice--info {

@@ -22,17 +22,17 @@ const { t } = useI18n()
 }
 
 .loading__bar {
-  width: 2.5rem;
-  height: 0.375rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--sky-200), var(--sky-400), var(--sky-200));
-  background-size: 200% 100%;
-  animation: slide 1.2s linear infinite;
+  width: 1rem;
+  height: 1rem;
+  border: 3px solid var(--sky-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
 }
 
-@keyframes slide {
+@keyframes spin {
   to {
-    background-position: -200% 0;
+    transform: rotate(360deg);
   }
 }
 </style>

@@ -1,12 +1,12 @@
 import { http } from './http'
-import type { ConflictResolution, SyncConflict } from './types'
+import type { ConflictResolution, SyncConflict, Uuid } from './types'
 
-/** Proposed endpoints (docs/API_ISSUES.md): the sync conflict queue. */
+/** Clinical sync conflicts waiting for a person (spec §9, §10). */
 export const conflictsApi = {
   list(): Promise<SyncConflict[]> {
-    return http.getAll<SyncConflict>('/api/sync/conflits/', { statut: 'ouvert' }, { proposed: true })
+    return http.getAll<SyncConflict>('/api/conflicts/', { statut: 'a_verifier' })
   },
-  resolve(id: number, resolution: ConflictResolution): Promise<unknown> {
-    return http.post(`/api/sync/conflits/${id}/resoudre/`, resolution, { proposed: true })
+  resolve(id: Uuid, resolution: ConflictResolution): Promise<SyncConflict> {
+    return http.post<SyncConflict>(`/api/conflicts/${id}/resolve/`, resolution)
   },
 }

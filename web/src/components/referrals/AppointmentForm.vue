@@ -5,18 +5,18 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 import { addDays, todayIso } from '@/utils/dates'
 
-export interface FollowUpDraft {
+export interface AppointmentDraft {
   date_prevue: string
   motif: string
 }
 
 const props = defineProps<{ busy: boolean; serverErrors?: Record<string, string[]> }>()
-const emit = defineEmits<{ submit: [draft: FollowUpDraft]; cancel: [] }>()
+const emit = defineEmits<{ submit: [draft: AppointmentDraft]; cancel: [] }>()
 
 const { t } = useI18n()
 const today = todayIso()
 // One week is the usual CRENAS control interval; the professional can change it.
-const form = reactive<FollowUpDraft>({ date_prevue: addDays(today, 7), motif: '' })
+const form = reactive<AppointmentDraft>({ date_prevue: addDays(today, 7), motif: '' })
 const errors = reactive<{ date: string | null; motif: string | null }>({ date: null, motif: null })
 
 function submit(): void {

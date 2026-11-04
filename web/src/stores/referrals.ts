@@ -2,14 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ApiError } from '@/api/errors'
 import { referralsApi } from '@/api/referrals'
-import type { DischargeOutcome, IsoDate, Referral, ReferralStatus, VersionConflictBody } from '@/api/types'
-import { STATUSES_BY_TAB, nextStatus, sortForTriage, type QueueTab } from '@/utils/triage'
-
-export interface DischargeDetails {
-  issue_sortie: DischargeOutcome
-  date_sortie: IsoDate
-  notes: string
-}
+import type { DischargeOutcome, Referral, ReferralStatus, VersionConflictBody } from '@/api/types'
+import { STATUSES_BY_TAB, sortForTriage, type QueueTab } from '@/utils/triage'
 
 /** Referrals of the user's centre, shared by the queue and the detail page. */
 export const useReferralsStore = defineStore('referrals', () => {
@@ -22,9 +16,11 @@ export const useReferralsStore = defineStore('referrals', () => {
     byId.value = next
   }
 
-  /** Loads every status of one tab (the backend filters one status at a time). */
   async function loadTab(tab: QueueTab): Promise<void> {
-    const lists = await Promise.all(STATUSES_BY_TAB[tab].map((status) => referralsApi.list(status)))
+    const lists =
+      tab === 'incoming'
+        ? [await referralsApi.incoming()]
+        : await Promise.all(STATUSES_BY_TAB[tab].map((status) => referralsApi.list(status)))
     remember(lists.flat())
     loadedAt.value = new Date()
   }
@@ -51,17 +47,15 @@ export const useReferralsStore = defineStore('referrals', () => {
   }
 
   /**
-   * Moves a referral to its next status. On a 409 the server's current row
-   * replaces the local one and the error goes up: the user decides again.
+   * Moves a referral on. On a 409 the server's current row replaces the
+   * local one and the error goes up: the user looks again and decides.
    */
-  async function advance(referral: Referral, discharge?: DischargeDetails): Promise<Referral> {
-    const status = nextStatus(referral.status)
-    if (!status) throw new ApiError({ kind: 'validation', status: 400 })
+  async function changeStatus(referral: Referral, status: ReferralStatus, outcome?: DischargeOutcome): Promise<Referral> {
     try {
       const updated = await referralsApi.changeStatus(referral.id, {
         status,
         version: referral.version,
-        ...(status === 'clos' && discharge ? discharge : {}),
+        ...(status === 'sortie' && outcome ? { issue_sortie: outcome } : {}),
       })
       remember([updated])
       return updated
@@ -74,5 +68,5 @@ export const useReferralsStore = defineStore('referrals', () => {
     }
   }
 
-  return { byId, loadedAt, counts, loadTab, loadAll, tab, fetchOne, advance, remember }
+  return { byId, loadedAt, counts, loadTab, loadAll, tab, fetchOne, changeStatus, remember }
 })

@@ -1,18 +1,25 @@
 import { http } from './http'
-import type { Consultation, ConsultationInput, FollowUp, FollowUpInput, Uuid } from './types'
+import type { Appointment, AppointmentInput, Consultation, ConsultationInput, Uuid } from './types'
 
-/** Proposed endpoints (docs/API_ISSUES.md): care records and follow-up visits. */
+/** Care recorded by the centre: consultations and follow-up appointments. */
 export const careApi = {
   consultations(childId: Uuid): Promise<Consultation[]> {
-    return http.getAll<Consultation>('/api/consultations/', { enfant: childId }, { proposed: true })
+    return http.getAll<Consultation>('/api/consultations/', { enfant: childId })
   },
   addConsultation(input: ConsultationInput): Promise<Consultation> {
-    return http.post<Consultation>('/api/consultations/', input, { proposed: true })
+    return http.post<Consultation>('/api/consultations/', input)
   },
-  followUps(childId: Uuid): Promise<FollowUp[]> {
-    return http.getAll<FollowUp>('/api/rendez-vous/', { enfant: childId }, { proposed: true })
+  appointments(childId: Uuid): Promise<Appointment[]> {
+    return http.getAll<Appointment>('/api/appointments/', { enfant: childId })
   },
-  addFollowUp(input: FollowUpInput): Promise<FollowUp> {
-    return http.post<FollowUp>('/api/rendez-vous/', input, { proposed: true })
+  addAppointment(input: AppointmentInput): Promise<Appointment> {
+    return http.post<Appointment>('/api/appointments/', input)
+  },
+  /** The child came: PATCH with the current version. */
+  markAttended(appointment: Appointment): Promise<Appointment> {
+    return http.patch<Appointment>(`/api/appointments/${appointment.id}/`, {
+      statut: 'honore',
+      version: appointment.version,
+    })
   },
 }

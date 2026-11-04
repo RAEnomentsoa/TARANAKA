@@ -16,7 +16,7 @@ import { useNotificationsStore } from '@/stores/notifications'
 const { t } = useI18n()
 const notifications = useNotificationsStore()
 const { data, error, loading, run } = useAsync(() => conflictsApi.list())
-const busyId = ref<number | null>(null)
+const busyId = ref<string | null>(null)
 
 async function resolve(conflict: SyncConflict, resolution: ConflictResolution): Promise<void> {
   busyId.value = conflict.id

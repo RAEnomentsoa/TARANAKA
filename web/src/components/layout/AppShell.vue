@@ -10,6 +10,7 @@ import { useNotificationsStore } from '@/stores/notifications'
 import type { Permission } from '@/utils/roles'
 import LanguageSwitch from '@/components/ui/LanguageSwitch.vue'
 import NoticeTray from '@/components/ui/NoticeTray.vue'
+import OfflineBanner from '@/components/ui/OfflineBanner.vue'
 import BrandMark from './BrandMark.vue'
 import CodeSearch from './CodeSearch.vue'
 
@@ -115,6 +116,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
       </nav>
 
       <main id="main" class="main" tabindex="-1">
+        <OfflineBanner />
         <RouterView />
       </main>
     </div>
@@ -157,7 +159,6 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
   padding: var(--space-2) var(--space-5);
   background: var(--white);
   border-bottom: 1px solid var(--sky-200);
-  box-shadow: inset 0 -4px 0 var(--sky-100);
 }
 
 .brand {

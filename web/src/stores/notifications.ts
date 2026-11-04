@@ -10,6 +10,8 @@ export interface Notice {
 }
 
 const DISPLAY_MS = 6000
+/** More than this would cover the page: the oldest notices go first. */
+const MAX_VISIBLE = 3
 
 /** Short confirmations ("Sortie enregistrée."), read out by screen readers. */
 export const useNotificationsStore = defineStore('notifications', () => {
@@ -22,7 +24,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   function push(message: string, tone: NoticeTone = 'success'): number {
     const id = nextId++
-    notices.value = [...notices.value, { id, tone, message }]
+    notices.value = [...notices.value, { id, tone, message }].slice(-MAX_VISIBLE)
     // Errors stay until dismissed: they need reading.
     if (tone !== 'error') setTimeout(() => dismiss(id), DISPLAY_MS)
     return id

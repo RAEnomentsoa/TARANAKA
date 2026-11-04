@@ -6,7 +6,7 @@ const now = new Date('2026-11-04T11:00:00Z')
 
 describe('ReferralRow', () => {
   it('shows urgency, code, reason and waiting time', () => {
-    const referral = makeReferral({ priorite: 'urgente', motif: 'Œdèmes ++', created_at: '2026-11-04T08:00:00Z' })
+    const referral = makeReferral({ priorite: 'urgente', motif: 'Œdèmes ++', date_referencement: '2026-11-04T08:00:00Z' })
     const wrapper = mountWithApp(ReferralRow, { props: { referral, now, canUpdate: true, busy: false } })
 
     expect(wrapper.classes()).toContain('row--rouge')
@@ -30,6 +30,11 @@ describe('ReferralRow', () => {
     expect(received.find('button').exists()).toBe(false)
     const readOnly = mountWithApp(ReferralRow, { props: { referral: makeReferral(), now, canUpdate: false, busy: false } })
     expect(readOnly.find('button').exists()).toBe(false)
+  })
+
+  it('flags a referral that has not arrived in time, in words', () => {
+    const wrapper = mountWithApp(ReferralRow, { props: { referral: makeReferral({ en_retard: true }), now, canUpdate: true, busy: false } })
+    expect(wrapper.find('.row__late').text()).toBe('En retard')
   })
 
   it('names the pregnant woman for a pregnancy referral', () => {

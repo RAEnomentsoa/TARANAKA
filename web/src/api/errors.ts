@@ -6,7 +6,6 @@ export type ApiErrorKind =
   | 'session_expired'
   | 'forbidden'
   | 'not_found'
-  | 'not_implemented'
   | 'conflict'
   | 'validation'
   | 'locked'
@@ -50,12 +49,10 @@ export function isApiError(value: unknown): value is ApiError {
   return value instanceof ApiError
 }
 
-function kindFromStatus(status: number, proposed: boolean): ApiErrorKind {
+function kindFromStatus(status: number): ApiErrorKind {
   if (status === 400) return 'validation'
   if (status === 401) return 'unauthorized'
   if (status === 403) return 'forbidden'
-  // A proposed endpoint that answers 404/405 is not built yet on the server.
-  if (proposed && (status === 404 || status === 405 || status === 501)) return 'not_implemented'
   if (status === 404) return 'not_found'
   if (status === 409) return 'conflict'
   if (status === 423) return 'locked'
@@ -64,7 +61,7 @@ function kindFromStatus(status: number, proposed: boolean): ApiErrorKind {
 }
 
 /** Split a DRF error body into a detail, a code and the field errors. */
-export function errorFromResponse(status: number, body: unknown, proposed = false): ApiError {
+export function errorFromResponse(status: number, body: unknown): ApiError {
   let detail: string | undefined
   let code: string | null = null
   const fieldErrors: FieldErrors = {}
@@ -81,7 +78,7 @@ export function errorFromResponse(status: number, body: unknown, proposed = fals
   }
 
   return new ApiError({
-    kind: kindFromStatus(status, proposed),
+    kind: kindFromStatus(status),
     status,
     code,
     detail,

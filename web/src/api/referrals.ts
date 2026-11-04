@@ -2,7 +2,12 @@ import { http } from './http'
 import type { Referral, ReferralStatus, StatusChange, Uuid } from './types'
 
 export const referralsApi = {
-  list(status?: ReferralStatus): Promise<Referral[]> {
+  /** The centre's queue (envoye and recu), red first then oldest. */
+  incoming(): Promise<Referral[]> {
+    return http.getAll<Referral>('/api/referrals/incoming/')
+  },
+
+  list(status: ReferralStatus): Promise<Referral[]> {
     return http.getAll<Referral>('/api/referrals/', { status })
   },
 
@@ -10,20 +15,15 @@ export const referralsApi = {
     return http.get<Referral>(`/api/referrals/${id}/`)
   },
 
-  /**
-   * The backend has no filter on the code yet (docs/API_ISSUES.md): the
-   * proposed "code_unique" parameter is sent, and the answer is checked here.
-   */
   async findByCode(code: string): Promise<Referral | null> {
     const wanted = normaliseCode(code)
-    const list = await http.getAll<Referral>('/api/referrals/', { code_unique: code.trim() })
+    const list = await http.getAll<Referral>('/api/referrals/', { code: code.trim().replace(/\s+/g, '') })
+    // The filter is exact on the server; checked again here in case of spaces or case.
     return list.find((r) => normaliseCode(r.code_unique) === wanted) ?? null
   },
 
-  /** No "enfant" filter on the backend yet: filtered here. */
-  async forChild(childId: Uuid): Promise<Referral[]> {
-    const list = await http.getAll<Referral>('/api/referrals/', { enfant: childId })
-    return list.filter((r) => r.enfant_id === childId)
+  forChild(childId: Uuid): Promise<Referral[]> {
+    return http.getAll<Referral>('/api/referrals/', { enfant: childId })
   },
 
   changeStatus(id: Uuid, change: StatusChange): Promise<Referral> {

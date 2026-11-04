@@ -11,28 +11,28 @@ const fmt = useFormatters()
 
 const rows = computed(() => [...props.measurements].sort((a, b) => b.date_mesure.localeCompare(a.date_mesure)))
 
-function z(value: string | null): string {
+function decimal(value: string | null, digits: number): string {
   const n = toNumber(value)
-  return n === null ? '–' : fmt.number(n, 2)
+  return n === null ? '–' : fmt.number(n, digits)
 }
 </script>
 
 <template>
-  <div class="table-scroll" tabindex="0" role="region" :aria-label="t('measurements.title')">
-    <table class="measures">
+  <div class="table-scroll">
+    <table class="measures stack-on-mobile">
       <caption class="visually-hidden">{{ t('measurements.title') }}</caption>
       <thead>
         <tr>
           <th scope="col">{{ t('measurements.date') }}</th>
-          <th scope="col">{{ t('measurements.age') }}</th>
-          <th scope="col">{{ t('measurements.weight') }}</th>
-          <th scope="col">{{ t('measurements.height') }}</th>
-          <th scope="col">{{ t('measurements.muac') }}</th>
+          <th scope="col" class="num">{{ t('measurements.age') }}</th>
+          <th scope="col" class="num">{{ t('measurements.weight') }}</th>
+          <th scope="col" class="num">{{ t('measurements.height') }}</th>
+          <th scope="col" class="num">{{ t('measurements.muac') }}</th>
           <th scope="col">{{ t('measurements.oedema') }}</th>
-          <th scope="col">{{ t('measurements.whz') }}</th>
-          <th scope="col">{{ t('measurements.haz') }}</th>
-          <th scope="col">{{ t('measurements.waz') }}</th>
-          <th scope="col">{{ t('measurements.alert') }}</th>
+          <th scope="col" class="num">{{ t('measurements.whz') }}</th>
+          <th scope="col" class="num">{{ t('measurements.haz') }}</th>
+          <th scope="col" class="num">{{ t('measurements.waz') }}</th>
+          <th scope="col">{{ t('measurements.classification') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -40,19 +40,21 @@ function z(value: string | null): string {
           <th scope="row">
             <time :datetime="m.date_mesure">{{ fmt.date(m.date_mesure) }}</time>
           </th>
-          <td>{{ m.age_mois }}</td>
-          <td>{{ fmt.number(toNumber(m.poids_kg) ?? 0, 2) }}</td>
-          <td>
-            {{ fmt.number(toNumber(m.taille_corrigee_cm) ?? 0) }}
+          <td class="num" :data-label="t('measurements.age')">{{ m.age_mois }}</td>
+          <td class="num" :data-label="t('measurements.weight')">{{ decimal(m.poids_kg, 2) }}</td>
+          <td class="num" :data-label="t('measurements.height')">
+            {{ decimal(m.taille_corrigee_cm, 1) }}
             <span class="muted">({{ t(`measurements.position.${m.position}`) }})</span>
           </td>
-          <td>{{ m.pb_mm ?? t('measurements.notAvailable') }}</td>
-          <td>{{ m.oedemes_bilateraux === 'aucun' ? t('common.none') : m.oedemes_bilateraux }}</td>
-          <td>{{ z(m.whz) }}</td>
-          <td>{{ z(m.haz) }}</td>
-          <td>{{ z(m.waz) }}</td>
-          <td>
-            <span class="alert-tag" :class="`alert-tag--${m.alerte}`">{{ t(`measurements.alerts.${m.alerte}`) }}</span>
+          <td class="num" :data-label="t('measurements.muac')">{{ m.pb_mm ?? t('measurements.notAvailable') }}</td>
+          <td :data-label="t('measurements.oedema')">{{ m.oedemes_bilateraux === 'aucun' ? t('common.none') : m.oedemes_bilateraux }}</td>
+          <td class="num" :data-label="t('measurements.whz')">{{ decimal(m.whz, 2) }}</td>
+          <td class="num" :data-label="t('measurements.haz')">{{ decimal(m.haz, 2) }}</td>
+          <td class="num" :data-label="t('measurements.waz')">{{ decimal(m.waz, 2) }}</td>
+          <td :data-label="t('measurements.classification')">
+            <span class="tag" :class="m.classification ? `tag--${m.classification}` : ''">
+              {{ m.classification ? t(`measurements.classifications.${m.classification}`) : t('measurements.notClassified') }}
+            </span>
             <span v-if="m.flag_aberrant" class="flag">{{ t('measurements.flagged') }}</span>
           </td>
         </tr>
@@ -64,6 +66,7 @@ function z(value: string | null): string {
 <style scoped>
 .measures {
   min-width: 52rem;
+  font-size: var(--text-sm);
 }
 
 .measures td,
@@ -71,40 +74,43 @@ function z(value: string | null): string {
   white-space: nowrap;
 }
 
-.measures th[scope='row'] {
-  font-weight: 700;
+.num {
+  text-align: right;
 }
 
 .measures__row--flagged {
   background: var(--orange-bg);
 }
 
-.alert-tag {
+.tag {
   display: inline-block;
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: var(--text-sm);
+  border: 1px solid var(--sky-200);
 }
 
-.alert-tag--vert {
-  background: var(--success-bg);
-  color: var(--success-ink);
-}
-
-.alert-tag--orange {
-  background: var(--orange-bg);
-  color: var(--orange-ink);
-}
-
-.alert-tag--rouge {
+.tag--mas {
   background: var(--rouge-bg);
   color: var(--rouge-ink);
+  border-color: transparent;
+}
+
+.tag--mam,
+.tag--nourrisson_a_risque {
+  background: var(--orange-bg);
+  color: var(--orange-ink);
+  border-color: transparent;
+}
+
+.tag--normal {
+  background: var(--success-bg);
+  color: var(--success-ink);
+  border-color: transparent;
 }
 
 .flag {
   display: block;
-  font-size: var(--text-sm);
   color: var(--orange-ink);
   font-weight: 700;
 }

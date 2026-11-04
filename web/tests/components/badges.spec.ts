@@ -7,14 +7,14 @@ import { mountWithApp } from '../helpers'
 
 describe('badges', () => {
   it('names the urgency in words, not only in colour', () => {
-    const wrapper = mountWithApp(UrgencyBadge, { props: { priorite: 'urgente' } })
+    const wrapper = mountWithApp(UrgencyBadge, { props: { urgency: 'rouge' } })
     expect(wrapper.text()).toContain('Rouge')
     expect(wrapper.find('svg').attributes('aria-hidden')).toBe('true')
     expect(wrapper.classes()).toContain('urgency--rouge')
   })
 
   it('translates urgency and status into Malagasy', () => {
-    expect(mountWithApp(UrgencyBadge, { props: { priorite: 'normale' }, locale: 'mg' }).text()).toContain('Mavo')
+    expect(mountWithApp(UrgencyBadge, { props: { urgency: 'jaune' }, locale: 'mg' }).text()).toContain('Mavo')
     expect(mountWithApp(StatusBadge, { props: { status: 'recu' }, locale: 'mg' }).text()).toContain('Tonga ny marary')
   })
 

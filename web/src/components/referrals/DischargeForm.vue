@@ -1,47 +1,36 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { DischargeOutcome } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
-import AppField from '@/components/ui/AppField.vue'
-import type { DischargeDetails } from '@/stores/referrals'
-import { OUTCOMES } from '@/utils/privacy'
-import { todayIso } from '@/utils/dates'
+import { OUTCOMES } from '@/utils/triage'
 
 const props = defineProps<{ busy: boolean }>()
-const emit = defineEmits<{ submit: [details: DischargeDetails]; cancel: [] }>()
+const emit = defineEmits<{ submit: [outcome: DischargeOutcome]; cancel: [] }>()
 
 const { t } = useI18n()
-const today = todayIso()
-const form = reactive<{ outcome: DischargeOutcome | ''; date: string; notes: string }>({ outcome: '', date: today, notes: '' })
-const errors = reactive<{ outcome: string | null; date: string | null }>({ outcome: null, date: null })
-const legendId = ref('discharge-outcome')
+const outcome = ref<DischargeOutcome | ''>('')
+const error = ref<string | null>(null)
+const id = useId()
 
 function submit(): void {
-  errors.outcome = form.outcome ? null : t('validation.required')
-  errors.date = !form.date ? t('validation.required') : form.date > today ? t('care.dateInFuture') : null
-  if (errors.outcome || errors.date || props.busy || !form.outcome) return
-  emit('submit', { issue_sortie: form.outcome, date_sortie: form.date, notes: form.notes.trim() })
+  error.value = outcome.value ? null : t('validation.required')
+  if (!outcome.value || props.busy) return
+  emit('submit', outcome.value)
 }
 </script>
 
 <template>
   <form class="stack" novalidate @submit.prevent="submit">
     <p class="muted">{{ t('discharge.intro') }}</p>
-    <fieldset class="outcomes" :aria-describedby="errors.outcome ? `${legendId}-error` : undefined">
-      <legend :id="legendId">{{ t('discharge.outcome') }}</legend>
-      <label v-for="outcome in OUTCOMES" :key="outcome" class="outcomes__option">
-        <input v-model="form.outcome" type="radio" name="outcome" :value="outcome" />
-        {{ t(`discharge.outcomes.${outcome}`) }}
+    <fieldset class="outcomes" :aria-describedby="error ? `${id}-error` : undefined" :aria-invalid="Boolean(error)">
+      <legend>{{ t('discharge.outcome') }}</legend>
+      <label v-for="value in OUTCOMES" :key="value" class="outcomes__option">
+        <input v-model="outcome" type="radio" :name="`${id}-outcome`" :value="value" />
+        {{ t(`discharge.outcomes.${value}`) }}
       </label>
-      <p v-if="errors.outcome" :id="`${legendId}-error`" class="outcomes__error">{{ errors.outcome }}</p>
+      <p v-if="error" :id="`${id}-error`" class="outcomes__error">{{ error }}</p>
     </fieldset>
-    <AppField v-slot="{ id, describedBy, invalid }" :label="t('discharge.date')" :error="errors.date" required>
-      <input :id="id" v-model="form.date" type="date" :max="today" required :aria-describedby="describedBy" :aria-invalid="invalid" />
-    </AppField>
-    <AppField v-slot="{ id, describedBy }" :label="t('discharge.notes')" optional>
-      <textarea :id="id" v-model="form.notes" maxlength="2000" :aria-describedby="describedBy" />
-    </AppField>
     <div class="actions">
       <AppButton variant="ghost" :disabled="busy" @click="emit('cancel')">{{ t('common.cancel') }}</AppButton>
       <AppButton type="submit" variant="danger" :loading="busy">{{ t('discharge.submit') }}</AppButton>
@@ -55,7 +44,7 @@ function submit(): void {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .outcomes legend {
@@ -70,14 +59,15 @@ function submit(): void {
   gap: var(--space-3);
   min-height: var(--target);
   padding: 0 var(--space-3);
-  border: 2px solid var(--sky-200);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
 .outcomes__option:has(input:checked) {
-  border-color: var(--primary);
+  border: 2px solid var(--primary);
   background: var(--sky-50);
+  font-weight: 700;
 }
 
 .outcomes__option input {

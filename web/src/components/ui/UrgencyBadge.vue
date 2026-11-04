@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Priorite } from '@/api/types'
-import { urgencyOf } from '@/utils/triage'
+import type { Urgency } from '@/api/types'
 
 /** Urgency is never colour alone: a shape and a word go with it. */
-const props = withDefaults(defineProps<{ priorite: Priorite; withHint?: boolean }>(), { withHint: false })
+withDefaults(defineProps<{ urgency: Urgency; withHint?: boolean }>(), { withHint: false })
 const { t } = useI18n()
-const urgency = computed(() => urgencyOf(props.priorite))
 </script>
 
 <template>

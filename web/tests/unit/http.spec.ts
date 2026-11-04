@@ -92,9 +92,24 @@ describe('HttpClient', () => {
     expect(calls).toHaveLength(1)
   })
 
-  it('reports a missing proposed endpoint as not implemented', async () => {
+  it('downloads a file with the token, refreshing it when needed', async () => {
+    tokenStorage.save({ access: 'old', refresh: 'R1' })
+    const { http, calls } = client([
+      () => jsonResponse(401, expired),
+      () => jsonResponse(200, { access: 'new', refresh: 'R2' }),
+      () => new Response('groupe,indicateur,valeur\r\nTotal,cas_mas,<5', { status: 200, headers: { 'Content-Type': 'text/csv' } }),
+    ])
+
+    const blob = await http.blob('/api/stats/export/', { region: 1 })
+
+    expect(await blob.text()).toContain('cas_mas,<5')
+    expect((calls[2]!.init.headers as Record<string, string>).Accept).toBe('*/*')
+    expect(calls[2]!.url).toBe('http://api.test/api/stats/export/?region=1')
+  })
+
+  it('reports a 404 as not found', async () => {
     const { http } = client([() => jsonResponse(404, { detail: 'Not found.' })])
-    await expect(http.get('/api/stats/', {}, { proposed: true })).rejects.toMatchObject({ kind: 'not_implemented' })
+    await expect(http.get('/api/referrals/x/')).rejects.toMatchObject({ kind: 'not_found' })
   })
 
   it('keeps field errors and the conflict body', async () => {

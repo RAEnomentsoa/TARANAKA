@@ -5,15 +5,19 @@ export interface Domain {
   max: number
 }
 
-export function extent(values: number[], include: number[] = []): Domain {
+/**
+ * Range of the values. A single value is widened by `pad` on each side
+ * (default 10 % of it, or 1): a date axis must pass a duration instead.
+ */
+export function extent(values: number[], include: number[] = [], pad?: number): Domain {
   const all = [...values, ...include].filter(Number.isFinite)
   if (all.length === 0) return { min: 0, max: 1 }
   let min = Math.min(...all)
   let max = Math.max(...all)
   if (min === max) {
-    const pad = Math.abs(min) * 0.1 || 1
-    min -= pad
-    max += pad
+    const widen = pad ?? (Math.abs(min) * 0.1 || 1)
+    min -= widen
+    max += widen
   }
   return { min, max }
 }

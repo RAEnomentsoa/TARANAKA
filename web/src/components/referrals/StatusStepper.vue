@@ -9,8 +9,12 @@ const props = defineProps<{ status: ReferralStatus }>()
 const { t } = useI18n()
 const currentIndex = computed(() => STATUS_ORDER.indexOf(props.status))
 
-function state(index: number): 'done' | 'current' | 'todo' {
-  if (index < currentIndex.value) return 'done'
+type StepState = 'done' | 'current' | 'todo'
+const STATE_LABEL: Record<StepState, string> = { done: 'referral.stepDone', current: 'referral.stepCurrent', todo: 'referral.stepTodo' }
+
+function state(index: number): StepState {
+  // A discharge can skip steps: once out, every step counts as done.
+  if (index < currentIndex.value || props.status === 'sortie') return 'done'
   if (index === currentIndex.value) return 'current'
   return 'todo'
 }
@@ -31,7 +35,7 @@ function state(index: number): 'done' | 'current' | 'todo' {
         </svg>
       </span>
       <span class="stepper__label">{{ t(`status.${step}`) }}</span>
-      <span class="visually-hidden">({{ t(`referral.step${state(index) === 'done' ? 'Done' : state(index) === 'current' ? 'Current' : 'Todo'}`) }})</span>
+      <span class="visually-hidden">({{ t(STATE_LABEL[state(index)]) }})</span>
     </li>
   </ol>
 </template>
@@ -43,7 +47,6 @@ function state(index: number): 'done' | 'current' | 'todo' {
   padding: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  counter-reset: step;
 }
 
 .stepper__step {
@@ -65,7 +68,6 @@ function state(index: number): 'done' | 'current' | 'todo' {
   width: 100%;
   height: 4px;
   background: var(--sky-200);
-  z-index: 0;
 }
 
 .stepper__step:first-child::before {
@@ -79,7 +81,6 @@ function state(index: number): 'done' | 'current' | 'todo' {
 
 .stepper__dot {
   position: relative;
-  z-index: 1;
   display: grid;
   place-items: center;
   width: 1.75rem;
@@ -97,7 +98,7 @@ function state(index: number): 'done' | 'current' | 'todo' {
 
 .stepper__step--current .stepper__dot {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--sky-100);
+  outline: 4px solid var(--sky-100);
 }
 
 .stepper__step--current {

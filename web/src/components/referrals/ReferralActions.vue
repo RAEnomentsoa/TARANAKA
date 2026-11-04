@@ -1,93 +1,101 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Referral, ReferralStatus } from '@/api/types'
+import type { DischargeOutcome, Referral, ReferralStatus } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppDialog from '@/components/ui/AppDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import { useNotificationsStore } from '@/stores/notifications'
-import { useReferralsStore, type DischargeDetails } from '@/stores/referrals'
-import { nextStatus } from '@/utils/triage'
+import { useReferralsStore } from '@/stores/referrals'
+import { canDischargeFrom, nextStatus } from '@/utils/triage'
 import DischargeForm from './DischargeForm.vue'
 
-/** The one next step of the referral, confirmed before it is sent. */
+/**
+ * One main action (the next step) and, once the patient has arrived, the
+ * discharge. Every change is confirmed before it is sent.
+ */
 const props = defineProps<{ referral: Referral; canUpdate: boolean; canDischarge: boolean }>()
 
 const { t } = useI18n()
 const store = useReferralsStore()
 const notifications = useNotificationsStore()
 
-const next = computed<ReferralStatus | null>(() => nextStatus(props.referral.status))
-const allowed = computed(() => (next.value === 'clos' ? props.canDischarge : props.canUpdate))
-const confirming = ref(false)
+const next = computed(() => nextStatus(props.referral.status))
+const dischargeAllowed = computed(() => canDischargeFrom(props.referral.status))
+const pending = ref<ReferralStatus | null>(null)
+const outcome = ref<DischargeOutcome | null>(null)
 const dischargeOpen = ref(false)
-const discharge = ref<DischargeDetails | null>(null)
 const busy = ref(false)
 const error = ref<unknown>(null)
 
 const confirmMessage = computed(() => {
-  if (next.value === 'clos' && discharge.value) {
+  if (pending.value === 'sortie' && outcome.value) {
     return t('discharge.confirm', {
       code: props.referral.code_unique,
-      outcome: t(`discharge.outcomes.${discharge.value.issue_sortie}`),
+      outcome: t(`discharge.outcomes.${outcome.value}`),
     })
   }
-  return next.value && next.value !== 'clos' ? t(`referral.confirm.${next.value}`, { code: props.referral.code_unique }) : ''
+  return pending.value ? t(`referral.confirm.${pending.value}`, { code: props.referral.code_unique }) : ''
 })
 
-function start(): void {
+function ask(status: ReferralStatus): void {
   error.value = null
-  if (next.value === 'clos') dischargeOpen.value = true
-  else confirming.value = true
+  pending.value = status
 }
 
-function onDischarge(details: DischargeDetails): void {
-  discharge.value = details
+function onOutcome(value: DischargeOutcome): void {
+  outcome.value = value
   dischargeOpen.value = false
-  confirming.value = true
+  ask('sortie')
+}
+
+function cancel(): void {
+  pending.value = null
+  outcome.value = null
 }
 
 async function confirm(): Promise<void> {
-  const target = next.value
+  const target = pending.value
   if (!target) return
   busy.value = true
   try {
-    await store.advance(props.referral, discharge.value ?? undefined)
+    await store.changeStatus(props.referral, target, outcome.value ?? undefined)
     notifications.push(t(`referral.done.${target}`))
   } catch (caught) {
     error.value = caught
   } finally {
     busy.value = false
-    confirming.value = false
-    discharge.value = null
+    cancel()
   }
 }
 </script>
 
 <template>
   <div class="actions">
-    <p v-if="!next" class="muted">{{ t('referral.closed') }}</p>
-    <template v-else-if="allowed">
-      <AppButton block :variant="next === 'clos' ? 'secondary' : 'primary'" @click="start">
-        {{ t(`referral.actions.${next}`) }}
+    <p v-if="referral.status === 'sortie'" class="muted">{{ t('referral.closed') }}</p>
+    <AppButton v-if="next && canUpdate" block @click="ask(next)">{{ t(`referral.actions.${next}`) }}</AppButton>
+    <template v-if="dischargeAllowed">
+      <AppButton v-if="canDischarge" block :variant="next ? 'secondary' : 'primary'" @click="dischargeOpen = true">
+        {{ t('referral.actions.sortie') }}
       </AppButton>
+      <p v-else class="muted actions__note">{{ t('referral.dischargeOnlyAgent') }}</p>
     </template>
     <ErrorState v-if="error" :error="error" />
 
     <ConfirmDialog
-      :open="confirming"
-      :title="next ? t(`referral.actions.${next}`) : ''"
+      :open="pending !== null"
+      :title="pending ? t(`referral.actions.${pending}`) : ''"
       :message="confirmMessage"
-      :confirm-label="next ? t(`referral.actions.${next}`) : undefined"
-      :danger="next === 'clos'"
+      :confirm-label="pending ? t(`referral.actions.${pending}`) : undefined"
+      :danger="pending === 'sortie'"
       :busy="busy"
       @confirm="confirm"
-      @cancel="confirming = false"
+      @cancel="cancel"
     />
 
     <AppDialog :open="dischargeOpen" :title="t('discharge.title')" @close="dischargeOpen = false">
-      <DischargeForm :busy="busy" @submit="onDischarge" @cancel="dischargeOpen = false" />
+      <DischargeForm :busy="busy" @submit="onOutcome" @cancel="dischargeOpen = false" />
     </AppDialog>
   </div>
 </template>
@@ -97,5 +105,10 @@ async function confirm(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.actions__note {
+  font-size: var(--text-sm);
+  margin: 0;
 }
 </style>

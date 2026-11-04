@@ -1,19 +1,15 @@
 /**
- * Types of the TARANAKA REST API.
- *
- * "Existing" types mirror the Django serializers in Backend_serveur/.
- * "Proposed" types describe endpoints the dashboard needs but the backend
- * does not offer yet: see docs/API_ISSUES.md for each of them.
+ * Types of the TARANAKA REST API, mirroring docs/openapi.yaml
+ * (components/schemas). Only the fields the dashboard uses are listed.
  */
 
 export type Uuid = string
 export type IsoDate = string // YYYY-MM-DD
 export type IsoDateTime = string
 
-// ---------- Existing: comptes ----------
+// ---------- Accounts and login ----------
 
-/** Profile codes known to the backend, plus the proposed "superviseur". */
-export type ProfileCode = 'beneficiaire' | 'asc' | 'agent_csb' | 'admin' | 'superviseur'
+export type ProfileCode = 'beneficiaire' | 'asc' | 'agent_csb' | 'superviseur' | 'admin'
 
 export interface Profile {
   code: ProfileCode | string
@@ -34,23 +30,40 @@ export interface TokenPair {
   refresh: string
 }
 
-export interface LoginSuccess extends TokenPair {
+/** LoginRequest: code_totp only for an account with 2FA turned on. */
+export interface LoginRequest {
+  identifiant: string
+  pin: string
+  code_totp?: string
+}
+
+/** LoginReponse */
+export interface LoginResponse extends TokenPair {
   utilisateur: Utilisateur
+  /** true: the token only opens /auth/me/, /auth/changer-pin/ and /auth/2fa/. */
+  totp_a_configurer: boolean
 }
 
-/** Proposed: second step of the login when TOTP is required. */
-export interface LoginTotpChallenge {
-  double_auth: {
-    etape: 'verification' | 'enrolement'
-    jeton: string
-    /** Only for "enrolement": otpauth:// URI to show as a QR code. */
-    otpauth_uri?: string
-  }
+/** TotpEtat (GET /api/auth/2fa/) */
+export interface TotpState {
+  active: boolean
+  requise_pour_ce_profil: boolean
+  obligatoire: boolean
+  a_configurer: boolean
 }
 
-export type LoginResponse = LoginSuccess | LoginTotpChallenge
+/** TotpPreparation (POST /api/auth/2fa/setup/) */
+export interface TotpSetup {
+  secret: string
+  uri: string
+}
 
-// ---------- Existing: pagination and sync fields ----------
+/** ChangerPinReponse (POST /api/auth/2fa/activate/): replace both tokens. */
+export interface TokenRenewal extends TokenPair {
+  detail: string
+}
+
+// ---------- Lists ----------
 
 export interface Paginated<T> {
   count: number
@@ -68,7 +81,7 @@ export interface SyncFields {
   deleted_at: IsoDateTime | null
 }
 
-// ---------- Existing: référentiel ----------
+// ---------- Reference lists ----------
 
 export interface Region {
   id: number
@@ -76,18 +89,24 @@ export interface Region {
   province_id: number
 }
 
+export type CentreType = 'csb' | 'crenam' | 'crenas' | 'creni'
+
 export interface Facility {
   id: number
   name: string
+  type_centre: CentreType
   region_id: number
   tel: string
 }
 
-// ---------- Existing: referrals ----------
+// ---------- Referrals ----------
 
 export type Priorite = 'urgente' | 'haute' | 'normale'
-export type ReferralStatus = 'envoye' | 'recu' | 'vu' | 'pris_en_charge' | 'clos'
+export type Urgency = 'rouge' | 'orange' | 'jaune'
+/** Spec §7: Référé → Reçu → Pris en charge → En suivi → Sortie. */
+export type ReferralStatus = 'envoye' | 'recu' | 'pris_en_charge' | 'en_suivi' | 'sortie'
 export type Origine = 'enfant' | 'grossesse'
+export type DischargeOutcome = 'gueri' | 'transfere' | 'non_repondant' | 'abandon' | 'decede'
 
 export interface Referral extends SyncFields {
   code_unique: string
@@ -100,24 +119,27 @@ export interface Referral extends SyncFields {
   priorite: Priorite
   motif: string
   status: ReferralStatus
+  urgence: Urgency
+  date_referencement: IsoDateTime
+  date_reception: IsoDateTime | null
+  date_prise_en_charge: IsoDateTime | null
+  date_sortie: IsoDateTime | null
+  /** "" until the discharge. */
+  issue_sortie: DischargeOutcome | ''
+  /** Still "envoye" after the delay of the clinical config. */
+  en_retard: boolean
   femme: { nom: string; prenom: string } | null
-  /** Proposed: outcome stored when the referral is closed. */
-  issue_sortie?: DischargeOutcome | null
 }
 
-/** Proposed outcomes of a discharge (spec section 7). */
-export type DischargeOutcome = 'gueri' | 'transfere' | 'non_repondant' | 'abandon' | 'deces'
-
+/** StatusRequest */
 export interface StatusChange {
   status: ReferralStatus
   version: number
-  /** Proposed: only with status "clos". Ignored by the current backend. */
+  /** Required with "sortie", refused otherwise. */
   issue_sortie?: DischargeOutcome
-  date_sortie?: IsoDate
-  notes?: string
 }
 
-// ---------- Existing: children and measurements ----------
+// ---------- Children and measurements ----------
 
 export type Sexe = 'M' | 'F'
 export type StatutPriseEnCharge =
@@ -127,6 +149,9 @@ export type StatutPriseEnCharge =
   | 'pris_en_charge'
   | 'gueri'
   | 'abandon'
+  | 'transfere'
+  | 'non_repondant'
+  | 'decede'
 
 export interface Child extends SyncFields {
   nom: string
@@ -141,6 +166,7 @@ export interface Child extends SyncFields {
 
 export type Alerte = 'vert' | 'orange' | 'rouge'
 export type Oedemes = 'aucun' | '+' | '++' | '+++'
+export type Classification = 'mas' | 'mam' | 'normal' | 'nourrisson_a_risque'
 
 export interface Measurement extends SyncFields {
   enfant_id: Uuid
@@ -160,18 +186,21 @@ export interface Measurement extends SyncFields {
   whz: string | null
   flag_aberrant: boolean
   alerte: Alerte
-  motif_alerte: string
-  ref_oms: string
+  /** Computed by the server from the published config; "" or null without it. */
+  classification: Classification | '' | null
+  orientation_centre: CentreType | '' | null
+  urgence: Urgency | '' | null
+  date_prochain_controle: IsoDate | null
 }
 
-/** Existing on HTTP 409 from any synced table. */
+/** Body of any 409 on a synced table. */
 export interface VersionConflictBody<T> {
   detail: string
   code: 'conflit_version'
   current: T
 }
 
-// ---------- Proposed: care (consultation_nutritionnelle) ----------
+// ---------- Care: consultations and appointments ----------
 
 export type Decision = 'conseil' | 'reference' | 'prise_en_charge'
 
@@ -187,102 +216,107 @@ export interface Consultation extends SyncFields {
   observations: string
 }
 
+/** ConsultationRequest. A centre agent's csb_id and agent_medical_id are forced by the server. */
 export interface ConsultationInput {
   id: Uuid
   enfant_id: Uuid
   referencement_id: Uuid | null
-  csb_id: number
+  csb_id?: number
+  agent_medical_id?: Uuid
   date: IsoDate
   diagnostic: string
   decision: Decision
   observations: string
 }
 
-// ---------- Proposed: follow-up appointments ----------
+export type AppointmentType = 'controle' | 'depistage'
+export type AppointmentStatus = 'prevu' | 'honore' | 'annule'
 
-export type FollowUpStatus = 'prevu' | 'honore' | 'manque'
-
-export interface FollowUp extends SyncFields {
+export interface Appointment extends SyncFields {
   enfant_id: Uuid
   referencement_id: Uuid | null
+  csb_id: number | null
   date_prevue: IsoDate
+  type_rendez_vous: AppointmentType
+  statut: AppointmentStatus
   motif: string
-  statut: FollowUpStatus
+  /** Still "prevu" after its date. */
+  manque: boolean
 }
 
-export interface FollowUpInput {
+export interface AppointmentInput {
   id: Uuid
   enfant_id: Uuid
   referencement_id: Uuid | null
   date_prevue: IsoDate
+  type_rendez_vous: AppointmentType
   motif: string
 }
 
-// ---------- Proposed: sync conflicts ----------
+// ---------- Sync conflicts ----------
 
-export interface ConflictVersion {
-  version: number
-  device_id: string
-  date: IsoDateTime
-  donnees: Record<string, unknown>
-}
+export type ConflictChoice = 'serveur' | 'telephone' | 'fusion'
 
 export interface SyncConflict {
-  id: number
+  id: Uuid
   table_nom: string
   ligne_id: Uuid
-  version_serveur: ConflictVersion
-  version_appareil: ConflictVersion
-  date_creation: IsoDateTime
+  operation: 'create' | 'update' | 'delete'
+  version_base: number | null
+  version_serveur: number
+  donnees_telephone: Record<string, unknown> | null
+  donnees_serveur: Record<string, unknown> | null
+  user_id: Uuid
+  device_id: string
+  statut: 'a_verifier' | 'resolu'
+  created_at: IsoDateTime
 }
 
-export type ConflictChoice = 'serveur' | 'appareil' | 'fusion'
-
+/** ResolutionRequest */
 export interface ConflictResolution {
   choix: ConflictChoice
-  /** Only for "fusion": the merged values, field by field. */
   donnees?: Record<string, unknown>
+  commentaire?: string
 }
 
-// ---------- Proposed: aggregated statistics ----------
+// ---------- Aggregated statistics ----------
 
-/** A count the server may already hide (null) for small groups. */
-export type Count = number | null
+/** Indicators of /api/stats/ (statistiques/services.py, INDICATEURS). */
+export type Indicator =
+  | 'depistages'
+  | 'enfants_depistes'
+  | 'cas_mas'
+  | 'cas_mam'
+  | 'nourrissons_a_risque'
+  | 'referencements'
+  | 'referencements_arrives'
+  | 'rendez_vous_manques'
+  | 'taux_arrivee_pct'
+  | 'delai_moyen_arrivee_heures'
+  | `sorties_${DischargeOutcome}`
 
-export interface StatsMetrics {
-  depistages: Count
-  mam: Count
-  mas: Count
-  referencements: Count
-  referencements_arrives: Count
-  /** Mean delay between referral and arrival, in hours. */
-  delai_moyen_arrivee_heures: number | null
-  rdv_manques: Count
+/** Bloc: null = hidden by the server (also listed in "masques"). */
+export interface StatsBlock {
+  indicateurs: Partial<Record<Indicator, number | null>>
+  masques: string[]
 }
 
-export interface StatsZoneRow extends StatsMetrics {
-  zone_id: number
-  zone_nom: string
-}
-
-export interface StatsPeriodRow {
-  periode: string // YYYY-MM
-  depistages: Count
-  mam: Count
-  mas: Count
+export interface StatsGroup extends StatsBlock {
+  cle: string
+  libelle: string
 }
 
 export interface StatsResponse {
-  periode: { debut: IsoDate; fin: IsoDate }
-  totaux: StatsMetrics
-  issues_sortie: Record<DischargeOutcome, Count>
-  par_zone: StatsZoneRow[]
-  par_periode: StatsPeriodRow[]
+  periode: { date_debut: IsoDate; date_fin: IsoDate }
+  seuil_petits_effectifs: number
+  grouper_par: 'region' | 'mois' | null
+  total: StatsBlock
+  groupes: StatsGroup[]
 }
 
 export interface StatsQuery {
   date_debut: IsoDate
   date_fin: IsoDate
-  region_id?: number
-  csb_id?: number
+  region?: number
+  grouper_par?: 'region' | 'mois'
 }

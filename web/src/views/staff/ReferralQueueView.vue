@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import type { Referral } from '@/api/types'
 import ReferralRow from '@/components/referrals/ReferralRow.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -24,9 +25,14 @@ const store = useReferralsStore()
 const notifications = useNotificationsStore()
 const now = useNow()
 
-const active = ref<QueueTab>('incoming')
+const route = useRoute()
+const router = useRouter()
+const TABS: QueueTab[] = ['incoming', 'in_care', 'closed']
+// The tab lives in the address, so "Back" from a referral returns to it.
+const fromQuery = TABS.find((tab) => tab === route.query.onglet)
+const active = ref<QueueTab>(fromQuery ?? 'incoming')
 const tabs = computed(() =>
-  (['incoming', 'in_care', 'closed'] as QueueTab[]).map((value) => ({
+  TABS.map((value) => ({
     value,
     label: t(`queue.tabs.${value}`),
     count: value === 'closed' ? undefined : store.counts[value],
@@ -43,7 +49,7 @@ async function confirmArrival(): Promise<void> {
   if (!referral) return
   saving.value = true
   try {
-    await store.advance(referral)
+    await store.changeStatus(referral, 'recu')
     notifications.push(t('queue.arrivedDone', { code: referral.code_unique }))
   } catch (caught) {
     notifications.push(errorMessage(t, caught), 'error')
@@ -54,7 +60,10 @@ async function confirmArrival(): Promise<void> {
 }
 
 onMounted(run)
-watch(active, () => void store.loadTab(active.value).catch(() => undefined))
+watch(active, (tab) => {
+  void router.replace({ query: { ...route.query, onglet: tab } })
+  void store.loadTab(tab).catch(() => undefined)
+})
 </script>
 
 <template>

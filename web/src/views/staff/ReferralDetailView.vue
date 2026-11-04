@@ -33,7 +33,24 @@ const referral = computed(() => store.byId[props.id] ?? null)
 const measurement = useAsync(() =>
   referral.value?.mesure_id ? childrenApi.measurement(referral.value.mesure_id) : Promise.resolve(null),
 )
-const facility = computed(() => referentiel.facilityName(referral.value?.csb_id) ?? (referral.value ? `#${referral.value.csb_id}` : ''))
+const facility = computed(() => {
+  const r = referral.value
+  const found = r ? referentiel.facilities.find((f) => f.id === r.csb_id) : undefined
+  if (!found) return r ? `#${r.csb_id}` : ''
+  return t('referral.facilityType', { name: found.name, type: t(`centreTypes.${found.type_centre}`) })
+})
+const urgency = computed(() => (referral.value ? urgencyOf(referral.value) : 'jaune'))
+const referredAt = computed(() => referral.value?.date_referencement ?? referral.value?.created_at ?? '')
+const dates = computed(() => {
+  const r = referral.value
+  if (!r) return []
+  return [
+    { key: 'createdAt', value: referredAt.value },
+    { key: 'dateReception', value: r.date_reception },
+    { key: 'datePriseEnCharge', value: r.date_prise_en_charge },
+    { key: 'dateSortie', value: r.date_sortie },
+  ].filter((d): d is { key: string; value: string } => Boolean(d.value))
+})
 
 async function load(): Promise<void> {
   await loader.run()
@@ -48,7 +65,7 @@ watch(() => props.id, load)
 <template>
   <ErrorState v-if="loader.error.value && !referral" :error="loader.error.value" retryable @retry="load" />
   <LoadingState v-else-if="!referral" />
-  <div v-else class="detail" :class="`detail--${urgencyOf(referral.priorite)}`">
+  <div v-else class="detail" :class="`detail--${urgency}`">
     <header class="detail__head">
       <p class="detail__label muted">{{ t('referral.code') }}</p>
       <h1 tabindex="-1" data-page-title class="detail__title">
@@ -56,8 +73,9 @@ watch(() => props.id, load)
         <ReferralCode :code="referral.code_unique" size="xl" aria-hidden="true" />
       </h1>
       <div class="detail__badges">
-        <UrgencyBadge :priorite="referral.priorite" with-hint />
-        <span class="muted">{{ t('duration.waiting', { duration: fmt.waiting(referral.created_at) }) }}</span>
+        <UrgencyBadge :urgency="urgency" with-hint />
+        <span v-if="referral.status === 'envoye'" class="muted">{{ t('duration.waiting', { duration: fmt.waiting(referredAt) }) }}</span>
+        <span v-if="referral.en_retard" class="detail__late">{{ t('referral.late') }}</span>
       </div>
     </header>
 
@@ -79,16 +97,16 @@ watch(() => props.id, load)
               <dd>{{ referral.femme.prenom }} {{ referral.femme.nom }}</dd>
             </div>
             <div>
-              <dt>{{ t('referral.createdAt') }}</dt>
-              <dd><time :datetime="referral.created_at">{{ fmt.dateTime(referral.created_at) }}</time></dd>
-            </div>
-            <div>
               <dt>{{ t('referral.facility') }}</dt>
               <dd>{{ facility }}</dd>
             </div>
             <div>
               <dt>{{ t('referral.agent') }}</dt>
               <dd>{{ t('referral.agentId', { id: referral.asc_id.slice(0, 8) }) }}</dd>
+            </div>
+            <div v-for="d in dates" :key="d.key">
+              <dt>{{ t(`referral.${d.key}`) }}</dt>
+              <dd><time :datetime="d.value">{{ fmt.dateTime(d.value) }}</time></dd>
             </div>
             <div v-if="referral.issue_sortie">
               <dt>{{ t('referral.outcome') }}</dt>
@@ -131,8 +149,18 @@ watch(() => props.id, load)
               <dd>{{ toNumber(measurement.data.value.whz) === null ? '–' : fmt.number(toNumber(measurement.data.value.whz)!, 2) }}</dd>
             </div>
             <div>
-              <dt>{{ t('measurements.alert') }}</dt>
-              <dd>{{ t(`measurements.alerts.${measurement.data.value.alerte}`) }}</dd>
+              <dt>{{ t('measurements.classification') }}</dt>
+              <dd>
+                {{
+                  measurement.data.value.classification
+                    ? t(`measurements.classifications.${measurement.data.value.classification}`)
+                    : t('measurements.notClassified')
+                }}
+              </dd>
+            </div>
+            <div v-if="measurement.data.value.orientation_centre">
+              <dt>{{ t('measurements.orientation') }}</dt>
+              <dd>{{ t(`centreTypes.${measurement.data.value.orientation_centre}`) }}</dd>
             </div>
           </dl>
         </SectionPanel>
@@ -142,7 +170,7 @@ watch(() => props.id, load)
           :child-id="referral.enfant_id"
           :referral-id="referral.id"
           :csb-id="referral.csb_id"
-          :can-write="auth.can('care:write') && referral.status !== 'clos'"
+          :can-write="auth.can('care:write') && referral.status !== 'sortie'"
         />
       </div>
 
@@ -194,6 +222,11 @@ watch(() => props.id, load)
 
 .detail__title:focus {
   outline: none;
+}
+
+.detail__late {
+  font-weight: 700;
+  color: var(--rouge-ink);
 }
 
 .detail__badges {

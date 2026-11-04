@@ -31,6 +31,16 @@
   --jaune-bar: #e6b800;
   --success-ink: #11663a; /* 6.2:1 on success-bg */
   --success-bg: #e3f5ea;
+  --success-on-dark: #5fd08f; /* accents on the dark notice */
+  --warning-on-dark: #ffd29a;
+
+  /* Elevation: floating elements only (dialogs, notices) */
+  --shadow-float: 0 0.75rem 2rem rgb(15 42 61 / 0.2);
+  --backdrop: rgb(15 42 61 / 0.45);
+
+  /* Motion (taste-design: 120–200 ms, standard curve) */
+  --duration: 160ms;
+  --easing: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Type */
   --font-sans: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -55,6 +65,7 @@
   --radius-md: 10px;
   --radius-lg: 18px;
   --target: 3rem; /* 48px touch targets (spec section 12) */
+  --target-min: 2.75rem; /* 44px: inline links in dense lists */
   --nav-width: 16rem;
   --content-max: 76rem;
 }

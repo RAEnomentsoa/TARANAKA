@@ -3,7 +3,6 @@
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string
   readonly VITE_IDLE_TIMEOUT_MINUTES?: string
-  readonly VITE_ALLOW_LOGIN_WITHOUT_TOTP?: string
 }
 
 interface ImportMeta {

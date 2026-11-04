@@ -12,8 +12,6 @@ export interface RequestOptions {
   body?: unknown
   /** Send the access token (default true). */
   auth?: boolean
-  /** The endpoint is proposed in docs/API_ISSUES.md and may not exist yet. */
-  proposed?: boolean
   signal?: AbortSignal
 }
 
@@ -54,11 +52,11 @@ export class HttpClient {
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const response = await this.send(path, options)
     if (response.status === 401 && options.auth !== false && (await this.isExpiredToken(response))) {
-      if (await this.refreshTokens()) return this.parse<T>(await this.send(path, options), options)
+      if (await this.refreshTokens()) return this.parse<T>(await this.send(path, options))
       this.expireSession()
       throw new ApiError({ kind: 'session_expired', status: 401, code: 'token_not_valid' })
     }
-    return this.parse<T>(response, options)
+    return this.parse<T>(response)
   }
 
   get<T>(path: string, query?: Query, options: Omit<RequestOptions, 'query'> = {}): Promise<T> {
@@ -67,6 +65,28 @@ export class HttpClient {
 
   post<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'body' | 'method'> = {}): Promise<T> {
     return this.request<T>(path, { ...options, method: 'POST', body })
+  }
+
+  patch<T>(path: string, body: unknown): Promise<T> {
+    return this.request<T>(path, { method: 'PATCH', body })
+  }
+
+  /**
+   * A file answer (CSV export), with the same token handling as JSON calls.
+   * "Accept: text/csv" gets a 406 from DRF's content negotiation on
+   * /api/stats/export/ (docs/API_ISSUES.md), so any type is accepted.
+   */
+  async blob(path: string, query?: Query): Promise<Blob> {
+    let response = await this.send(path, { query, accept: '*/*' })
+    if (response.status === 401 && (await this.isExpiredToken(response))) {
+      if (!(await this.refreshTokens())) {
+        this.expireSession()
+        throw new ApiError({ kind: 'session_expired', status: 401, code: 'token_not_valid' })
+      }
+      response = await this.send(path, { query, accept: '*/*' })
+    }
+    if (!response.ok) throw errorFromResponse(response.status, await readBody(response))
+    return response.blob()
   }
 
   /**
@@ -85,9 +105,9 @@ export class HttpClient {
     return items
   }
 
-  private async send(path: string, options: RequestOptions): Promise<Response> {
+  private async send(path: string, options: RequestOptions & { accept?: string }): Promise<Response> {
     const headers: Record<string, string> = {
-      Accept: 'application/json',
+      Accept: options.accept ?? 'application/json',
       'Accept-Language': this.language,
       'X-Device-Id': deviceId(),
     }
@@ -108,9 +128,9 @@ export class HttpClient {
     }
   }
 
-  private async parse<T>(response: Response, options: RequestOptions): Promise<T> {
+  private async parse<T>(response: Response): Promise<T> {
     const body = await readBody(response)
-    if (!response.ok) throw errorFromResponse(response.status, body, options.proposed)
+    if (!response.ok) throw errorFromResponse(response.status, body)
     return body as T
   }
 
@@ -137,7 +157,6 @@ export class HttpClient {
     try {
       const tokens = await this.parse<TokenPair>(
         await this.send(REFRESH_PATH, { method: 'POST', body: { refresh }, auth: false }),
-        {},
       )
       tokenStorage.save(tokens)
       return true

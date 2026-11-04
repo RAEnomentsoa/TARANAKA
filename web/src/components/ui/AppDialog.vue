@@ -65,11 +65,11 @@ function onCancel(event: Event): void {
   width: min(36rem, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
   color: var(--ink);
-  box-shadow: 0 1.5rem 3rem rgb(11 92 142 / 0.25);
+  box-shadow: var(--shadow-float);
 }
 
 .dialog::backdrop {
-  background: rgb(15 42 61 / 0.45);
+  background: var(--backdrop);
 }
 
 .dialog__panel {
@@ -83,7 +83,7 @@ function onCancel(event: Event): void {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-5) var(--space-5) 0;
-  border-top: 6px solid var(--sky-400);
+  border-top: 4px solid var(--primary);
 }
 
 .dialog__close {

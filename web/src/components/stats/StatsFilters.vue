@@ -1,32 +1,36 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Facility, Region, StatsQuery } from '@/api/types'
+import type { Region, StatsQuery } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 import { addDays, todayIso } from '@/utils/dates'
 
 export type PeriodPreset = '30d' | '90d' | '365d' | 'custom'
 
-const props = defineProps<{ regions: Region[]; facilities: Facility[]; initialRegion: number | null; busy: boolean }>()
-const emit = defineEmits<{ apply: [query: StatsQuery] }>()
+export interface StatsFilterValues {
+  preset: PeriodPreset
+  from: string
+  to: string
+  region: number | null
+}
+
+/**
+ * Period and zone. A regional supervisor is locked to their region by the
+ * server (403 otherwise): the selector is then shown fixed.
+ */
+const props = defineProps<{ regions: Region[]; lockedRegion: number | null; initial: StatsFilterValues | null; busy: boolean }>()
+const emit = defineEmits<{ apply: [query: StatsQuery, values: StatsFilterValues] }>()
 
 const PRESETS: PeriodPreset[] = ['30d', '90d', '365d', 'custom']
 const DAYS: Record<Exclude<PeriodPreset, 'custom'>, number> = { '30d': 30, '90d': 90, '365d': 365 }
 
 const { t } = useI18n()
 const today = todayIso()
-const form = reactive({
-  preset: '90d' as PeriodPreset,
-  from: addDays(today, -90),
-  to: today,
-  region: props.initialRegion as number | null,
-  facility: null as number | null,
-})
-const rangeError = ref<string | null>(null)
-const facilityOptions = computed(() =>
-  form.region === null ? props.facilities : props.facilities.filter((f) => f.region_id === form.region),
+const form = reactive<StatsFilterValues>(
+  props.initial ?? { preset: '30d', from: addDays(today, -30), to: today, region: props.lockedRegion },
 )
+const rangeError = ref<string | null>(null)
 
 /** The query the form describes; null when the dates are not valid. */
 function query(): StatsQuery | null {
@@ -34,24 +38,16 @@ function query(): StatsQuery | null {
   const to = form.preset === 'custom' ? form.to : today
   rangeError.value = !from || !to || from > to ? t('stats.invalidRange') : null
   if (rangeError.value) return null
-  return {
-    date_debut: from,
-    date_fin: to,
-    region_id: form.region ?? undefined,
-    csb_id: form.facility ?? undefined,
-  }
-}
-
-function onRegion(): void {
-  if (form.facility !== null && !facilityOptions.value.some((f) => f.id === form.facility)) form.facility = null
+  const region = props.lockedRegion ?? form.region
+  return { date_debut: from, date_fin: to, ...(region !== null ? { region } : {}) }
 }
 
 function submit(): void {
   const q = query()
-  if (q) emit('apply', q)
+  if (q) emit('apply', q, { ...form })
 }
 
-defineExpose({ query })
+defineExpose({ submit })
 </script>
 
 <template>
@@ -66,7 +62,7 @@ defineExpose({ query })
       </div>
     </fieldset>
 
-    <div v-if="form.preset === 'custom'" class="filters__dates">
+    <div v-if="form.preset === 'custom'" class="filters__row">
       <AppField v-slot="{ id, describedBy, invalid }" :label="t('stats.from')" :error="rangeError">
         <input :id="id" v-model="form.from" type="date" :max="today" :aria-describedby="describedBy" :aria-invalid="invalid" />
       </AppField>
@@ -75,17 +71,11 @@ defineExpose({ query })
       </AppField>
     </div>
 
-    <div class="filters__zone">
-      <AppField v-slot="{ id, describedBy }" :label="t('stats.region')">
-        <select :id="id" v-model="form.region" :aria-describedby="describedBy" @change="onRegion">
+    <div class="filters__row">
+      <AppField v-slot="{ id, describedBy }" :label="t('stats.region')" :hint="lockedRegion !== null ? t('stats.zoneLocked') : undefined">
+        <select :id="id" v-model="form.region" :disabled="lockedRegion !== null" :aria-describedby="describedBy">
           <option :value="null">{{ t('stats.allRegions') }}</option>
           <option v-for="r in regions" :key="r.id" :value="r.id">{{ r.nom }}</option>
-        </select>
-      </AppField>
-      <AppField v-slot="{ id, describedBy }" :label="t('stats.facility')">
-        <select :id="id" v-model="form.facility" :aria-describedby="describedBy">
-          <option :value="null">{{ t('stats.allFacilities') }}</option>
-          <option v-for="f in facilityOptions" :key="f.id" :value="f.id">{{ f.name }}</option>
         </select>
       </AppField>
       <AppButton type="submit" :loading="busy">{{ t('stats.apply') }}</AppButton>
@@ -140,7 +130,7 @@ defineExpose({ query })
   align-items: center;
   min-height: var(--target);
   padding: 0 var(--space-4);
-  border: 2px solid var(--sky-200);
+  border: 1px solid var(--field-border);
   border-radius: 999px;
   font-weight: 700;
   color: var(--ink-muted);
@@ -157,11 +147,16 @@ defineExpose({ query })
   outline-offset: 2px;
 }
 
-.filters__dates,
-.filters__zone {
+.filters__row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--space-3);
   align-items: end;
+}
+
+@media (max-width: 40rem) {
+  .filters {
+    padding: var(--space-4);
+  }
 }
 </style>

@@ -15,7 +15,8 @@ defineEmits<{ arrived: [referral: Referral] }>()
 
 const { t } = useI18n()
 const fmt = useFormatters()
-const urgency = computed(() => urgencyOf(props.referral.priorite))
+const urgency = computed(() => urgencyOf(props.referral))
+const referredAt = computed(() => props.referral.date_referencement ?? props.referral.created_at)
 const patient = computed(() =>
   props.referral.origine === 'grossesse' && props.referral.femme
     ? t('queue.patientMother', props.referral.femme)
@@ -25,7 +26,7 @@ const patient = computed(() =>
 
 <template>
   <li class="row" :class="`row--${urgency}`">
-    <div class="row__urgency"><UrgencyBadge :priorite="referral.priorite" /></div>
+    <div class="row__urgency"><UrgencyBadge :urgency="urgency" /></div>
     <div class="row__main">
       <RouterLink :to="{ name: 'referral', params: { id: referral.id } }" class="row__link">
         <span class="visually-hidden">{{ t('queue.open', { code: referral.code_unique }) }}</span>
@@ -38,7 +39,14 @@ const patient = computed(() =>
     </p>
     <p class="row__waiting">
       <span class="visually-hidden">{{ t('queue.columns.waiting') }} : </span>
-      <time :datetime="referral.created_at" :title="fmt.dateTime(referral.created_at)">{{ fmt.waiting(referral.created_at, now) }}</time>
+      <time :datetime="referredAt" :title="fmt.dateTime(referredAt)">{{ fmt.waiting(referredAt, now) }}</time>
+      <span v-if="referral.en_retard" class="row__late" :title="t('referral.late')">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="M8 4.5V8l2.5 1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        {{ t('referral.lateShort') }}
+      </span>
     </p>
     <div class="row__status"><StatusBadge :status="referral.status" /></div>
     <div class="row__action">
@@ -57,7 +65,7 @@ const patient = computed(() =>
 <style scoped>
 .row {
   display: grid;
-  grid-template-columns: 9rem minmax(11rem, 1.2fr) minmax(10rem, 2fr) 6rem 9rem 11rem;
+  grid-template-columns: 9rem minmax(11rem, 1.2fr) minmax(10rem, 2fr) 7rem 9rem 11rem;
   align-items: center;
   gap: var(--space-3) var(--space-4);
   padding: var(--space-3) var(--space-4);
@@ -90,7 +98,7 @@ const patient = computed(() =>
 .row__link {
   display: inline-flex;
   align-items: center;
-  min-height: 2rem;
+  min-height: var(--target-min);
   font-weight: 700;
   color: var(--primary);
 }
@@ -111,6 +119,14 @@ const patient = computed(() =>
 .row__waiting {
   margin: 0;
   font-weight: 700;
+}
+
+.row__late {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--rouge-ink);
 }
 
 .row__action {
@@ -136,6 +152,7 @@ const patient = computed(() =>
 
   .row__waiting {
     grid-area: waiting;
+    text-align: right;
   }
 
   .row__reason {

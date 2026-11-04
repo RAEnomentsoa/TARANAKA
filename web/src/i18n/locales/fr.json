@@ -48,7 +48,7 @@
     "totpHelp": "Le code change toutes les 30 secondes.",
     "totpSubmit": "Valider le code",
     "enrollTitle": "Activer la double authentification",
-    "enrollIntro": "Première connexion : scannez ce QR code avec une application d'authentification (par exemple FreeOTP ou Google Authenticator), puis saisissez le code qu'elle affiche.",
+    "enrollIntro": "Pour protéger les dossiers des patients, la double authentification est obligatoire. Scannez ce QR code avec une application d'authentification (par exemple FreeOTP, Aegis ou Google Authenticator), puis saisissez le code qu'elle affiche.",
     "enrollQrAlt": "QR code de configuration de l'application d'authentification",
     "enrollManual": "Impossible de scanner ? Saisissez cette clé dans l'application :",
     "enrollSubmit": "Activer et me connecter",
@@ -57,13 +57,11 @@
       "credentials": "Identifiant ou PIN incorrect.",
       "locked": "Compte bloqué. Réessayez dans {minutes} minute(s).",
       "lockedAdmin": "Compte bloqué. Contactez un administrateur pour le débloquer.",
-      "profile": "Votre profil n'a pas accès à ce tableau de bord.",
       "throttled": "Trop de tentatives. Patientez une minute avant de réessayer.",
       "totpInvalid": "Code incorrect ou expiré. Saisissez le nouveau code affiché.",
       "totpFormat": "Le code doit contenir exactement 6 chiffres.",
-      "totpUnavailable": "Le serveur ne propose pas encore la double authentification. Contactez l'administrateur.",
-      "totpNotOffered": "Le serveur n'a pas demandé de code de vérification. Pour votre sécurité, la connexion est refusée. Contactez l'administrateur.",
-      "required": "Ce champ est obligatoire."
+      "required": "Ce champ est obligatoire.",
+      "noWebAccess": "Votre profil n'a pas accès à ce tableau de bord. Les agents communautaires utilisent l'application mobile."
     }
   },
   "access": {
@@ -82,7 +80,6 @@
     "unauthorized": "Votre session a expiré. Reconnectez-vous.",
     "forbidden": "Votre profil ne permet pas cette action.",
     "not_found": "Cet élément n'existe pas ou n'est pas visible pour votre centre.",
-    "not_implemented": "Cette fonction n'est pas encore disponible sur le serveur.",
     "conflict": "Ce dossier a été modifié entre-temps. La version à jour est affichée : vérifiez-la puis recommencez.",
     "validation": "Certaines informations sont invalides. Corrigez-les puis réessayez.",
     "locked": "Compte bloqué.",
@@ -101,13 +98,10 @@
     "back": "Retour",
     "seeTable": "Voir les données en tableau",
     "hideTable": "Masquer le tableau",
-    "updatedAt": "Mis à jour à {time}",
     "none": "Aucun",
     "unknown": "Inconnu",
     "optional": "facultatif",
-    "saved": "Enregistré.",
-    "yes": "Oui",
-    "no": "Non"
+    "saved": "Enregistré."
   },
   "duration": {
     "minutes": "{n} min | {n} min",
@@ -128,9 +122,9 @@
     "label": "Statut",
     "envoye": "Référé",
     "recu": "Patient arrivé",
-    "vu": "Examiné",
     "pris_en_charge": "Pris en charge",
-    "clos": "Sortie"
+    "en_suivi": "En suivi",
+    "sortie": "Sortie"
   },
   "origin": {
     "enfant": "Enfant",
@@ -197,21 +191,29 @@
     "disclaimer": "TARANAKA oriente, il ne pose pas de diagnostic. Les décisions de soin et de sortie restent sous la responsabilité du professionnel.",
     "actions": {
       "recu": "Patient arrivé",
-      "vu": "Patient examiné",
       "pris_en_charge": "Enregistrer la prise en charge",
-      "clos": "Enregistrer la sortie"
+      "en_suivi": "Passer en suivi",
+      "sortie": "Enregistrer la sortie"
     },
     "confirm": {
       "recu": "Confirmer l'arrivée du patient {code} ? L'agent communautaire verra « Reçu par le centre » à sa prochaine synchronisation.",
-      "vu": "Confirmer que le patient {code} a été examiné ?",
-      "pris_en_charge": "Confirmer la prise en charge du patient {code} ?"
+      "pris_en_charge": "Confirmer la prise en charge du patient {code} ?",
+      "en_suivi": "Passer le dossier {code} en suivi ?"
     },
     "done": {
       "recu": "Arrivée du patient enregistrée.",
-      "vu": "Examen enregistré.",
       "pris_en_charge": "Prise en charge enregistrée.",
-      "clos": "Sortie enregistrée."
-    }
+      "en_suivi": "Dossier passé en suivi.",
+      "sortie": "Sortie enregistrée."
+    },
+    "dischargeOnlyAgent": "Seul un infirmier ou un médecin du centre de destination peut enregistrer la sortie.",
+    "dates": "Dates du dossier",
+    "dateReception": "Arrivé le",
+    "datePriseEnCharge": "Pris en charge le",
+    "dateSortie": "Sorti le",
+    "late": "Non arrivé après le délai prévu",
+    "lateShort": "En retard",
+    "facilityType": "{name} ({type})"
   },
   "care": {
     "title": "Soins et suivi",
@@ -234,26 +236,28 @@
     "followUpReason": "Motif du contrôle",
     "followUpStatus": {
       "prevu": "Prévu",
-      "honore": "Honoré",
-      "manque": "Manqué"
+      "honore": "Venu",
+      "annule": "Annulé"
     },
     "dateInPast": "La date du contrôle doit être aujourd'hui ou plus tard.",
     "dateInFuture": "La date ne peut pas être dans le futur.",
     "consultationSaved": "Consultation enregistrée.",
-    "followUpSaved": "Contrôle programmé pour le {date}."
+    "followUpSaved": "Contrôle programmé pour le {date}.",
+    "missed": "Manqué",
+    "markAttended": "Noter la venue",
+    "markAttendedLabel": "Noter la venue au contrôle du {date}",
+    "attendedSaved": "Venue au contrôle enregistrée."
   },
   "discharge": {
     "title": "Enregistrer la sortie",
-    "intro": "Seul un professionnel habilité peut enregistrer une sortie. Cette action clôt le dossier.",
+    "intro": "Seul un professionnel du centre de destination peut enregistrer une sortie. Cette action clôt le dossier et ne peut pas être annulée.",
     "outcome": "Issue",
-    "date": "Date de sortie",
-    "notes": "Notes",
     "outcomes": {
       "gueri": "Guéri",
       "transfere": "Transféré",
       "non_repondant": "Non-répondant",
       "abandon": "Abandon / perdu de vue",
-      "deces": "Décédé"
+      "decede": "Décédé"
     },
     "submit": "Clore le dossier",
     "confirm": "Clore le dossier {code} avec l'issue « {outcome} » ? Cette action est définitive."
@@ -276,7 +280,10 @@
       "refere": "Référé",
       "pris_en_charge": "Pris en charge",
       "gueri": "Guéri",
-      "abandon": "Abandon"
+      "abandon": "Abandon",
+      "transfere": "Transféré",
+      "non_repondant": "Non-répondant",
+      "decede": "Décédé"
     },
     "referrals": "Référencements de l'enfant",
     "noReferrals": "Aucun référencement visible pour votre centre."
@@ -305,7 +312,17 @@
       "rouge": "Danger"
     },
     "notAvailable": "non mesuré",
-    "zscoreSource": "Z-scores calculés sur le téléphone selon les standards OMS 2006."
+    "zscoreSource": "Z-scores OMS 2006 recalculés par le serveur quand les tables OMS sont chargées.",
+    "classification": "Classement",
+    "classifications": {
+      "mas": "MAS",
+      "mam": "MAM",
+      "normal": "Normal",
+      "nourrisson_a_risque": "Nourrisson à risque"
+    },
+    "notClassified": "Non classé",
+    "orientation": "Orientation",
+    "nextControl": "Prochain contrôle"
   },
   "charts": {
     "growth": "Courbes de croissance",
@@ -326,7 +343,7 @@
     "thresholdMam": "MAM (< −2)",
     "thresholdMuacMas": "MAS (< 115 mm)",
     "thresholdMuacMam": "MAM (< 125 mm)",
-    "noReferenceCurves": "Les courbes de référence OMS ne sont pas encore fournies par le serveur : seules les mesures de l'enfant sont tracées."
+    "noReferenceCurves": "Les courbes montrent les mesures de l'enfant et les seuils MAS / MAM."
   },
   "conflicts": {
     "title": "Conflits de synchronisation",
@@ -339,21 +356,31 @@
       "mesure": "Mesure",
       "referencement": "Référencement",
       "consultation_nutritionnelle": "Consultation",
-      "other": "Autre ({name})"
+      "other": "Autre ({name})",
+      "rendez_vous": "Rendez-vous",
+      "grossesse": "Grossesse",
+      "danger_grossesse": "Signe de danger"
     },
     "detectedAt": "Détecté le {date}",
     "field": "Champ",
-    "serverVersion": "Version serveur (v{version})",
-    "deviceVersion": "Version appareil (v{version})",
-    "deviceLabel": "Appareil {device}, {date}",
+    "serverVersion": "Version du serveur (v{version})",
+    "deviceVersion": "Version du téléphone",
+    "deviceLabel": "Envoyée par l'appareil {device}",
     "keepServer": "Garder la version serveur",
-    "keepDevice": "Garder la version appareil",
+    "keepDevice": "Garder la version du téléphone",
     "chooseField": "Valeur à garder pour {field}",
-    "sameValue": "identique",
     "differentFields": "Aucun champ différent | 1 champ différent | {n} champs différents",
     "resolve": "Valider l'arbitrage",
     "resolved": "Conflit arbitré.",
-    "confirm": "Valider ce choix ? Les autres valeurs seront conservées dans l'historique."
+    "confirm": "Valider ce choix ? Les autres valeurs seront conservées dans l'historique.",
+    "comment": "Commentaire",
+    "commentHelp": "Expliquez votre choix (par exemple : vérifié avec la mère).",
+    "operations": {
+      "create": "Création",
+      "update": "Modification",
+      "delete": "Suppression"
+    },
+    "deleted": "supprimé"
   },
   "stats": {
     "title": "Statistiques agrégées",
@@ -371,45 +398,50 @@
     "zone": "Zone",
     "region": "Région",
     "allRegions": "Toutes les régions",
-    "facility": "Centre",
-    "allFacilities": "Tous les centres",
     "apply": "Afficher",
     "invalidRange": "La date de début doit précéder la date de fin.",
     "export": "Exporter en CSV",
-    "exported": "Fichier CSV téléchargé.",
     "hidden": "< 5",
     "hiddenLabel": "masqué : moins de 5 cas",
-    "hiddenNote": "« < 5 » : chiffre masqué pour protéger l'anonymat (moins de 5 cas, ou déductible des autres chiffres).",
     "periodLabel": "Du {start} au {end}",
     "metrics": {
       "depistages": "Dépistages",
-      "mas": "Cas de MAS",
-      "mam": "Cas de MAM",
       "referencements": "Référencements",
       "referencements_arrives": "Référencements arrivés",
-      "arrivalRate": "Taux d'arrivée",
-      "meanDelay": "Délai moyen d'arrivée",
-      "rdv_manques": "Rendez-vous manqués"
+      "enfants_depistes": "Enfants dépistés",
+      "cas_mas": "Enfants MAS",
+      "cas_mam": "Enfants MAM",
+      "nourrissons_a_risque": "Nourrissons à risque",
+      "rendez_vous_manques": "Rendez-vous manqués",
+      "taux_arrivee_pct": "Taux d'arrivée",
+      "delai_moyen_arrivee_heures": "Délai moyen d'arrivée"
     },
     "hoursValue": "{n} h",
-    "byZone": "Par zone",
+    "byZone": "Par région",
     "byPeriod": "Évolution par mois",
     "outcomes": "Issues de sortie",
-    "zoneColumn": "Zone",
-    "monthColumn": "Mois",
+    "zoneColumn": "Région",
     "outcomeColumn": "Issue",
     "casesColumn": "Cas",
     "noData": "Aucune donnée pour cette période et cette zone.",
-    "csv": {
-      "filename": "taranaka-statistiques-{start}-{end}.csv",
-      "section": "Section",
-      "total": "Total",
-      "metric": "Indicateur",
-      "value": "Valeur"
-    }
+    "zoneLocked": "Votre compte est limité à cette région.",
+    "percentValue": "{n} %",
+    "exportHint": "Le fichier contient les mêmes chiffres que l'écran par région, avec « <5 » pour les chiffres masqués. Chaque export est enregistré dans le journal d'audit.",
+    "filename": "taranaka-statistiques-{start}-{end}.csv",
+    "hiddenNote": "« < 5 » : chiffre masqué pour protéger l'anonymat (moins de 5 cas, ou déductible des autres chiffres).",
+    "monthColumn": "Mois",
+    "exported": "Fichier CSV téléchargé."
   },
   "validation": {
-    "required": "Ce champ est obligatoire.",
-    "maxLength": "{max} caractères au maximum."
+    "required": "Ce champ est obligatoire."
+  },
+  "centreTypes": {
+    "csb": "CSB",
+    "crenam": "CRENAM",
+    "crenas": "CRENAS",
+    "creni": "CRENI"
+  },
+  "offline": {
+    "banner": "Pas de connexion. Les données affichées peuvent ne pas être à jour ; les actions reprendront au retour du réseau."
   }
 }

@@ -31,8 +31,10 @@ const props = withDefaults(
     formatY: (y: number) => string
     thresholds?: Threshold[]
     minPoints?: number
+    /** How far to widen the x axis around a single point (a duration for dates). */
+    xPad?: number
   }>(),
-  { thresholds: () => [], minPoints: 1 },
+  { thresholds: () => [], minPoints: 1, xPad: undefined },
 )
 
 const { t } = useI18n()
@@ -49,7 +51,7 @@ const sorted = computed(() => [...props.points].sort((a, b) => a.x - b.x))
 const enough = computed(() => sorted.value.length >= props.minPoints)
 
 const xScale = computed(() => {
-  const d = extent(sorted.value.map((p) => p.x))
+  const d = extent(sorted.value.map((p) => p.x), [], props.xPad)
   return { domain: d, ticks: niceTicks(d, 4).ticks.filter((v) => v >= d.min && v <= d.max) }
 })
 const yScale = computed(() => niceTicks(extent(sorted.value.map((p) => p.y), props.thresholds.map((th) => th.value)), 5))
@@ -320,7 +322,7 @@ function onPointerMove(event: PointerEvent): void {
 }
 
 .chart__tooltip .chart__flag {
-  color: #ffd29a;
+  color: var(--warning-on-dark);
 }
 
 .chart__toggle {

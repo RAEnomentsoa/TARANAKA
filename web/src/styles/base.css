@@ -138,3 +138,57 @@ caption {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Wide tables become one block per row on small screens: each cell shows
+ * its column name (data-label), so nothing scrolls sideways.
+ */
+@media (max-width: 40rem) {
+  table.stack-on-mobile {
+    min-width: 0;
+  }
+
+  table.stack-on-mobile thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  table.stack-on-mobile tr {
+    display: block;
+    padding: var(--space-2) 0;
+  }
+
+  table.stack-on-mobile tbody tr + tr {
+    border-top: 1px solid var(--sky-200);
+  }
+
+  table.stack-on-mobile th[scope='row'],
+  table.stack-on-mobile td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    border: none;
+    text-align: right;
+    white-space: normal;
+  }
+
+  table.stack-on-mobile th[scope='row'] {
+    font-size: var(--text-md);
+    text-align: left;
+  }
+
+  table.stack-on-mobile td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-align: left;
+  }
+
+  table.stack-on-mobile td[data-label=''] {
+    display: block;
+  }
+}

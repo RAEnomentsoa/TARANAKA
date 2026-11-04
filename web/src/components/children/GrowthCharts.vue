@@ -38,6 +38,10 @@ const muacThresholds = computed<Threshold[]>(() => [
   { value: 125, label: t('charts.thresholdMuacMam'), tone: 'orange' },
 ])
 
+const DAY_MS = 86_400_000
+const DATE_PAD = 15 * DAY_MS
+const AGE_PAD = 1 // month
+
 const months = (x: number) => fmt.number(x, 1)
 const day = (x: number) => fmt.date(new Date(x).toISOString().slice(0, 10))
 </script>
@@ -50,6 +54,7 @@ const day = (x: number) => fmt.date(new Date(x).toISOString().slice(0, 10))
       :y-label="t('charts.kg')"
       :points="weight"
       :format-x="months"
+      :x-pad="AGE_PAD"
       :format-y="(y) => fmt.number(y, 1)"
     />
     <LineChart
@@ -58,6 +63,7 @@ const day = (x: number) => fmt.date(new Date(x).toISOString().slice(0, 10))
       :y-label="t('charts.cm')"
       :points="height"
       :format-x="months"
+      :x-pad="AGE_PAD"
       :format-y="(y) => fmt.number(y, 1)"
     />
     <LineChart
@@ -67,6 +73,7 @@ const day = (x: number) => fmt.date(new Date(x).toISOString().slice(0, 10))
       :points="whz"
       :thresholds="zThresholds"
       :format-x="day"
+      :x-pad="DATE_PAD"
       :format-y="(y) => fmt.number(y, 1)"
     />
     <LineChart
@@ -77,6 +84,7 @@ const day = (x: number) => fmt.date(new Date(x).toISOString().slice(0, 10))
       :points="muac"
       :thresholds="muacThresholds"
       :format-x="day"
+      :x-pad="DATE_PAD"
       :format-y="(y) => fmt.number(y, 0)"
     />
   </div>

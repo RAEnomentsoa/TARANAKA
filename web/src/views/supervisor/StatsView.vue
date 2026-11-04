@@ -6,7 +6,7 @@ import type { StatsQuery } from '@/api/types'
 import BarList from '@/components/stats/BarList.vue'
 import ProtectedValue from '@/components/stats/ProtectedValue.vue'
 import StatTile from '@/components/stats/StatTile.vue'
-import StatsFilters from '@/components/stats/StatsFilters.vue'
+import StatsFilters, { type StatsFilterValues } from '@/components/stats/StatsFilters.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
@@ -16,76 +16,103 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import SectionPanel from '@/components/ui/SectionPanel.vue'
 import { useAsync } from '@/composables/useAsync'
 import { useFormatters } from '@/composables/useFormatters'
+import { errorMessage } from '@/i18n/errors'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useReferentielStore } from '@/stores/referentiel'
-import { downloadCsv } from '@/utils/csv'
-import { COUNT_METRICS, OUTCOMES, protectStats } from '@/utils/privacy'
-import { buildStatsCsv } from '@/utils/statsCsv'
+import { useStatsFiltersStore } from '@/stores/statsFilters'
+import { downloadBlob } from '@/utils/download'
+import { COUNT_INDICATORS, OUTCOME_INDICATORS, protectStats, type CountIndicator } from '@/utils/privacy'
 
 const { t } = useI18n()
 const fmt = useFormatters()
 const auth = useAuthStore()
 const referentiel = useReferentielStore()
 const notifications = useNotificationsStore()
+const savedFilters = useStatsFiltersStore()
+
+/** Indicators shown as columns of the tables, in reading order. */
+const TABLE_COLUMNS: CountIndicator[] = ['depistages', 'cas_mas', 'cas_mam', 'referencements', 'referencements_arrives', 'rendez_vous_manques']
 
 const filters = ref<InstanceType<typeof StatsFilters> | null>(null)
 const lastQuery = ref<StatsQuery | null>(null)
+const exporting = ref(false)
+const lockedRegion = computed(() => (auth.user?.profile.code === 'superviseur' ? auth.user.region_id : null))
+
 // Raw server numbers never reach the template: only protectStats() output.
-const result = useAsync(async () => (lastQuery.value ? protectStats(await statsApi.get(lastQuery.value)) : null))
+const result = useAsync(async () => {
+  const q = lastQuery.value
+  if (!q) return null
+  const [byRegion, byMonth] = await Promise.all([
+    statsApi.get({ ...q, grouper_par: 'region' }),
+    statsApi.get({ ...q, grouper_par: 'mois' }),
+  ])
+  return protectStats(byRegion, byMonth)
+})
 const stats = computed(() => result.data.value)
 
 const zoneName = computed(() => {
-  const q = lastQuery.value
-  if (q?.csb_id) return referentiel.facilityName(q.csb_id) ?? String(q.csb_id)
-  if (q?.region_id) return referentiel.regions.find((r) => r.id === q.region_id)?.nom ?? String(q.region_id)
-  return t('stats.allRegions')
+  const region = lastQuery.value?.region
+  if (region === undefined) return t('stats.allRegions')
+  return referentiel.regions.find((r) => r.id === region)?.nom ?? String(region)
 })
 
 const isEmpty = computed(() => {
   const s = stats.value
-  return !!s && COUNT_METRICS.every((k) => !s.totals.counts[k].hidden && s.totals.counts[k].value === 0)
+  return !!s && COUNT_INDICATORS.every((k) => !s.total.counts[k].hidden && s.total.counts[k].value === 0)
 })
 
-const percent = (n: number) => `${fmt.number(n * 100, 0)} %`
+const percent = (n: number) => t('stats.percentValue', { n: fmt.number(n, 0) })
 const hours = (n: number) => t('stats.hoursValue', { n: fmt.number(n, 1) })
 
 const outcomeItems = computed(() =>
-  OUTCOMES.map((o) => ({ key: o, label: t(`discharge.outcomes.${o}`), value: stats.value!.outcomes[o] })),
+  OUTCOME_INDICATORS.map((key) => ({
+    key,
+    label: t(`discharge.outcomes.${key.replace('sorties_', '')}`),
+    value: stats.value!.total.counts[key],
+  })),
 )
 
-function apply(query: StatsQuery): void {
+function apply(query: StatsQuery, values: StatsFilterValues): void {
+  savedFilters.values = values
   lastQuery.value = query
   void result.run()
 }
 
-function exportCsv(): void {
-  const s = stats.value
-  if (!s) return
-  const rows = buildStatsCsv(s, { translate: (key, values) => t(key, values ?? {}), hidden: t('stats.hiddenLabel'), zoneName: zoneName.value })
-  downloadCsv(t('stats.csv.filename', { start: s.period.start, end: s.period.end }), rows)
-  notifications.push(t('stats.exported'))
+/** The server's CSV: same masking, and every export is audited. */
+async function exportCsv(): Promise<void> {
+  const q = lastQuery.value
+  if (!q) return
+  exporting.value = true
+  try {
+    const blob = await statsApi.exportCsv({ ...q, grouper_par: 'region' })
+    downloadBlob(t('stats.filename', { start: q.date_debut, end: q.date_fin }), blob)
+    notifications.push(t('stats.exported'))
+  } catch (caught) {
+    notifications.push(errorMessage(t, caught), 'error')
+  } finally {
+    exporting.value = false
+  }
 }
 
 onMounted(async () => {
   await referentiel.load().catch(() => undefined)
-  const q = filters.value?.query()
-  if (q) apply(q)
+  filters.value?.submit()
 })
 </script>
 
 <template>
   <PageHeader :title="t('stats.title')" :intro="t('stats.intro')">
     <template #actions>
-      <AppButton variant="secondary" :disabled="!stats" @click="exportCsv">{{ t('stats.export') }}</AppButton>
+      <AppButton variant="secondary" :disabled="!stats" :loading="exporting" @click="exportCsv">{{ t('stats.export') }}</AppButton>
     </template>
   </PageHeader>
 
   <StatsFilters
     ref="filters"
     :regions="referentiel.regions"
-    :facilities="referentiel.facilities"
-    :initial-region="auth.user?.region_id ?? null"
+    :locked-region="lockedRegion"
+    :initial="savedFilters.values"
     :busy="result.loading.value"
     @apply="apply"
   />
@@ -102,32 +129,34 @@ onMounted(async () => {
       <EmptyState v-if="isEmpty" :title="t('stats.noData')" />
       <div v-else class="stack">
         <dl class="tiles">
-          <StatTile :label="t('stats.metrics.depistages')" :value="stats.totals.counts.depistages" emphasis />
-          <StatTile :label="t('stats.metrics.mas')" :value="stats.totals.counts.mas" emphasis />
-          <StatTile :label="t('stats.metrics.mam')" :value="stats.totals.counts.mam" emphasis />
-          <StatTile :label="t('stats.metrics.arrivalRate')" :value="stats.totals.arrivalRate" :format="percent" />
-          <StatTile :label="t('stats.metrics.meanDelay')" :value="stats.totals.meanDelayHours" :format="hours" />
-          <StatTile :label="t('stats.metrics.rdv_manques')" :value="stats.totals.counts.rdv_manques" />
+          <StatTile :label="t('stats.metrics.depistages')" :value="stats.total.counts.depistages" />
+          <StatTile :label="t('stats.metrics.cas_mas')" :value="stats.total.counts.cas_mas" />
+          <StatTile :label="t('stats.metrics.cas_mam')" :value="stats.total.counts.cas_mam" />
+          <StatTile :label="t('stats.metrics.taux_arrivee_pct')" :value="stats.total.arrivalRate" :format="percent" />
+          <StatTile :label="t('stats.metrics.delai_moyen_arrivee_heures')" :value="stats.total.meanDelayHours" :format="hours" />
+          <StatTile :label="t('stats.metrics.rendez_vous_manques')" :value="stats.total.counts.rendez_vous_manques" />
         </dl>
 
-        <SectionPanel v-if="stats.zones.length" :title="t('stats.byZone')">
-          <div class="table-scroll" tabindex="0" role="region" :aria-label="t('stats.byZone')">
-            <table class="zones">
+        <SectionPanel v-if="stats.byRegion.length > 1" :title="t('stats.byZone')">
+          <div class="table-scroll">
+            <table class="groups stack-on-mobile">
               <caption class="visually-hidden">{{ t('stats.byZone') }}</caption>
               <thead>
                 <tr>
                   <th scope="col">{{ t('stats.zoneColumn') }}</th>
-                  <th v-for="key in COUNT_METRICS" :key="key" scope="col" class="num">{{ t(`stats.metrics.${key}`) }}</th>
-                  <th scope="col" class="num">{{ t('stats.metrics.arrivalRate') }}</th>
-                  <th scope="col" class="num">{{ t('stats.metrics.meanDelay') }}</th>
+                  <th v-for="key in TABLE_COLUMNS" :key="key" scope="col" class="num">{{ t(`stats.metrics.${key}`) }}</th>
+                  <th scope="col" class="num">{{ t('stats.metrics.taux_arrivee_pct') }}</th>
+                  <th scope="col" class="num">{{ t('stats.metrics.delai_moyen_arrivee_heures') }}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="zone in stats.zones" :key="zone.zoneId">
-                  <th scope="row">{{ zone.zoneName }}</th>
-                  <td v-for="key in COUNT_METRICS" :key="key" class="num"><ProtectedValue :value="zone.metrics.counts[key]" /></td>
-                  <td class="num"><ProtectedValue :value="zone.metrics.arrivalRate" :format="percent" /></td>
-                  <td class="num"><ProtectedValue :value="zone.metrics.meanDelayHours" :format="hours" /></td>
+                <tr v-for="row in stats.byRegion" :key="row.key">
+                  <th scope="row">{{ row.label }}</th>
+                  <td v-for="key in TABLE_COLUMNS" :key="key" class="num" :data-label="t(`stats.metrics.${key}`)">
+                    <ProtectedValue :value="row.block.counts[key]" />
+                  </td>
+                  <td class="num" :data-label="t('stats.metrics.taux_arrivee_pct')"><ProtectedValue :value="row.block.arrivalRate" :format="percent" /></td>
+                  <td class="num" :data-label="t('stats.metrics.delai_moyen_arrivee_heures')"><ProtectedValue :value="row.block.meanDelayHours" :format="hours" /></td>
                 </tr>
               </tbody>
             </table>
@@ -139,24 +168,24 @@ onMounted(async () => {
             <BarList :caption="t('stats.outcomes')" :label-header="t('stats.outcomeColumn')" :value-header="t('stats.casesColumn')" :items="outcomeItems" />
           </SectionPanel>
 
-          <SectionPanel v-if="stats.periods.length" :title="t('stats.byPeriod')">
+          <SectionPanel v-if="stats.byMonth.length" :title="t('stats.byPeriod')">
             <div class="table-scroll">
-              <table>
+              <table class="stack-on-mobile">
                 <caption class="visually-hidden">{{ t('stats.byPeriod') }}</caption>
                 <thead>
                   <tr>
                     <th scope="col">{{ t('stats.monthColumn') }}</th>
                     <th scope="col" class="num">{{ t('stats.metrics.depistages') }}</th>
-                    <th scope="col" class="num">{{ t('stats.metrics.mas') }}</th>
-                    <th scope="col" class="num">{{ t('stats.metrics.mam') }}</th>
+                    <th scope="col" class="num">{{ t('stats.metrics.cas_mas') }}</th>
+                    <th scope="col" class="num">{{ t('stats.metrics.cas_mam') }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in stats.periods" :key="p.period">
-                    <th scope="row">{{ p.period }}</th>
-                    <td class="num"><ProtectedValue :value="p.counts.depistages" /></td>
-                    <td class="num"><ProtectedValue :value="p.counts.mas" /></td>
-                    <td class="num"><ProtectedValue :value="p.counts.mam" /></td>
+                  <tr v-for="row in stats.byMonth" :key="row.key">
+                    <th scope="row">{{ row.label }}</th>
+                    <td class="num" :data-label="t('stats.metrics.depistages')"><ProtectedValue :value="row.block.counts.depistages" /></td>
+                    <td class="num" :data-label="t('stats.metrics.cas_mas')"><ProtectedValue :value="row.block.counts.cas_mas" /></td>
+                    <td class="num" :data-label="t('stats.metrics.cas_mam')"><ProtectedValue :value="row.block.counts.cas_mam" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -164,7 +193,10 @@ onMounted(async () => {
           </SectionPanel>
         </div>
 
-        <InlineAlert tone="info">{{ t('stats.hiddenNote') }}</InlineAlert>
+        <InlineAlert tone="info">
+          <p>{{ t('stats.hiddenNote') }}</p>
+          <p>{{ t('stats.exportHint') }}</p>
+        </InlineAlert>
       </div>
     </template>
   </div>
@@ -180,13 +212,14 @@ onMounted(async () => {
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
   gap: var(--space-3);
   margin: 0;
 }
 
-.zones {
+.groups {
   min-width: 56rem;
+  font-size: var(--text-sm);
 }
 
 .num {

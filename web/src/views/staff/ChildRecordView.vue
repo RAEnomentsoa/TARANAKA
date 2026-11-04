@@ -18,7 +18,7 @@ import { useAsync } from '@/composables/useAsync'
 import { useFormatters } from '@/composables/useFormatters'
 import { useAuthStore } from '@/stores/auth'
 import { ageInMonths, todayIso } from '@/utils/dates'
-import { sortForTriage } from '@/utils/triage'
+import { sortForTriage, urgencyOf } from '@/utils/triage'
 
 const props = defineProps<{ id: string }>()
 const { t } = useI18n()
@@ -36,7 +36,7 @@ const record = useAsync(async () => {
 
 const child = computed(() => record.data.value?.child ?? null)
 const age = computed(() => (child.value ? ageInMonths(child.value.date_naissance, todayIso()) : 0))
-const openReferral = computed(() => record.data.value?.referrals.find((r) => r.status !== 'clos') ?? null)
+const openReferral = computed(() => record.data.value?.referrals.find((r) => r.status !== 'sortie') ?? null)
 const csbId = computed(() => auth.user?.csb_id ?? openReferral.value?.csb_id ?? null)
 
 onMounted(record.run)
@@ -91,9 +91,9 @@ watch(() => props.id, record.run)
               <span class="visually-hidden">{{ t('queue.open', { code: r.code_unique }) }}</span>
               <ReferralCode :code="r.code_unique" aria-hidden="true" />
             </RouterLink>
-            <UrgencyBadge :priorite="r.priorite" />
+            <UrgencyBadge :urgency="urgencyOf(r)" />
             <StatusBadge :status="r.status" />
-            <time class="muted" :datetime="r.created_at">{{ fmt.date(r.created_at) }}</time>
+            <time class="muted" :datetime="r.date_referencement">{{ fmt.date(r.date_referencement) }}</time>
           </li>
         </ul>
       </SectionPanel>
@@ -117,9 +117,8 @@ watch(() => props.id, record.run)
 }
 
 .facts div {
-  padding: var(--space-3) var(--space-4);
-  background: var(--white);
-  border-top: 4px solid var(--sky-300);
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--sky-300);
 }
 
 .facts dt {

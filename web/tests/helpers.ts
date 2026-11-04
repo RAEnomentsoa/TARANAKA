@@ -20,7 +20,7 @@ export function makeUser(code: string, extra: Partial<Utilisateur> = {}): Utilis
 let counter = 0
 export function makeReferral(extra: Partial<Referral> = {}): Referral {
   counter += 1
-  return {
+  const base: Referral = {
     id: `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`,
     code_unique: `R-0AA5-1104-${String(counter).padStart(2, '0')}`,
     origine: 'enfant',
@@ -30,15 +30,28 @@ export function makeReferral(extra: Partial<Referral> = {}): Referral {
     asc_id: '0aa5a6f7-ba14-4ff9-8303-37fef7fdd866',
     csb_id: 3,
     priorite: 'haute',
+    urgence: 'orange',
     motif: 'PB 112 mm',
     status: 'envoye',
+    date_referencement: '2026-11-04T08:00:00Z',
+    date_reception: null,
+    date_prise_en_charge: null,
+    date_sortie: null,
+    issue_sortie: '',
+    en_retard: false,
     femme: null,
     version: 1,
     created_at: '2026-11-04T08:00:00Z',
     updated_at: '2026-11-04T08:00:00Z',
     device_id: 'phone-1',
     deleted_at: null,
-    ...extra,
+  }
+  const merged = { ...base, ...extra }
+  return {
+    ...merged,
+    // Keep the colour consistent with the priority unless a test sets it.
+    urgence: extra.urgence ?? ({ urgente: 'rouge', haute: 'orange', normale: 'jaune' } as const)[merged.priorite],
+    date_referencement: extra.date_referencement ?? extra.created_at ?? base.date_referencement,
   }
 }
 

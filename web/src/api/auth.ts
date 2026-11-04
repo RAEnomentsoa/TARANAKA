@@ -1,28 +1,10 @@
 import { http } from './http'
-import type { LoginResponse, LoginSuccess, Utilisateur } from './types'
+import type { LoginRequest, LoginResponse, TokenRenewal, TotpSetup, TotpState, Utilisateur } from './types'
 
 export const authApi = {
-  /** Existing. With TOTP (proposed), the answer is a challenge instead of tokens. */
-  login(identifiant: string, pin: string): Promise<LoginResponse> {
-    return http.post<LoginResponse>('/api/auth/login/', { identifiant, pin }, { auth: false })
-  },
-
-  /** Proposed: second step, a 6-digit code from the authenticator app. */
-  verifyTotp(jeton: string, code: string): Promise<LoginSuccess> {
-    return http.post<LoginSuccess>(
-      '/api/auth/totp/verifier/',
-      { jeton, code },
-      { auth: false, proposed: true },
-    )
-  },
-
-  /** Proposed: first use, confirms the authenticator app was set up. */
-  enrollTotp(jeton: string, code: string): Promise<LoginSuccess> {
-    return http.post<LoginSuccess>(
-      '/api/auth/totp/activer/',
-      { jeton, code },
-      { auth: false, proposed: true },
-    )
+  /** 401 "totp_requis": send again with code_totp. */
+  login(request: LoginRequest): Promise<LoginResponse> {
+    return http.post<LoginResponse>('/api/auth/login/', request, { auth: false })
   },
 
   me(): Promise<Utilisateur> {
@@ -31,5 +13,19 @@ export const authApi = {
 
   logout(refresh: string): Promise<unknown> {
     return http.post('/api/auth/logout/', { refresh }, { auth: false })
+  },
+
+  totpState(): Promise<TotpState> {
+    return http.get<TotpState>('/api/auth/2fa/')
+  },
+
+  /** A new secret: show its URI as a QR code. 400 "totp_deja_actif" if already on. */
+  totpSetup(): Promise<TotpSetup> {
+    return http.post<TotpSetup>('/api/auth/2fa/setup/')
+  },
+
+  /** Turns 2FA on, closes the other sessions and returns new tokens. */
+  totpActivate(code: string): Promise<TokenRenewal> {
+    return http.post<TokenRenewal>('/api/auth/2fa/activate/', { code })
   },
 }
