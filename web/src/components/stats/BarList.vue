@@ -1,16 +1,27 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
-import type { Protected } from '@/utils/privacy'
 import ProtectedValue from './ProtectedValue.vue'
+
+/** @typedef {import('@/utils/privacy').Protected} Protected */
 
 /**
  * Horizontal bars, labelled directly with their value. A hidden value gets
  * a hatched stub, so its absence is visible but its size is not.
  */
-const props = defineProps<{ caption: string; labelHeader: string; valueHeader: string; items: { key: string; label: string; value: Protected }[] }>()
+const props = defineProps({
+  caption: { type: String, required: true },
+  labelHeader: { type: String, required: true },
+  valueHeader: { type: String, required: true },
+  /** @type {import('vue').PropType<{ key: string, label: string, value: Protected }[]>} */
+  items: { type: Array, required: true },
+})
 
 const max = computed(() => Math.max(1, ...props.items.map((i) => (i.value.hidden ? 0 : i.value.value))))
-function width(value: Protected): string {
+/**
+ * @param {Protected} value
+ * @returns {string}
+ */
+function width(value) {
   return value.hidden ? '2.5rem' : `${Math.max(0.5, (value.value / max.value) * 100)}%`
 }
 </script>

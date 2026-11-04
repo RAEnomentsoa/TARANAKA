@@ -1,7 +1,7 @@
 # TARANAKA — tableau de bord web
 
 Tableau de bord des CSB, CRENAS, CRENI et des superviseurs (section 10 de `docs/SPEC.md`).
-Vue 3, TypeScript, Vite, Pinia, Vue Router, vue-i18n (malagasy et français).
+Vue 3 en JavaScript (types documentés en JSDoc), Vite, Pinia, Vue Router, vue-i18n (malagasy et français).
 
 ## Démarrer
 
@@ -19,8 +19,7 @@ Le backend doit tourner sur `VITE_API_PROXY_TARGET` (par défaut `http://127.0.0
 | `npm run dev` | Serveur de développement |
 | `npm test` | Tests unitaires et de composants (Vitest + Vue Test Utils) |
 | `npm run lint` | ESLint, dont la règle qui interdit tout texte en dur dans les templates |
-| `npm run typecheck` | Vérification TypeScript (`vue-tsc`) |
-| `npm run build` | Vérification des types puis build de production dans `dist/` |
+| `npm run build` | Build de production dans `dist/` |
 
 ### Variables d'environnement
 
@@ -39,7 +38,7 @@ Le backend doit tourner sur `VITE_API_PROXY_TARGET` (par défaut `http://127.0.0
 | `admin` | Tous les écrans, sauf l'enregistrement d'une sortie (réservé au centre de destination, D7) |
 | `asc`, `beneficiaire` | Aucun : connexion refusée, ils utilisent l'application mobile |
 
-Les permissions suivent le tableau « Qui peut faire quoi » de `Backend_serveur/docs/endpoint.md` (`src/utils/roles.ts`). Le serveur reste l'autorité : le web n'affiche simplement pas une action qui serait refusée.
+Les permissions suivent le tableau « Qui peut faire quoi » de `Backend_serveur/docs/endpoint.md` (`src/utils/roles.js`). Le serveur reste l'autorité : le web n'affiche simplement pas une action qui serait refusée.
 
 - **Connexion** : identifiant + PIN, puis code TOTP ; enrôlement (QR code + clé) imposé à tout compte web qui n'a pas encore la double authentification.
 - **File** : `/api/referrals/incoming/`, triée par urgence (rouge, orange, jaune) puis du plus ancien au plus récent ; « Patient arrivé » en un clic (avec confirmation) ; référencements en retard signalés.
@@ -64,7 +63,7 @@ src/
 tests/          tests unitaires et de composants
 ```
 
-Les types de `src/api/types.ts` suivent `docs/openapi.yaml`. Les écarts et limites constatés sur l'API sont dans `docs/API_ISSUES.md`.
+Les types JSDoc de `src/api/types.js` suivent `docs/openapi.yaml`. Les écarts et limites constatés sur l'API sont dans `docs/API_ISSUES.md`.
 
 ## Accessibilité
 

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { isApiError } from '@/api/errors'
@@ -6,8 +6,12 @@ import { errorMessage } from '@/i18n/errors'
 import AppButton from './AppButton.vue'
 import InlineAlert from './InlineAlert.vue'
 
-const props = defineProps<{ error: unknown; retryable?: boolean }>()
-defineEmits<{ retry: [] }>()
+const props = defineProps({
+  /** Anything thrown by the API layer. */
+  error: { type: null, required: true },
+  retryable: { type: Boolean, default: false },
+})
+defineEmits(['retry'])
 
 const { t } = useI18n()
 const message = computed(() => errorMessage(t, props.error))

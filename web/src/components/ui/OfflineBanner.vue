@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InlineAlert from './InlineAlert.vue'

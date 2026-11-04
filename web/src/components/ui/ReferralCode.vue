@@ -1,11 +1,15 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 
 /**
  * Referral codes are read out over the phone: a legible monospace face,
  * with the groups split apart so each part can be checked.
  */
-const props = withDefaults(defineProps<{ code: string; size?: 'md' | 'xl' }>(), { size: 'md' })
+const props = defineProps({
+  code: { type: String, required: true },
+  /** 'md' | 'xl' */
+  size: { type: String, default: 'md' },
+})
 const groups = computed(() => props.code.split('-'))
 </script>
 

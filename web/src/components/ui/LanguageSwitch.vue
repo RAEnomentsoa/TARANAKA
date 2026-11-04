@@ -1,11 +1,14 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
 import { http } from '@/api/http'
-import { SUPPORTED_LOCALES, persistLocale, type AppLocale } from '@/i18n'
+import { SUPPORTED_LOCALES, persistLocale } from '@/i18n'
+
+/** @typedef {import('@/i18n').AppLocale} AppLocale */
 
 const { t, locale } = useI18n()
 
-function choose(next: AppLocale): void {
+/** @param {AppLocale} next */
+function choose(next) {
   locale.value = next
   http.language = next
   persistLocale(next)

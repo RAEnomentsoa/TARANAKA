@@ -1,18 +1,21 @@
-<script setup lang="ts">
+<script setup>
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 
-const props = defineProps<{ busy: boolean }>()
-const emit = defineEmits<{ submit: [identifiant: string, pin: string] }>()
+const props = defineProps({ busy: { type: Boolean, required: true } })
+/** submit(identifiant: string, pin: string) */
+const emit = defineEmits(['submit'])
 
 const { t } = useI18n()
 const form = reactive({ identifiant: '', pin: '' })
-const errors = reactive<{ identifiant: string | null; pin: string | null }>({ identifiant: null, pin: null })
-const identifiantInput = ref<HTMLInputElement | null>(null)
+/** @type {{ identifiant: string | null, pin: string | null }} */
+const errors = reactive({ identifiant: null, pin: null })
+/** @type {import('vue').Ref<HTMLInputElement | null>} */
+const identifiantInput = ref(null)
 
-function submit(): void {
+function submit() {
   errors.identifiant = form.identifiant.trim() ? null : t('login.errors.required')
   errors.pin = form.pin ? null : t('login.errors.required')
   if (errors.identifiant || errors.pin || props.busy) return

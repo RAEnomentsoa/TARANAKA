@@ -1,8 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import type { Referral } from '@/api/types'
 import ReferralRow from '@/components/referrals/ReferralRow.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
@@ -17,7 +16,9 @@ import { errorMessage } from '@/i18n/errors'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useReferralsStore } from '@/stores/referrals'
-import type { QueueTab } from '@/utils/triage'
+
+/** @typedef {import('@/api/types').Referral} Referral */
+/** @typedef {import('@/utils/triage').QueueTab} QueueTab */
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -27,10 +28,12 @@ const now = useNow()
 
 const route = useRoute()
 const router = useRouter()
-const TABS: QueueTab[] = ['incoming', 'in_care', 'closed']
+/** @type {QueueTab[]} */
+const TABS = ['incoming', 'in_care', 'closed']
 // The tab lives in the address, so "Back" from a referral returns to it.
 const fromQuery = TABS.find((tab) => tab === route.query.onglet)
-const active = ref<QueueTab>(fromQuery ?? 'incoming')
+/** @type {import('vue').Ref<QueueTab>} */
+const active = ref(fromQuery ?? 'incoming')
 const tabs = computed(() =>
   TABS.map((value) => ({
     value,
@@ -41,10 +44,12 @@ const tabs = computed(() =>
 const list = computed(() => store.tab(active.value))
 const { loading, error, run } = useAsync(() => store.loadAll())
 
-const pending = ref<Referral | null>(null)
+/** @type {import('vue').Ref<Referral | null>} */
+const pending = ref(null)
 const saving = ref(false)
 
-async function confirmArrival(): Promise<void> {
+/** @returns {Promise<void>} */
+async function confirmArrival() {
   const referral = pending.value
   if (!referral) return
   saving.value = true

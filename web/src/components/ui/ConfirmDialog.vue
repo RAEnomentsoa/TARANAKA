@@ -1,20 +1,17 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
 import AppButton from './AppButton.vue'
 import AppDialog from './AppDialog.vue'
 
-withDefaults(
-  defineProps<{
-    open: boolean
-    title: string
-    message: string
-    confirmLabel?: string
-    danger?: boolean
-    busy?: boolean
-  }>(),
-  { confirmLabel: undefined, danger: false, busy: false },
-)
-defineEmits<{ confirm: []; cancel: [] }>()
+defineProps({
+  open: { type: Boolean, required: true },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  confirmLabel: { type: String, default: undefined },
+  danger: { type: Boolean, default: false },
+  busy: { type: Boolean, default: false },
+})
+defineEmits(['confirm', 'cancel'])
 const { t } = useI18n()
 </script>
 

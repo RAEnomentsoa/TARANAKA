@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -20,7 +20,7 @@ import { useAuthStore } from '@/stores/auth'
 import { ageInMonths, todayIso } from '@/utils/dates'
 import { sortForTriage, urgencyOf } from '@/utils/triage'
 
-const props = defineProps<{ id: string }>()
+const props = defineProps({ id: { type: String, required: true } })
 const { t } = useI18n()
 const fmt = useFormatters()
 const auth = useAuthStore()

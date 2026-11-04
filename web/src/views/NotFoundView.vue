@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import PageHeader from '@/components/ui/PageHeader.vue'

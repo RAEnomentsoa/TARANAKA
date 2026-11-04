@@ -1,5 +1,5 @@
-<script setup lang="ts">
-defineProps<{ title: string; hint?: string }>()
+<script setup>
+defineProps({ title: { type: String, required: true }, hint: { type: String, default: undefined } })
 </script>
 
 <template>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -12,18 +12,25 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { useReferralsStore } from '@/stores/referrals'
 
 /** Search by referral code: a match opens the referral directly. */
-const props = defineProps<{ code: string }>()
+const props = defineProps({ code: { type: String, required: true } })
 const { t } = useI18n()
 const router = useRouter()
 const store = useReferralsStore()
 
 const form = reactive({ code: props.code })
-const fieldError = ref<string | null>(null)
+/** @type {import('vue').Ref<string | null>} */
+const fieldError = ref(null)
 const searching = ref(false)
-const error = ref<unknown>(null)
-const notFound = ref<string | null>(null)
+/** @type {import('vue').Ref<unknown>} */
+const error = ref(null)
+/** @type {import('vue').Ref<string | null>} */
+const notFound = ref(null)
 
-async function search(code: string): Promise<void> {
+/**
+ * @param {string} code
+ * @returns {Promise<void>}
+ */
+async function search(code) {
   error.value = null
   notFound.value = null
   if (!code.trim()) return
@@ -43,7 +50,7 @@ async function search(code: string): Promise<void> {
   }
 }
 
-function submit(): void {
+function submit() {
   fieldError.value = form.code.trim() ? null : t('search.required')
   if (fieldError.value) return
   if (form.code === props.code) void search(form.code)

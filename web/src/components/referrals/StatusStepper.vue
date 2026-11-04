@@ -1,18 +1,24 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ReferralStatus } from '@/api/types'
 import { STATUS_ORDER } from '@/utils/triage'
 
+/** @typedef {import('@/api/types').ReferralStatus} ReferralStatus */
+
 /** The referral's life cycle as an ordered list (spec section 7). */
-const props = defineProps<{ status: ReferralStatus }>()
+const props = defineProps({ status: { type: String, required: true } })
 const { t } = useI18n()
 const currentIndex = computed(() => STATUS_ORDER.indexOf(props.status))
 
-type StepState = 'done' | 'current' | 'todo'
-const STATE_LABEL: Record<StepState, string> = { done: 'referral.stepDone', current: 'referral.stepCurrent', todo: 'referral.stepTodo' }
+/** @typedef {'done' | 'current' | 'todo'} StepState */
+/** @type {Record<StepState, string>} */
+const STATE_LABEL = { done: 'referral.stepDone', current: 'referral.stepCurrent', todo: 'referral.stepTodo' }
 
-function state(index: number): StepState {
+/**
+ * @param {number} index
+ * @returns {StepState}
+ */
+function state(index) {
   // A discharge can skip steps: once out, every step counts as done.
   if (index < currentIndex.value || props.status === 'sortie') return 'done'
   if (index === currentIndex.value) return 'current'

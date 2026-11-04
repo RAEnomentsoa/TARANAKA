@@ -1,31 +1,44 @@
-<script setup lang="ts">
+<script setup>
 import { computed, reactive, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { ConflictResolution, SyncConflict } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useFormatters } from '@/composables/useFormatters'
-import { buildResolution, differingFields, displayValue, sideData, type Side } from '@/utils/conflicts'
+import { buildResolution, differingFields, displayValue, sideData } from '@/utils/conflicts'
+
+/** @typedef {import('@/api/types').ConflictResolution} ConflictResolution */
+/** @typedef {import('@/api/types').SyncConflict} SyncConflict */
+/** @typedef {import('@/utils/conflicts').Side} Side */
 
 /**
  * One sync conflict. Both versions stay visible; the professional picks a
  * side per differing field. Nothing is chosen for them by default (D10).
  */
-const props = defineProps<{ conflict: SyncConflict; busy: boolean }>()
-const emit = defineEmits<{ resolve: [resolution: ConflictResolution] }>()
+const props = defineProps({
+  /** @type {import('vue').PropType<SyncConflict>} */
+  conflict: { type: Object, required: true },
+  busy: { type: Boolean, required: true },
+})
+/** resolve(resolution: ConflictResolution) */
+const emit = defineEmits(['resolve'])
 
-const SIDES: Side[] = ['serveur', 'telephone']
+/** @type {Side[]} */
+const SIDES = ['serveur', 'telephone']
 const { t, te } = useI18n()
 const fmt = useFormatters()
 const id = useId()
 const isDeletion = computed(() => props.conflict.operation === 'delete')
 const fields = computed(() => (isDeletion.value ? [] : differingFields(props.conflict)))
-const choices = reactive<Record<string, Side | undefined>>({})
-const deletionChoice = ref<Side | null>(null)
+/** @type {Record<string, Side | undefined>} */
+const choices = reactive({})
+/** @type {import('vue').Ref<Side | null>} */
+const deletionChoice = ref(null)
 const comment = ref('')
 const confirming = ref(false)
-const complete = computed(() => (isDeletion.value ? deletionChoice.value !== null : fields.value.every((f) => choices[f])))
+const complete = computed(() =>
+  isDeletion.value ? deletionChoice.value !== null : fields.value.every((f) => choices[f]),
+)
 
 const tableLabel = computed(() =>
   te(`conflicts.tables.${props.conflict.table_nom}`)
@@ -33,22 +46,28 @@ const tableLabel = computed(() =>
     : t('conflicts.tables.other', { name: props.conflict.table_nom }),
 )
 
-function value(side: Side, field: string): string {
+/**
+ * @param {Side} side
+ * @param {string} field
+ * @returns {string}
+ */
+function value(side, field) {
   return displayValue(sideData(props.conflict, side)[field])
 }
 
-function chooseAll(side: Side): void {
+/** @param {Side} side */
+function chooseAll(side) {
   if (isDeletion.value) deletionChoice.value = side
   for (const field of fields.value) choices[field] = side
 }
 
-function confirm(): void {
+function confirm() {
   confirming.value = false
   emit(
     'resolve',
     isDeletion.value && deletionChoice.value
       ? { choix: deletionChoice.value, ...(comment.value.trim() ? { commentaire: comment.value.trim() } : {}) }
-      : buildResolution(props.conflict, choices as Record<string, Side>, comment.value),
+      : buildResolution(props.conflict, choices, comment.value),
   )
 }
 </script>

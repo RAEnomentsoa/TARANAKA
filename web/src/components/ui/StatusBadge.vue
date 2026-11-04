@@ -1,8 +1,12 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
-import type { ReferralStatus } from '@/api/types'
 
-defineProps<{ status: ReferralStatus }>()
+/** @typedef {import('@/api/types').ReferralStatus} ReferralStatus */
+
+defineProps({
+  /** @type {import('vue').PropType<ReferralStatus>} */
+  status: { type: String, required: true },
+})
 const { t } = useI18n()
 </script>
 

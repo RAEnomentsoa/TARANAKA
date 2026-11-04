@@ -1,5 +1,8 @@
-<script setup lang="ts">
-withDefaults(defineProps<{ tone?: 'info' | 'success' | 'warning' | 'error' }>(), { tone: 'info' })
+<script setup>
+defineProps({
+  /** 'info' | 'success' | 'warning' | 'error' */
+  tone: { type: String, default: 'info' },
+})
 </script>
 
 <template>

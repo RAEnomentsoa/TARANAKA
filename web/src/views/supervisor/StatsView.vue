@@ -1,12 +1,11 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { statsApi } from '@/api/stats'
-import type { StatsQuery } from '@/api/types'
 import BarList from '@/components/stats/BarList.vue'
 import ProtectedValue from '@/components/stats/ProtectedValue.vue'
 import StatTile from '@/components/stats/StatTile.vue'
-import StatsFilters, { type StatsFilterValues } from '@/components/stats/StatsFilters.vue'
+import StatsFilters from '@/components/stats/StatsFilters.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
@@ -22,7 +21,11 @@ import { useNotificationsStore } from '@/stores/notifications'
 import { useReferentielStore } from '@/stores/referentiel'
 import { useStatsFiltersStore } from '@/stores/statsFilters'
 import { downloadBlob } from '@/utils/download'
-import { COUNT_INDICATORS, OUTCOME_INDICATORS, protectStats, type CountIndicator } from '@/utils/privacy'
+import { COUNT_INDICATORS, OUTCOME_INDICATORS, protectStats } from '@/utils/privacy'
+
+/** @typedef {import('@/api/types').StatsQuery} StatsQuery */
+/** @typedef {import('@/stores/statsFilters').StatsFilterValues} StatsFilterValues */
+/** @typedef {import('@/utils/privacy').CountIndicator} CountIndicator */
 
 const { t } = useI18n()
 const fmt = useFormatters()
@@ -31,11 +34,23 @@ const referentiel = useReferentielStore()
 const notifications = useNotificationsStore()
 const savedFilters = useStatsFiltersStore()
 
-/** Indicators shown as columns of the tables, in reading order. */
-const TABLE_COLUMNS: CountIndicator[] = ['depistages', 'cas_mas', 'cas_mam', 'referencements', 'referencements_arrives', 'rendez_vous_manques']
+/**
+ * Indicators shown as columns of the tables, in reading order.
+ * @type {CountIndicator[]}
+ */
+const TABLE_COLUMNS = [
+  'depistages',
+  'cas_mas',
+  'cas_mam',
+  'referencements',
+  'referencements_arrives',
+  'rendez_vous_manques',
+]
 
-const filters = ref<InstanceType<typeof StatsFilters> | null>(null)
-const lastQuery = ref<StatsQuery | null>(null)
+/** @type {import('vue').Ref<InstanceType<typeof StatsFilters> | null>} */
+const filters = ref(null)
+/** @type {import('vue').Ref<StatsQuery | null>} */
+const lastQuery = ref(null)
 const exporting = ref(false)
 const lockedRegion = computed(() => (auth.user?.profile.code === 'superviseur' ? auth.user.region_id : null))
 
@@ -62,25 +77,34 @@ const isEmpty = computed(() => {
   return !!s && COUNT_INDICATORS.every((k) => !s.total.counts[k].hidden && s.total.counts[k].value === 0)
 })
 
-const percent = (n: number) => t('stats.percentValue', { n: fmt.number(n, 0) })
-const hours = (n: number) => t('stats.hoursValue', { n: fmt.number(n, 1) })
+/** @param {number} n */
+const percent = (n) => t('stats.percentValue', { n: fmt.number(n, 0) })
+/** @param {number} n */
+const hours = (n) => t('stats.hoursValue', { n: fmt.number(n, 1) })
 
 const outcomeItems = computed(() =>
   OUTCOME_INDICATORS.map((key) => ({
     key,
     label: t(`discharge.outcomes.${key.replace('sorties_', '')}`),
-    value: stats.value!.total.counts[key],
+    value: stats.value.total.counts[key],
   })),
 )
 
-function apply(query: StatsQuery, values: StatsFilterValues): void {
+/**
+ * @param {StatsQuery} query
+ * @param {StatsFilterValues} values
+ */
+function apply(query, values) {
   savedFilters.values = values
   lastQuery.value = query
   void result.run()
 }
 
-/** The server's CSV: same masking, and every export is audited. */
-async function exportCsv(): Promise<void> {
+/**
+ * The server's CSV: same masking, and every export is audited.
+ * @returns {Promise<void>}
+ */
+async function exportCsv() {
   const q = lastQuery.value
   if (!q) return
   exporting.value = true

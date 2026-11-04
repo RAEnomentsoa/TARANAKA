@@ -1,25 +1,33 @@
-<script setup lang="ts">
+<script setup>
 import { reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 import { addDays, todayIso } from '@/utils/dates'
 
-export interface AppointmentDraft {
-  date_prevue: string
-  motif: string
-}
+/**
+ * @typedef {Object} AppointmentDraft
+ * @property {string} date_prevue
+ * @property {string} motif
+ */
 
-const props = defineProps<{ busy: boolean; serverErrors?: Record<string, string[]> }>()
-const emit = defineEmits<{ submit: [draft: AppointmentDraft]; cancel: [] }>()
+const props = defineProps({
+  busy: { type: Boolean, required: true },
+  /** Field errors sent back by the server, by field name. */
+  serverErrors: { type: Object, default: () => ({}) },
+})
+/** submit(draft: AppointmentDraft), cancel() */
+const emit = defineEmits(['submit', 'cancel'])
 
 const { t } = useI18n()
 const today = todayIso()
 // One week is the usual CRENAS control interval; the professional can change it.
-const form = reactive<AppointmentDraft>({ date_prevue: addDays(today, 7), motif: '' })
-const errors = reactive<{ date: string | null; motif: string | null }>({ date: null, motif: null })
+/** @type {AppointmentDraft} */
+const form = reactive({ date_prevue: addDays(today, 7), motif: '' })
+/** @type {{ date: string | null, motif: string | null }} */
+const errors = reactive({ date: null, motif: null })
 
-function submit(): void {
+function submit() {
   errors.date = !form.date_prevue ? t('validation.required') : form.date_prevue < today ? t('care.dateInPast') : null
   errors.motif = form.motif.trim() ? null : t('validation.required')
   if (errors.date || errors.motif || props.busy) return

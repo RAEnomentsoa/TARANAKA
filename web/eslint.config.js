@@ -1,11 +1,17 @@
+import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
+import globals from 'globals'
 
-export default defineConfigWithVueTs(
+export default [
   { ignores: ['dist/**', 'node_modules/**', 'coverage/**'] },
-  pluginVue.configs['flat/recommended'],
-  vueTsConfigs.recommended,
+  js.configs.recommended,
+  ...pluginVue.configs['flat/recommended'],
   {
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.browser },
+    },
     rules: {
       // Every visible text comes from src/i18n/locales (French and Malagasy).
       'vue/no-bare-strings-in-template': [
@@ -21,4 +27,8 @@ export default defineConfigWithVueTs(
       'vue/html-indent': 'off',
     },
   },
-)
+  {
+    files: ['vite.config.js', 'eslint.config.js', 'tests/**/*.js'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+]

@@ -1,9 +1,14 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
-import type { Urgency } from '@/api/types'
+
+/** @typedef {import('@/api/types').Urgency} Urgency */
 
 /** Urgency is never colour alone: a shape and a word go with it. */
-withDefaults(defineProps<{ urgency: Urgency; withHint?: boolean }>(), { withHint: false })
+defineProps({
+  /** @type {import('vue').PropType<Urgency>} */
+  urgency: { type: String, required: true },
+  withHint: { type: Boolean, default: false },
+})
 const { t } = useI18n()
 </script>
 

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -16,9 +16,12 @@ const router = useRouter()
 const route = useRoute()
 
 const busy = ref(false)
-const error = ref<string | null>(null)
-const credentials = ref<InstanceType<typeof CredentialsForm> | null>(null)
-const totp = ref<InstanceType<typeof TotpForm> | null>(null)
+/** @type {import('vue').Ref<string | null>} */
+const error = ref(null)
+/** @type {import('vue').Ref<InstanceType<typeof CredentialsForm> | null>} */
+const credentials = ref(null)
+/** @type {import('vue').Ref<InstanceType<typeof TotpForm> | null>} */
+const totp = ref(null)
 
 const onTotpStep = computed(() => auth.step !== 'credentials')
 const heading = computed(() => {
@@ -27,12 +30,19 @@ const heading = computed(() => {
   return t('login.title')
 })
 
-async function finish(): Promise<void> {
-  const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : null
+/** @returns {Promise<void>} */
+async function finish() {
+  const redirect =
+    typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : null
   await router.replace(redirect ?? { name: auth.homeRoute })
 }
 
-async function onCredentials(identifiant: string, pin: string): Promise<void> {
+/**
+ * @param {string} identifiant
+ * @param {string} pin
+ * @returns {Promise<void>}
+ */
+async function onCredentials(identifiant, pin) {
   busy.value = true
   error.value = null
   try {
@@ -45,7 +55,11 @@ async function onCredentials(identifiant: string, pin: string): Promise<void> {
   }
 }
 
-async function onTotp(code: string): Promise<void> {
+/**
+ * @param {string} code
+ * @returns {Promise<void>}
+ */
+async function onTotp(code) {
   busy.value = true
   error.value = null
   try {
@@ -59,7 +73,8 @@ async function onTotp(code: string): Promise<void> {
   }
 }
 
-async function back(): Promise<void> {
+/** @returns {Promise<void>} */
+async function back() {
   auth.resetChallenge()
   error.value = null
   await nextTick()

@@ -1,8 +1,15 @@
-<script setup lang="ts">
-import type { Protected } from '@/utils/privacy'
+<script setup>
 import ProtectedValue from './ProtectedValue.vue'
 
-defineProps<{ label: string; value: Protected; format?: (n: number) => string; emphasis?: boolean }>()
+/** @typedef {import('@/utils/privacy').Protected} Protected */
+
+defineProps({
+  label: { type: String, required: true },
+  /** @type {import('vue').PropType<Protected>} */
+  value: { type: Object, required: true },
+  format: { type: Function, default: undefined },
+  emphasis: { type: Boolean, default: false },
+})
 </script>
 
 <template>

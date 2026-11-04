@@ -1,6 +1,6 @@
-<script setup lang="ts">
+<script setup>
 /** Page title (focused after navigation) with an optional intro and actions. */
-defineProps<{ title: string; intro?: string }>()
+defineProps({ title: { type: String, required: true }, intro: { type: String, default: undefined } })
 </script>
 
 <template>

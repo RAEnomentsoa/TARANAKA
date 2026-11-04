@@ -1,14 +1,13 @@
-<script setup lang="ts">
-withDefaults(
-  defineProps<{
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-    type?: 'button' | 'submit' | 'reset'
-    loading?: boolean
-    disabled?: boolean
-    block?: boolean
-  }>(),
-  { variant: 'primary', type: 'button', loading: false, disabled: false, block: false },
-)
+<script setup>
+defineProps({
+  /** 'primary' | 'secondary' | 'ghost' | 'danger' */
+  variant: { type: String, default: 'primary' },
+  /** 'button' | 'submit' | 'reset' */
+  type: { type: String, default: 'button' },
+  loading: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  block: { type: Boolean, default: false },
+})
 </script>
 
 <template>

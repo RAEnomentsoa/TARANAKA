@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -6,13 +6,13 @@ import { useI18n } from 'vue-i18n'
  * Label, hint and error around one form control. The control comes from the
  * slot and receives the ids it must use, so every error is announced.
  */
-const props = defineProps<{
-  label: string
-  hint?: string
-  error?: string | null
-  required?: boolean
-  optional?: boolean
-}>()
+const props = defineProps({
+  label: { type: String, required: true },
+  hint: { type: String, default: undefined },
+  error: { type: String, default: null },
+  required: { type: Boolean, default: false },
+  optional: { type: Boolean, default: false },
+})
 
 const { t } = useI18n()
 const id = useId()

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { nextTick, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -7,13 +7,15 @@ import { useI18n } from 'vue-i18n'
  * hides the rest of the page from screen readers. Focus returns to the
  * element that opened it.
  */
-const props = defineProps<{ open: boolean; title: string }>()
-const emit = defineEmits<{ close: [] }>()
+const props = defineProps({ open: { type: Boolean, required: true }, title: { type: String, required: true } })
+const emit = defineEmits(['close'])
 
 const { t } = useI18n()
-const dialog = ref<HTMLDialogElement | null>(null)
+/** @type {import('vue').Ref<HTMLDialogElement | null>} */
+const dialog = ref(null)
 const titleId = useId()
-let opener: HTMLElement | null = null
+/** @type {HTMLElement | null} */
+let opener = null
 
 watch(
   () => props.open,
@@ -22,7 +24,7 @@ watch(
     const el = dialog.value
     if (!el) return
     if (open && !el.open) {
-      opener = document.activeElement as HTMLElement | null
+      opener = document.activeElement
       if (typeof el.showModal === 'function') el.showModal()
       else el.setAttribute('open', '')
     } else if (!open && el.open) {
@@ -34,7 +36,8 @@ watch(
   { immediate: true },
 )
 
-function onCancel(event: Event): void {
+/** @param {Event} event */
+function onCancel(event) {
   event.preventDefault()
   emit('close')
 }

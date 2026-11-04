@@ -1,8 +1,12 @@
-<script setup lang="ts">
+<script setup>
 import { useId } from 'vue'
 
 /** A titled region of a page; the heading names the landmark. */
-withDefaults(defineProps<{ title: string; level?: 2 | 3 }>(), { level: 2 })
+defineProps({
+  title: { type: String, required: true },
+  /** Heading level, 2 or 3. */
+  level: { type: Number, default: 2 },
+})
 const id = useId()
 </script>
 

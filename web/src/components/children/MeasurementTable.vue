@@ -1,17 +1,26 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Measurement } from '@/api/types'
 import { useFormatters } from '@/composables/useFormatters'
 import { toNumber } from '@/utils/numbers'
 
-const props = defineProps<{ measurements: Measurement[] }>()
+/** @typedef {import('@/api/types').Measurement} Measurement */
+
+const props = defineProps({
+  /** @type {import('vue').PropType<Measurement[]>} */
+  measurements: { type: Array, required: true },
+})
 const { t } = useI18n()
 const fmt = useFormatters()
 
 const rows = computed(() => [...props.measurements].sort((a, b) => b.date_mesure.localeCompare(a.date_mesure)))
 
-function decimal(value: string | null, digits: number): string {
+/**
+ * @param {string | null} value
+ * @param {number} digits
+ * @returns {string}
+ */
+function decimal(value, digits) {
   const n = toNumber(value)
   return n === null ? '–' : fmt.number(n, digits)
 }

@@ -1,16 +1,19 @@
-<script setup lang="ts" generic="T extends string">
+<script setup>
 import { ref } from 'vue'
 
 /** WAI-ARIA tabs: arrow keys move between tabs, only the active one is tabbable. */
-const props = defineProps<{
-  label: string
-  tabs: { value: T; label: string; count?: number }[]
-  idPrefix: string
-}>()
-const model = defineModel<T>({ required: true })
-const buttons = ref<HTMLButtonElement[]>([])
+const props = defineProps({
+  label: { type: String, required: true },
+  /** @type {import('vue').PropType<{ value: string, label: string, count?: number }[]>} */
+  tabs: { type: Array, required: true },
+  idPrefix: { type: String, required: true },
+})
+const model = defineModel({ type: String, required: true })
+/** @type {import('vue').Ref<HTMLButtonElement[]>} */
+const buttons = ref([])
 
-function select(index: number): void {
+/** @param {number} index */
+function select(index) {
   const count = props.tabs.length
   const next = props.tabs[(index + count) % count]
   if (!next) return
@@ -18,8 +21,13 @@ function select(index: number): void {
   buttons.value[(index + count) % count]?.focus()
 }
 
-function onKey(event: KeyboardEvent, index: number): void {
-  const moves: Record<string, number> = {
+/**
+ * @param {KeyboardEvent} event
+ * @param {number} index
+ */
+function onKey(event, index) {
+  /** @type {Record<string, number>} */
+  const moves = {
     ArrowRight: index + 1,
     ArrowLeft: index - 1,
     Home: 0,

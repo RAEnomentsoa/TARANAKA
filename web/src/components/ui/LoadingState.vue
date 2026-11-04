@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
 
-defineProps<{ label?: string }>()
+defineProps({ label: { type: String, default: undefined } })
 const { t } = useI18n()
 </script>
 

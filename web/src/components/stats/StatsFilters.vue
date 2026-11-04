@@ -1,39 +1,50 @@
-<script setup lang="ts">
+<script setup>
 import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Region, StatsQuery } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 import { addDays, todayIso } from '@/utils/dates'
 
-export type PeriodPreset = '30d' | '90d' | '365d' | 'custom'
+/** @typedef {import('@/api/types').Region} Region */
+/** @typedef {import('@/api/types').StatsQuery} StatsQuery */
 
-export interface StatsFilterValues {
-  preset: PeriodPreset
-  from: string
-  to: string
-  region: number | null
-}
+/** @typedef {import('@/stores/statsFilters').PeriodPreset} PeriodPreset */
+/** @typedef {import('@/stores/statsFilters').StatsFilterValues} StatsFilterValues */
 
 /**
  * Period and zone. A regional supervisor is locked to their region by the
  * server (403 otherwise): the selector is then shown fixed.
  */
-const props = defineProps<{ regions: Region[]; lockedRegion: number | null; initial: StatsFilterValues | null; busy: boolean }>()
-const emit = defineEmits<{ apply: [query: StatsQuery, values: StatsFilterValues] }>()
+const props = defineProps({
+  /** @type {import('vue').PropType<Region[]>} */
+  regions: { type: Array, required: true },
+  lockedRegion: { type: Number, default: null },
+  /** @type {import('vue').PropType<StatsFilterValues | null>} */
+  initial: { type: Object, default: null },
+  busy: { type: Boolean, required: true },
+})
+/** apply(query: StatsQuery, values: StatsFilterValues) */
+const emit = defineEmits(['apply'])
 
-const PRESETS: PeriodPreset[] = ['30d', '90d', '365d', 'custom']
-const DAYS: Record<Exclude<PeriodPreset, 'custom'>, number> = { '30d': 30, '90d': 90, '365d': 365 }
+/** @type {PeriodPreset[]} */
+const PRESETS = ['30d', '90d', '365d', 'custom']
+/** @type {Record<Exclude<PeriodPreset, 'custom'>, number>} */
+const DAYS = { '30d': 30, '90d': 90, '365d': 365 }
 
 const { t } = useI18n()
 const today = todayIso()
-const form = reactive<StatsFilterValues>(
+/** @type {StatsFilterValues} */
+const form = reactive(
   props.initial ?? { preset: '30d', from: addDays(today, -30), to: today, region: props.lockedRegion },
 )
-const rangeError = ref<string | null>(null)
+/** @type {import('vue').Ref<string | null>} */
+const rangeError = ref(null)
 
-/** The query the form describes; null when the dates are not valid. */
-function query(): StatsQuery | null {
+/**
+ * The query the form describes; null when the dates are not valid.
+ * @returns {StatsQuery | null}
+ */
+function query() {
   const from = form.preset === 'custom' ? form.from : addDays(today, -DAYS[form.preset])
   const to = form.preset === 'custom' ? form.to : today
   rangeError.value = !from || !to || from > to ? t('stats.invalidRange') : null
@@ -42,7 +53,7 @@ function query(): StatsQuery | null {
   return { date_debut: from, date_fin: to, ...(region !== null ? { region } : {}) }
 }
 
-function submit(): void {
+function submit() {
   const q = query()
   if (q) emit('apply', q, { ...form })
 }

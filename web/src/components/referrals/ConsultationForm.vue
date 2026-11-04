@@ -1,32 +1,47 @@
-<script setup lang="ts">
+<script setup>
 import { reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Decision } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 import { todayIso } from '@/utils/dates'
 
-export interface ConsultationDraft {
-  date: string
-  diagnostic: string
-  decision: Decision
-  observations: string
-}
+/** @typedef {import('@/api/types').Decision} Decision */
 
-const props = defineProps<{ busy: boolean; serverErrors?: Record<string, string[]> }>()
-const emit = defineEmits<{ submit: [draft: ConsultationDraft]; cancel: [] }>()
+/**
+ * @typedef {Object} ConsultationDraft
+ * @property {string} date
+ * @property {string} diagnostic
+ * @property {Decision} decision
+ * @property {string} observations
+ */
 
-const DECISIONS: Decision[] = ['prise_en_charge', 'conseil', 'reference']
+const props = defineProps({
+  busy: { type: Boolean, required: true },
+  /** Field errors sent back by the server, by field name. */
+  serverErrors: { type: Object, default: () => ({}) },
+})
+/** submit(draft: ConsultationDraft), cancel() */
+const emit = defineEmits(['submit', 'cancel'])
+
+/** @type {Decision[]} */
+const DECISIONS = ['prise_en_charge', 'conseil', 'reference']
 const { t } = useI18n()
 const today = todayIso()
-const form = reactive<ConsultationDraft>({ date: today, diagnostic: '', decision: 'prise_en_charge', observations: '' })
-const errors = reactive<{ date: string | null; diagnostic: string | null }>({ date: null, diagnostic: null })
+/** @type {ConsultationDraft} */
+const form = reactive({ date: today, diagnostic: '', decision: 'prise_en_charge', observations: '' })
+/** @type {{ date: string | null, diagnostic: string | null }} */
+const errors = reactive({ date: null, diagnostic: null })
 
-function fieldError(name: string, local: string | null): string | null {
+/**
+ * @param {string} name
+ * @param {string | null} local
+ * @returns {string | null}
+ */
+function fieldError(name, local) {
   return local ?? props.serverErrors?.[name]?.join(' ') ?? null
 }
 
-function submit(): void {
+function submit() {
   errors.date = !form.date ? t('validation.required') : form.date > today ? t('care.dateInFuture') : null
   errors.diagnostic = form.diagnostic.trim() ? null : t('validation.required')
   if (errors.date || errors.diagnostic || props.busy) return

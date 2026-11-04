@@ -1,8 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { conflictsApi } from '@/api/conflicts'
-import type { ConflictResolution, SyncConflict } from '@/api/types'
 import ConflictCard from '@/components/referrals/ConflictCard.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -13,12 +12,21 @@ import { useAsync } from '@/composables/useAsync'
 import { errorMessage } from '@/i18n/errors'
 import { useNotificationsStore } from '@/stores/notifications'
 
+/** @typedef {import('@/api/types').ConflictResolution} ConflictResolution */
+/** @typedef {import('@/api/types').SyncConflict} SyncConflict */
+
 const { t } = useI18n()
 const notifications = useNotificationsStore()
 const { data, error, loading, run } = useAsync(() => conflictsApi.list())
-const busyId = ref<string | null>(null)
+/** @type {import('vue').Ref<string | null>} */
+const busyId = ref(null)
 
-async function resolve(conflict: SyncConflict, resolution: ConflictResolution): Promise<void> {
+/**
+ * @param {SyncConflict} conflict
+ * @param {ConflictResolution} resolution
+ * @returns {Promise<void>}
+ */
+async function resolve(conflict, resolution) {
   busyId.value = conflict.id
   try {
     await conflictsApi.resolve(conflict.id, resolution)

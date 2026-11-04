@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import QRCode from 'qrcode'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -6,14 +6,22 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
 
 /** Second login step: a 6-digit TOTP code, with the QR code on first use. */
-const props = defineProps<{ busy: boolean; enrolment: boolean; otpauthUri: string | null }>()
-const emit = defineEmits<{ submit: [code: string]; back: [] }>()
+const props = defineProps({
+  busy: { type: Boolean, required: true },
+  enrolment: { type: Boolean, required: true },
+  otpauthUri: { type: String, default: null },
+})
+/** submit(code: string), back() */
+const emit = defineEmits(['submit', 'back'])
 
 const { t } = useI18n()
 const code = ref('')
-const error = ref<string | null>(null)
-const qrDataUrl = ref<string | null>(null)
-const input = ref<HTMLInputElement | null>(null)
+/** @type {import('vue').Ref<string | null>} */
+const error = ref(null)
+/** @type {import('vue').Ref<string | null>} */
+const qrDataUrl = ref(null)
+/** @type {import('vue').Ref<HTMLInputElement | null>} */
+const input = ref(null)
 
 /** The secret, for people who cannot scan (otpauth://totp/...?secret=XXX). */
 const secret = computed(() => {
@@ -30,7 +38,9 @@ watch(
   () => props.otpauthUri,
   async (uri) => {
     try {
-      qrDataUrl.value = uri ? await QRCode.toDataURL(uri, { margin: 1, width: 224, color: { dark: '#0f2a3dff', light: '#ffffffff' } }) : null
+      qrDataUrl.value = uri
+        ? await QRCode.toDataURL(uri, { margin: 1, width: 224, color: { dark: '#0f2a3dff', light: '#ffffffff' } })
+        : null
     } catch {
       // No QR code: the key below can still be typed by hand.
       qrDataUrl.value = null
@@ -39,12 +49,13 @@ watch(
   { immediate: true },
 )
 
-function onInput(event: Event): void {
+/** @param {Event} event */
+function onInput(event) {
   // Keep digits only: codes are often pasted as "123 456".
-  code.value = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 6)
+  code.value = event.target.value.replace(/\D/g, '').slice(0, 6)
 }
 
-function submit(): void {
+function submit() {
   error.value = /^\d{6}$/.test(code.value) ? null : t('login.errors.totpFormat')
   if (error.value || props.busy) return
   emit('submit', code.value)

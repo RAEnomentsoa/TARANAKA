@@ -1,7 +1,6 @@
-<script setup lang="ts">
+<script setup>
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { DischargeOutcome, Referral, ReferralStatus } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppDialog from '@/components/ui/AppDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
@@ -11,11 +10,20 @@ import { useReferralsStore } from '@/stores/referrals'
 import { canDischargeFrom, nextStatus } from '@/utils/triage'
 import DischargeForm from './DischargeForm.vue'
 
+/** @typedef {import('@/api/types').DischargeOutcome} DischargeOutcome */
+/** @typedef {import('@/api/types').Referral} Referral */
+/** @typedef {import('@/api/types').ReferralStatus} ReferralStatus */
+
 /**
  * One main action (the next step) and, once the patient has arrived, the
  * discharge. Every change is confirmed before it is sent.
  */
-const props = defineProps<{ referral: Referral; canUpdate: boolean; canDischarge: boolean }>()
+const props = defineProps({
+  /** @type {import('vue').PropType<Referral>} */
+  referral: { type: Object, required: true },
+  canUpdate: { type: Boolean, required: true },
+  canDischarge: { type: Boolean, required: true },
+})
 
 const { t } = useI18n()
 const store = useReferralsStore()
@@ -23,11 +31,14 @@ const notifications = useNotificationsStore()
 
 const next = computed(() => nextStatus(props.referral.status))
 const dischargeAllowed = computed(() => canDischargeFrom(props.referral.status))
-const pending = ref<ReferralStatus | null>(null)
-const outcome = ref<DischargeOutcome | null>(null)
+/** @type {import('vue').Ref<ReferralStatus | null>} */
+const pending = ref(null)
+/** @type {import('vue').Ref<DischargeOutcome | null>} */
+const outcome = ref(null)
 const dischargeOpen = ref(false)
 const busy = ref(false)
-const error = ref<unknown>(null)
+/** @type {import('vue').Ref<unknown>} */
+const error = ref(null)
 
 const confirmMessage = computed(() => {
   if (pending.value === 'sortie' && outcome.value) {
@@ -39,23 +50,26 @@ const confirmMessage = computed(() => {
   return pending.value ? t(`referral.confirm.${pending.value}`, { code: props.referral.code_unique }) : ''
 })
 
-function ask(status: ReferralStatus): void {
+/** @param {ReferralStatus} status */
+function ask(status) {
   error.value = null
   pending.value = status
 }
 
-function onOutcome(value: DischargeOutcome): void {
+/** @param {DischargeOutcome} value */
+function onOutcome(value) {
   outcome.value = value
   dischargeOpen.value = false
   ask('sortie')
 }
 
-function cancel(): void {
+function cancel() {
   pending.value = null
   outcome.value = null
 }
 
-async function confirm(): Promise<void> {
+/** @returns {Promise<void>} */
+async function confirm() {
   const target = pending.value
   if (!target) return
   busy.value = true

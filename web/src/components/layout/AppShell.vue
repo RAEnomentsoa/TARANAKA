@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
@@ -7,12 +7,13 @@ import { useIdleLogout } from '@/composables/useIdleLogout'
 import { config } from '@/config'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
-import type { Permission } from '@/utils/roles'
 import LanguageSwitch from '@/components/ui/LanguageSwitch.vue'
 import NoticeTray from '@/components/ui/NoticeTray.vue'
 import OfflineBanner from '@/components/ui/OfflineBanner.vue'
 import BrandMark from './BrandMark.vue'
 import CodeSearch from './CodeSearch.vue'
+
+/** @typedef {import('@/utils/roles').Permission} Permission */
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -22,13 +23,15 @@ const router = useRouter()
 const { message: announcement, announce } = useAnnouncer()
 const menuOpen = ref(false)
 
-interface NavItem {
-  name: string
-  labelKey: string
-  permission: Permission
-}
+/**
+ * @typedef {Object} NavItem
+ * @property {string} name
+ * @property {string} labelKey
+ * @property {Permission} permission
+ */
 
-const NAV: NavItem[] = [
+/** @type {NavItem[]} */
+const NAV = [
   { name: 'referrals', labelKey: 'nav.referrals', permission: 'referrals:read' },
   { name: 'conflicts', labelKey: 'nav.conflicts', permission: 'conflicts:resolve' },
   { name: 'stats', labelKey: 'nav.stats', permission: 'stats:read' },
@@ -45,13 +48,14 @@ watch(
   async () => {
     menuOpen.value = false
     await nextTick()
-    const title = document.querySelector<HTMLElement>('[data-page-title]')
+    const title = document.querySelector('[data-page-title]')
     title?.focus({ preventScroll: true })
     if (title?.textContent) announce(t('app.pageLoaded', { title: title.textContent }))
   },
 )
 
-async function logout(): Promise<void> {
+/** @returns {Promise<void>} */
+async function logout() {
   await auth.logout()
   await router.push({ name: 'login' })
 }

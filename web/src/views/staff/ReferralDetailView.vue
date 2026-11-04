@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
@@ -20,7 +20,7 @@ import { useReferralsStore } from '@/stores/referrals'
 import { toNumber } from '@/utils/numbers'
 import { urgencyOf } from '@/utils/triage'
 
-const props = defineProps<{ id: string }>()
+const props = defineProps({ id: { type: String, required: true } })
 const { t } = useI18n()
 const fmt = useFormatters()
 const auth = useAuthStore()
@@ -49,10 +49,11 @@ const dates = computed(() => {
     { key: 'dateReception', value: r.date_reception },
     { key: 'datePriseEnCharge', value: r.date_prise_en_charge },
     { key: 'dateSortie', value: r.date_sortie },
-  ].filter((d): d is { key: string; value: string } => Boolean(d.value))
+  ].filter((d) => Boolean(d.value))
 })
 
-async function load(): Promise<void> {
+/** @returns {Promise<void>} */
+async function load() {
   await loader.run()
   void measurement.run()
   void referentiel.load().catch(() => undefined)
@@ -146,7 +147,7 @@ watch(() => props.id, load)
             </div>
             <div>
               <dt>{{ t('measurements.whz') }}</dt>
-              <dd>{{ toNumber(measurement.data.value.whz) === null ? '–' : fmt.number(toNumber(measurement.data.value.whz)!, 2) }}</dd>
+              <dd>{{ toNumber(measurement.data.value.whz) === null ? '–' : fmt.number(toNumber(measurement.data.value.whz), 2) }}</dd>
             </div>
             <div>
               <dt>{{ t('measurements.classification') }}</dt>

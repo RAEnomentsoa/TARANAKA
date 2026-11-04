@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { extent, linear, niceTicks } from '@/utils/scale'
@@ -8,39 +8,31 @@ import { extent, linear, niceTicks } from '@/utils/scale'
  * Accessible: a text summary, focusable points with tooltips, and a table
  * view with the same numbers.
  */
-export interface ChartPoint {
-  x: number
-  y: number
-  /** Marks a value the phone flagged as implausible. */
-  flagged?: boolean
-}
+/** @typedef {import('@/utils/scale').ChartPoint} ChartPoint */
+/** @typedef {import('@/utils/scale').Threshold} Threshold */
 
-export interface Threshold {
-  value: number
-  label: string
-  tone: 'rouge' | 'orange'
-}
-
-const props = withDefaults(
-  defineProps<{
-    title: string
-    xLabel: string
-    yLabel: string
-    points: ChartPoint[]
-    formatX: (x: number) => string
-    formatY: (y: number) => string
-    thresholds?: Threshold[]
-    minPoints?: number
-    /** How far to widen the x axis around a single point (a duration for dates). */
-    xPad?: number
-  }>(),
-  { thresholds: () => [], minPoints: 1, xPad: undefined },
-)
+const props = defineProps({
+  title: { type: String, required: true },
+  xLabel: { type: String, required: true },
+  yLabel: { type: String, required: true },
+  /** @type {import('vue').PropType<ChartPoint[]>} */
+  points: { type: Array, required: true },
+  /** (x: number) => string */
+  formatX: { type: Function, required: true },
+  /** (y: number) => string */
+  formatY: { type: Function, required: true },
+  /** @type {import('vue').PropType<Threshold[]>} */
+  thresholds: { type: Array, default: () => [] },
+  minPoints: { type: Number, default: 1 },
+  /** How far to widen the x axis around a single point (a duration for dates). */
+  xPad: { type: Number, default: undefined },
+})
 
 const { t } = useI18n()
 const id = useId()
 const showTable = ref(false)
-const active = ref<number | null>(null)
+/** @type {import('vue').Ref<number | null>} */
+const active = ref(null)
 
 // A small viewBox keeps the text legible once the chart is scaled to its column.
 const WIDTH = 480
@@ -51,10 +43,22 @@ const sorted = computed(() => [...props.points].sort((a, b) => a.x - b.x))
 const enough = computed(() => sorted.value.length >= props.minPoints)
 
 const xScale = computed(() => {
-  const d = extent(sorted.value.map((p) => p.x), [], props.xPad)
+  const d = extent(
+    sorted.value.map((p) => p.x),
+    [],
+    props.xPad,
+  )
   return { domain: d, ticks: niceTicks(d, 4).ticks.filter((v) => v >= d.min && v <= d.max) }
 })
-const yScale = computed(() => niceTicks(extent(sorted.value.map((p) => p.y), props.thresholds.map((th) => th.value)), 5))
+const yScale = computed(() =>
+  niceTicks(
+    extent(
+      sorted.value.map((p) => p.y),
+      props.thresholds.map((th) => th.value),
+    ),
+    5,
+  ),
+)
 
 const sx = computed(() => linear(xScale.value.domain, [M.left, WIDTH - M.right]))
 const sy = computed(() => linear(yScale.value.domain, [HEIGHT - M.bottom, M.top]))
@@ -75,10 +79,11 @@ const summary = computed(() => {
   })
 })
 
-const activePoint = computed(() => (active.value === null ? null : sorted.value[active.value] ?? null))
+const activePoint = computed(() => (active.value === null ? null : (sorted.value[active.value] ?? null)))
 
-function onPointerMove(event: PointerEvent): void {
-  const svg = event.currentTarget as SVGSVGElement
+/** @param {PointerEvent} event */
+function onPointerMove(event) {
+  const svg = event.currentTarget
   const box = svg.getBoundingClientRect()
   if (!box.width) return
   const x = ((event.clientX - box.left) / box.width) * WIDTH

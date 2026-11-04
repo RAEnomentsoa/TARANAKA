@@ -1,10 +1,9 @@
-<script setup lang="ts">
+<script setup>
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { careApi } from '@/api/care'
 import { newUuid } from '@/api/deviceId'
 import { isApiError } from '@/api/errors'
-import type { Appointment, Consultation, Uuid } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppDialog from '@/components/ui/AppDialog.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
@@ -16,11 +15,23 @@ import { errorMessage } from '@/i18n/errors'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 import { todayIso } from '@/utils/dates'
-import AppointmentForm, { type AppointmentDraft } from './AppointmentForm.vue'
-import ConsultationForm, { type ConsultationDraft } from './ConsultationForm.vue'
+import AppointmentForm from './AppointmentForm.vue'
+import ConsultationForm from './ConsultationForm.vue'
+
+/** @typedef {import('@/api/types').Appointment} Appointment */
+/** @typedef {import('@/api/types').Consultation} Consultation */
+/** @typedef {import('@/api/types').Uuid} Uuid */
+
+/** @typedef {{ date: string, diagnostic: string, decision: import('@/api/types').Decision, observations: string }} ConsultationDraft */
+/** @typedef {{ date_prevue: string, motif: string }} AppointmentDraft */
 
 /** Consultations and follow-up appointments of one child (spec §10). */
-const props = defineProps<{ childId: Uuid; referralId: Uuid | null; csbId: number | null; canWrite: boolean }>()
+const props = defineProps({
+  childId: { type: String, required: true },
+  referralId: { type: String, default: null },
+  csbId: { type: Number, default: null },
+  canWrite: { type: Boolean, required: true },
+})
 
 const { t } = useI18n()
 const fmt = useFormatters()
@@ -34,19 +45,30 @@ const appointments = useAsync(async () =>
   (await careApi.appointments(props.childId)).sort((a, b) => a.date_prevue.localeCompare(b.date_prevue)),
 )
 
-const dialog = ref<'consultation' | 'appointment' | null>(null)
+/** @type {import('vue').Ref<'consultation' | 'appointment' | null>} */
+const dialog = ref(null)
 const busy = ref(false)
-const attending = ref<Uuid | null>(null)
-const saveError = ref<unknown>(null)
-const serverErrors = ref<Record<string, string[]>>({})
+/** @type {import('vue').Ref<Uuid | null>} */
+const attending = ref(null)
+/** @type {import('vue').Ref<unknown>} */
+const saveError = ref(null)
+/** @type {import('vue').Ref<Record<string, string[]>>} */
+const serverErrors = ref({})
 
-function open(kind: 'consultation' | 'appointment'): void {
+/** @param {'consultation' | 'appointment'} kind */
+function open(kind) {
   saveError.value = null
   serverErrors.value = {}
   dialog.value = kind
 }
 
-async function save<T>(action: () => Promise<T>, onDone: (result: T) => void): Promise<void> {
+/**
+ * @template T
+ * @param {() => Promise<T>} action
+ * @param {(result: T) => void} onDone
+ * @returns {Promise<void>}
+ */
+async function save(action, onDone) {
   busy.value = true
   saveError.value = null
   serverErrors.value = {}
@@ -61,7 +83,11 @@ async function save<T>(action: () => Promise<T>, onDone: (result: T) => void): P
   }
 }
 
-function addConsultation(draft: ConsultationDraft): Promise<void> {
+/**
+ * @param {ConsultationDraft} draft
+ * @returns {Promise<void>}
+ */
+function addConsultation(draft) {
   return save(
     () =>
       careApi.addConsultation({
@@ -73,14 +99,18 @@ function addConsultation(draft: ConsultationDraft): Promise<void> {
         ...(auth.user ? { agent_medical_id: auth.user.id } : {}),
         ...draft,
       }),
-    (created: Consultation) => {
+    (created) => {
       consultations.data.value = [created, ...(consultations.data.value ?? [])]
       notifications.push(t('care.consultationSaved'))
     },
   )
 }
 
-function addAppointment(draft: AppointmentDraft): Promise<void> {
+/**
+ * @param {AppointmentDraft} draft
+ * @returns {Promise<void>}
+ */
+function addAppointment(draft) {
   return save(
     () =>
       careApi.addAppointment({
@@ -90,7 +120,7 @@ function addAppointment(draft: AppointmentDraft): Promise<void> {
         type_rendez_vous: 'controle',
         ...draft,
       }),
-    (created: Appointment) => {
+    (created) => {
       appointments.data.value = [...(appointments.data.value ?? []), created].sort((a, b) =>
         a.date_prevue.localeCompare(b.date_prevue),
       )
@@ -99,7 +129,11 @@ function addAppointment(draft: AppointmentDraft): Promise<void> {
   )
 }
 
-async function markAttended(appointment: Appointment): Promise<void> {
+/**
+ * @param {Appointment} appointment
+ * @returns {Promise<void>}
+ */
+async function markAttended(appointment) {
   attending.value = appointment.id
   try {
     const updated = await careApi.markAttended(appointment)

@@ -1,8 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import type { Referral } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import ReferralCode from '@/components/ui/ReferralCode.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -10,8 +9,17 @@ import UrgencyBadge from '@/components/ui/UrgencyBadge.vue'
 import { useFormatters } from '@/composables/useFormatters'
 import { urgencyOf } from '@/utils/triage'
 
-const props = defineProps<{ referral: Referral; now: Date; canUpdate: boolean; busy: boolean }>()
-defineEmits<{ arrived: [referral: Referral] }>()
+/** @typedef {import('@/api/types').Referral} Referral */
+
+const props = defineProps({
+  /** @type {import('vue').PropType<Referral>} */
+  referral: { type: Object, required: true },
+  now: { type: Date, required: true },
+  canUpdate: { type: Boolean, required: true },
+  busy: { type: Boolean, required: true },
+})
+/** arrived(referral: Referral) */
+defineEmits(['arrived'])
 
 const { t } = useI18n()
 const fmt = useFormatters()

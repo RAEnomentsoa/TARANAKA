@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -9,7 +9,7 @@ const router = useRouter()
 const code = ref('')
 const id = useId()
 
-function submit(): void {
+function submit() {
   const value = code.value.trim()
   if (!value) return
   void router.push({ name: 'search', query: { code: value } })

@@ -1,9 +1,14 @@
-<script setup lang="ts">
+<script setup>
 import { useI18n } from 'vue-i18n'
-import type { Protected } from '@/utils/privacy'
+
+/** @typedef {import('@/utils/privacy').Protected} Protected */
 
 /** A figure, or "< 5" when the group is too small to show. */
-withDefaults(defineProps<{ value: Protected; format?: (n: number) => string }>(), { format: (n: number) => String(n) })
+defineProps({
+  /** @type {import('vue').PropType<Protected>} */
+  value: { type: Object, required: true },
+  format: { type: Function, default: (n) => String(n) },
+})
 const { t } = useI18n()
 </script>
 

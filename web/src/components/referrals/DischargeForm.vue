@@ -1,19 +1,23 @@
-<script setup lang="ts">
+<script setup>
 import { ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { DischargeOutcome } from '@/api/types'
 import AppButton from '@/components/ui/AppButton.vue'
 import { OUTCOMES } from '@/utils/triage'
 
-const props = defineProps<{ busy: boolean }>()
-const emit = defineEmits<{ submit: [outcome: DischargeOutcome]; cancel: [] }>()
+/** @typedef {import('@/api/types').DischargeOutcome} DischargeOutcome */
+
+const props = defineProps({ busy: { type: Boolean, required: true } })
+/** submit(outcome: DischargeOutcome), cancel() */
+const emit = defineEmits(['submit', 'cancel'])
 
 const { t } = useI18n()
-const outcome = ref<DischargeOutcome | ''>('')
-const error = ref<string | null>(null)
+/** @type {import('vue').Ref<DischargeOutcome | ''>} */
+const outcome = ref('')
+/** @type {import('vue').Ref<string | null>} */
+const error = ref(null)
 const id = useId()
 
-function submit(): void {
+function submit() {
   error.value = outcome.value ? null : t('validation.required')
   if (!outcome.value || props.busy) return
   emit('submit', outcome.value)
