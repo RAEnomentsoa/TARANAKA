@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'referencement',
     'config_clinique',
     'statistiques',
+    'demo',
 ]
 
 AUTH_USER_MODEL = 'comptes.User'
