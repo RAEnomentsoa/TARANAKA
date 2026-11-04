@@ -60,13 +60,14 @@ function response(query) {
         libelle: 'Analamanga',
         indicateurs: {
           depistages: 120,
-          cas_mas: 6,
+          // 6, masked by the server's complementary suppression (D11).
+          cas_mas: null,
           cas_mam: 10,
           referencements: 13,
           referencements_arrives: 11,
           rendez_vous_manques: null,
         },
-        masques: ['rendez_vous_manques'],
+        masques: ['cas_mas', 'rendez_vous_manques'],
       },
       {
         cle: '2',
@@ -110,7 +111,7 @@ describe('StatsView', () => {
       .map(Number)
     expect(figures.length).toBeGreaterThan(5)
     expect(figures.every((n) => n === 0 || n >= 5)).toBe(true)
-    // Analamanga's 6 MAS would give Atsinanana's hidden value by subtraction.
+    // The server hid Analamanga's MAS too, so Atsinanana's cannot be subtracted.
     const firstRow = wrapper.findAll('tbody tr')[0]
     expect(firstRow.findAll('td')[1].text()).toContain('< 5')
   })

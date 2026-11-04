@@ -6,6 +6,7 @@ import { childrenApi } from '@/api/children'
 import CareSection from '@/components/referrals/CareSection.vue'
 import ReferralActions from '@/components/referrals/ReferralActions.vue'
 import StatusStepper from '@/components/referrals/StatusStepper.vue'
+import AgentContact from '@/components/ui/AgentContact.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import InlineAlert from '@/components/ui/InlineAlert.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
@@ -41,16 +42,6 @@ const facility = computed(() => {
 })
 const urgency = computed(() => (referral.value ? urgencyOf(referral.value) : 'jaune'))
 const referredAt = computed(() => referral.value?.date_referencement ?? referral.value?.created_at ?? '')
-const dates = computed(() => {
-  const r = referral.value
-  if (!r) return []
-  return [
-    { key: 'createdAt', value: referredAt.value },
-    { key: 'dateReception', value: r.date_reception },
-    { key: 'datePriseEnCharge', value: r.date_prise_en_charge },
-    { key: 'dateSortie', value: r.date_sortie },
-  ].filter((d) => Boolean(d.value))
-})
 
 /** @returns {Promise<void>} */
 async function load() {
@@ -83,7 +74,7 @@ watch(() => props.id, load)
     <div class="detail__grid">
       <div class="stack detail__main">
         <SectionPanel :title="t('referral.progress')">
-          <StatusStepper :status="referral.status" />
+          <StatusStepper :referral="referral" />
         </SectionPanel>
 
         <SectionPanel :title="t('referral.reason')">
@@ -103,11 +94,7 @@ watch(() => props.id, load)
             </div>
             <div>
               <dt>{{ t('referral.agent') }}</dt>
-              <dd>{{ t('referral.agentId', { id: referral.asc_id.slice(0, 8) }) }}</dd>
-            </div>
-            <div v-for="d in dates" :key="d.key">
-              <dt>{{ t(`referral.${d.key}`) }}</dt>
-              <dd><time :datetime="d.value">{{ fmt.dateTime(d.value) }}</time></dd>
+              <dd><AgentContact :contact="referral.asc" /></dd>
             </div>
             <div v-if="referral.issue_sortie">
               <dt>{{ t('referral.outcome') }}</dt>

@@ -10,6 +10,7 @@ import { extent, linear, niceTicks } from '@/utils/scale'
  */
 /** @typedef {import('@/utils/scale').ChartPoint} ChartPoint */
 /** @typedef {import('@/utils/scale').Threshold} Threshold */
+/** @typedef {import('@/utils/who').ReferenceCurve} ReferenceCurve */
 
 const props = defineProps({
   title: { type: String, required: true },
@@ -26,6 +27,12 @@ const props = defineProps({
   minPoints: { type: Number, default: 1 },
   /** How far to widen the x axis around a single point (a duration for dates). */
   xPad: { type: Number, default: undefined },
+  /**
+   * Reference curves drawn behind the child's points (WHO z-scores),
+   * labelled at their right end.
+   * @type {import('vue').PropType<ReferenceCurve[]>}
+   */
+  references: { type: Array, default: () => [] },
 })
 
 const { t } = useI18n()
@@ -37,7 +44,9 @@ const active = ref(null)
 // A small viewBox keeps the text legible once the chart is scaled to its column.
 const WIDTH = 480
 const HEIGHT = 260
-const M = { top: 34, right: 16, bottom: 46, left: 48 }
+const hasReferences = computed(() => props.references.length > 0)
+// Room on the right for the curve labels ("+3 z", "médiane").
+const M = computed(() => ({ top: 34, right: hasReferences.value ? 64 : 16, bottom: 46, left: 48 }))
 
 const sorted = computed(() => [...props.points].sort((a, b) => a.x - b.x))
 const enough = computed(() => sorted.value.length >= props.minPoints)
@@ -45,7 +54,7 @@ const enough = computed(() => sorted.value.length >= props.minPoints)
 const xScale = computed(() => {
   const d = extent(
     sorted.value.map((p) => p.x),
-    [],
+    props.references.flatMap((curve) => curve.points.map((p) => p.x)),
     props.xPad,
   )
   return { domain: d, ticks: niceTicks(d, 4).ticks.filter((v) => v >= d.min && v <= d.max) }
@@ -54,18 +63,40 @@ const yScale = computed(() =>
   niceTicks(
     extent(
       sorted.value.map((p) => p.y),
-      props.thresholds.map((th) => th.value),
+      [...props.thresholds.map((th) => th.value), ...props.references.flatMap((curve) => curve.points.map((p) => p.y))],
     ),
     5,
   ),
 )
 
-const sx = computed(() => linear(xScale.value.domain, [M.left, WIDTH - M.right]))
-const sy = computed(() => linear(yScale.value.domain, [HEIGHT - M.bottom, M.top]))
+const sx = computed(() => linear(xScale.value.domain, [M.value.left, WIDTH - M.value.right]))
+const sy = computed(() => linear(yScale.value.domain, [HEIGHT - M.value.bottom, M.value.top]))
 
-const path = computed(() =>
-  sorted.value.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx.value(p.x).toFixed(1)},${sy.value(p.y).toFixed(1)}`).join(''),
+/** @param {{ x: number, y: number }[]} points */
+function line(points) {
+  return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${sx.value(p.x).toFixed(1)},${sy.value(p.y).toFixed(1)}`).join('')
+}
+
+/** @param {string} z */
+function curveLabel(z) {
+  if (z === '0') return t('charts.median')
+  return t('charts.curveLabel', { z: Number(z) > 0 ? `+${z}` : z.replace('-', '−') })
+}
+
+const curves = computed(() =>
+  props.references.map((curve) => {
+    const last = curve.points[curve.points.length - 1]
+    return {
+      z: curve.z,
+      d: line(curve.points),
+      tier: Math.abs(Number(curve.z)),
+      label: curveLabel(curve.z),
+      labelY: last ? sy.value(last.y) : 0,
+    }
+  }),
 )
+
+const path = computed(() => line(sorted.value))
 
 const summary = computed(() => {
   const first = sorted.value[0]
@@ -100,6 +131,10 @@ function onPointerMove(event) {
   <figure class="chart">
     <figcaption :id="`${id}-title`" class="chart__title">{{ title }}</figcaption>
     <p :id="`${id}-summary`" class="visually-hidden">{{ summary }}</p>
+    <ul v-if="hasReferences && enough" class="chart__legend">
+      <li><span class="chart__key chart__key--child" aria-hidden="true" />{{ t('charts.childSeries') }}</li>
+      <li><span class="chart__key chart__key--who" aria-hidden="true" />{{ t('charts.whoSeries') }}</li>
+    </ul>
 
     <div v-if="enough" class="chart__plot">
       <svg
@@ -123,6 +158,14 @@ function onPointerMove(event) {
           </text>
           <text :x="WIDTH - M.right" :y="HEIGHT - 6" text-anchor="end" class="chart__axis-label">{{ xLabel }}</text>
           <text :x="M.left - 8" :y="M.top - 22" text-anchor="end" class="chart__axis-label">{{ yLabel }}</text>
+        </g>
+
+        <!-- WHO reference curves: behind everything, labelled at the right -->
+        <g v-if="hasReferences" class="chart__refs" aria-hidden="true">
+          <path v-for="c in curves" :key="c.z" :d="c.d" class="chart__ref" :class="`chart__ref--${c.tier}`" />
+          <text v-for="c in curves" :key="`l${c.z}`" :x="WIDTH - M.right + 6" :y="c.labelY" dominant-baseline="middle" class="chart__ref-label">
+            {{ c.label }}
+          </text>
         </g>
 
         <!-- Thresholds -->
@@ -264,6 +307,60 @@ function onPointerMove(event) {
 
 .chart__threshold--orange text {
   fill: var(--orange-ink);
+}
+
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.chart__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chart__key {
+  display: inline-block;
+  width: 1.25rem;
+  height: 0;
+}
+
+.chart__key--child {
+  border-top: 2px solid var(--primary);
+}
+
+.chart__key--who {
+  border-top: 2px dashed var(--who-curve);
+}
+
+.chart__ref {
+  fill: none;
+  stroke: var(--who-curve);
+  stroke-width: 1.25;
+}
+
+.chart__ref--0 {
+  stroke: var(--who-median);
+  stroke-width: 1.5;
+}
+
+.chart__ref--2 {
+  stroke-dasharray: 6 4;
+}
+
+.chart__ref--3 {
+  stroke-dasharray: 2 4;
+}
+
+.chart__ref-label {
+  fill: var(--ink-muted);
+  font-size: 12px;
 }
 
 .chart__line {

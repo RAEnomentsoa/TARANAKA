@@ -14,6 +14,8 @@ npm run dev                   # http://localhost:5173, /api est relayé vers le 
 
 Le backend doit tourner sur `VITE_API_PROXY_TARGET` (par défaut `http://127.0.0.1:8000`). Pour une démonstration complète, chargez les données fictives côté backend (`python manage.py charger_demo`, voir `docs/DEMO.md`) puis connectez-vous avec `inf.crenas` / `3333` (infirmier) ou `sup.analamanga` / `2222` (superviseur). À la première connexion, le tableau de bord fait activer la double authentification : scannez le QR code avec une application TOTP (FreeOTP, Aegis, Google Authenticator…).
 
+Pour voir les courbes OMS sur la fiche enfant, importez côté backend les tables officielles de l'OMS (fichiers `weianthro.txt`, `lenanthro.txt`, `wflanthro.txt`, `wfhanthro.txt` du dépôt WHO « anthro ») : `python manage.py importer_tables_oms <dossier>`. Sans elles, les graphiques montrent les mesures de l'enfant et les seuils MAS / MAM seulement.
+
 | Commande | Rôle |
 |---|---|
 | `npm run dev` | Serveur de développement |
@@ -42,10 +44,10 @@ Les permissions suivent le tableau « Qui peut faire quoi » de `Backend_serveur
 
 - **Connexion** : identifiant + PIN, puis code TOTP ; enrôlement (QR code + clé) imposé à tout compte web qui n'a pas encore la double authentification.
 - **File** : `/api/referrals/incoming/`, triée par urgence (rouge, orange, jaune) puis du plus ancien au plus récent ; « Patient arrivé » en un clic (avec confirmation) ; référencements en retard signalés.
-- **Fiche de référencement** : étapes Référé → Patient arrivé → Pris en charge → En suivi → Sortie, une action principale à la fois, sortie avec issue (guéri, transféré, non-répondant, abandon, décédé), consultations, contrôles et venue au contrôle.
-- **Fiche enfant** : âge calculé, historique des mesures, courbes (poids/âge, taille/âge, P/T en z-score, PB avec seuils MAS/MAM), table de données pour chaque courbe.
-- **Conflits** : les deux versions côte à côte, choix champ par champ, jamais d'écrasement automatique.
-- **Statistiques** : par période et par région (verrouillée pour un superviseur régional), par mois, issues de sortie ; tout chiffre portant sur moins de 5 cas (ou déductible par soustraction) est remplacé par « < 5 ». L'export CSV est celui du serveur, journalisé dans l'audit.
+- **Fiche de référencement** : étapes Référé → Patient arrivé → Pris en charge → En suivi → Sortie, chacune avec sa date (une étape sautée par une sortie directe est marquée « non franchie ») ; une action principale à la fois ; sortie avec issue (guéri, transféré, non-répondant, abandon, décédé) ; nom et téléphone de l'agent communautaire, avec un lien d'appel ; consultations, contrôles et venue au contrôle.
+- **Fiche enfant** : âge calculé, historique des mesures, courbes de croissance avec les standards OMS 2006 (−3, −2, médiane, +2, +3 z) pour le poids selon l'âge, la taille selon l'âge et le poids selon la longueur (avant 2 ans) ou la taille (après) ; P/T en z-score et PB dans le temps avec les seuils MAS / MAM ; table de données pour chaque courbe.
+- **Conflits** : les deux versions côte à côte, choix champ par champ, jamais d'écrasement automatique ; nom et téléphone de l'agent qui a envoyé la version du téléphone.
+- **Statistiques** : par période et par région (verrouillée pour un superviseur régional), par mois, issues de sortie ; tout chiffre portant sur moins de 5 cas (ou déductible par soustraction) est masqué par le serveur et affiché « < 5 ». L'écran et l'export CSV (celui du serveur, journalisé dans l'audit) masquent les mêmes chiffres.
 
 ## Organisation du code
 
@@ -54,7 +56,7 @@ src/
   api/          couche HTTP (client, erreurs, un module par ressource, types)
   stores/       Pinia : auth (connexion en 2 étapes), référencements, référentiel, notifications
   router/       routes et gardes par permission
-  utils/        logique pure testée : rôles, tri, anonymat, CSV, dates, conflits, échelles
+  utils/        logique pure testée : rôles, tri, anonymat, dates, conflits, échelles, courbes OMS
   composables/  useAsync, useFormatters, useIdleLogout, useNow, useAnnouncer
   components/   ui/ (boutons, champs, dialogues, badges…), charts/, referrals/, children/, stats/, auth/, layout/
   views/        une vue par écran (auth/, staff/, supervisor/)
@@ -62,6 +64,16 @@ src/
   styles/       jetons de design et styles de base
 tests/          tests unitaires et de composants
 ```
+
+### JavaScript et JSDoc
+
+Le code est en JavaScript (ES modules), sans étape de compilation des types. Les types utiles sont documentés en JSDoc :
+
+- `src/api/types.js` : un `@typedef` par schéma de `docs/openapi.yaml` utilisé par le web ;
+- fonctions publiques (API, stores, utilitaires, composables) : `@param`, `@returns`, `@template` ;
+- composants : props déclarées à l'exécution (`defineProps({ … })`, validées par Vue), avec `PropType` en JSDoc pour les objets.
+
+`jsconfig.json` déclare l'alias `@/` pour les éditeurs.
 
 Les types JSDoc de `src/api/types.js` suivent `docs/openapi.yaml`. Les écarts et limites constatés sur l'API sont dans `docs/API_ISSUES.md`.
 
@@ -73,7 +85,7 @@ Les types JSDoc de `src/api/types.js` suivent `docs/openapi.yaml`. Les écarts e
 - Urgence jamais signalée par la couleur seule (forme + mot) ; « < 5 » expliqué aux lecteurs d'écran.
 - Dialogues natifs `<dialog>` (piège du focus, Échap, retour du focus), onglets ARIA au clavier, erreurs de formulaire reliées aux champs.
 - Graphiques : résumé texte, points focalisables avec infobulle, tableau des valeurs à la demande.
-- `prefers-reduced-motion` et `forced-colors` respectés ; mise en page vérifiée à 320, 360, 390, 768 et 1366 px, sans défilement horizontal ; tableaux larges présentés en fiches sur mobile.
+- `prefers-reduced-motion` et `forced-colors` respectés ; mise en page vérifiée à 320, 360, 390, 768, 1024, 1366 et 1440 px, sans défilement horizontal ; tableaux larges présentés en fiches sur mobile.
 
 ## Traductions
 

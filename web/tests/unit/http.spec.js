@@ -111,7 +111,7 @@ describe('HttpClient', () => {
     const blob = await http.blob('/api/stats/export/', { region: 1 })
 
     expect(await blob.text()).toContain('cas_mas,<5')
-    expect(calls[2].init.headers.Accept).toBe('*/*')
+    expect(calls[2].init.headers.Accept).toBe('text/csv')
     expect(calls[2].url).toBe('http://api.test/api/stats/export/?region=1')
   })
 

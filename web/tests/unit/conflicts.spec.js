@@ -38,8 +38,8 @@ describe('conflict arbitration', () => {
     })
   })
 
-  it('copes with a deletion, which has no phone data', () => {
-    expect(differingFields({ ...measureConflict, operation: 'delete', donnees_telephone: null })).toEqual([
+  it('copes with a deletion, whose phone data is an empty object', () => {
+    expect(differingFields({ ...measureConflict, operation: 'delete', donnees_telephone: {} })).toEqual([
       'pb_mm',
       'poids_kg',
       'taille_cm',

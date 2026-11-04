@@ -121,20 +121,19 @@ export class HttpClient {
 
   /**
    * A file answer (CSV export), with the same token handling as JSON calls.
-   * "Accept: text/csv" gets a 406 from DRF's content negotiation on
-   * /api/stats/export/ (docs/API_ISSUES.md), so any type is accepted.
    * @param {string} path
    * @param {Query} [query]
+   * @param {string} [accept='text/csv'] MIME type asked for.
    * @returns {Promise<Blob>}
    */
-  async blob(path, query) {
-    let response = await this.send(path, { query, accept: '*/*' })
+  async blob(path, query, accept = 'text/csv') {
+    let response = await this.send(path, { query, accept })
     if (response.status === 401 && (await this.isExpiredToken(response))) {
       if (!(await this.refreshTokens())) {
         this.expireSession()
         throw new ApiError({ kind: 'session_expired', status: 401, code: 'token_not_valid' })
       }
-      response = await this.send(path, { query, accept: '*/*' })
+      response = await this.send(path, { query, accept })
     }
     if (!response.ok) throw errorFromResponse(response.status, await readBody(response))
     return response.blob()

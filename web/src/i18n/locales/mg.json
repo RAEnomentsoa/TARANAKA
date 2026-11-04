@@ -173,10 +173,8 @@
     "origin": "Niaviana",
     "reason": "Antony",
     "priority": "Hamehana",
-    "createdAt": "Nalefa tamin'ny",
     "facility": "Toeram-pitsaboana alefana",
     "agent": "Mpiasan'ny fahasalamana eny ifotony",
-    "agentId": "Mpiasa laharana {id}",
     "mother": "Vehivavy bevohoka",
     "child": "Zaza",
     "openChild": "Sokafy ny taratasin'ny zaza",
@@ -208,12 +206,10 @@
     },
     "dischargeOnlyAgent": "Ny mpitsabo ao amin'ny toeram-pitsaboana alefana ihany no afaka mandrakitra ny fivoahana.",
     "dates": "Daty amin'ny antontan-taratasy",
-    "dateReception": "Tonga tamin'ny",
-    "datePriseEnCharge": "Voakarakara tamin'ny",
-    "dateSortie": "Nivoaka tamin'ny",
     "late": "Mbola tsy tonga taorian'ny fotoana voafetra",
     "lateShort": "Tara",
-    "facilityType": "{name} ({type})"
+    "facilityType": "{name} ({type})",
+    "stepSkipped": "tsy nolalovana"
   },
   "care": {
     "title": "Fitsaboana sy fanaraha-maso",
@@ -312,7 +308,7 @@
       "rouge": "Loza"
     },
     "notAvailable": "tsy norefesina",
-    "zscoreSource": "Kajian'ny mpizara ny z-score OMS 2006 rehefa voapetraka ny tabilao OMS.",
+    "zscoreSource": "Kajian'ny mpizara ny z-score OMS 2006.",
     "classification": "Fanasokajiana",
     "classifications": {
       "mas": "MAS",
@@ -343,7 +339,16 @@
     "thresholdMam": "MAM (< −2)",
     "thresholdMuacMas": "MAS (< 115 mm)",
     "thresholdMuacMam": "MAM (< 125 mm)",
-    "noReferenceCurves": "Ny fandrefesana ny zaza sy ny fetra MAS / MAM no asehon'ny fiolahana."
+    "weightForLength": "Lanja araka ny halava mandry",
+    "weightForHeight": "Lanja araka ny halava mitsangana",
+    "lengthAxis": "Halava mandry (cm)",
+    "heightAxis": "Halava mitsangana (cm)",
+    "childSeries": "Fandrefesana ny zaza",
+    "whoSeries": "Fiolahana OMS (z-score)",
+    "median": "antonony",
+    "curveLabel": "{z} z",
+    "whoNote": "Fiolahana fanondroana : fenitry ny fitomboana OMS 2006 (−3, −2, antonony, +2, +3 z), kajian'ny mpizara avy amin'ny tabilao ofisialy.",
+    "whoMissing": "Tsy voapetraka ao amin'ny mpizara ny tabilao OMS : ny fandrefesana ny zaza sy ny fetra MAS / MAM ihany no aseho."
   },
   "conflicts": {
     "title": "Fifanoherana amin'ny fampifanarahana",
@@ -365,7 +370,7 @@
     "field": "Saha",
     "serverVersion": "Dikan'ny mpizara (v{version})",
     "deviceVersion": "Dikan'ny finday",
-    "deviceLabel": "Nalefan'ny fitaovana {device}",
+    "deviceLabel": "Fitaovana {device}",
     "keepServer": "Tazomy ny dikan'ny mpizara",
     "keepDevice": "Tazomy ny dikan'ny finday",
     "chooseField": "Sanda hotazonina ho an'ny {field}",
@@ -380,7 +385,8 @@
       "update": "Fanovana",
       "delete": "Famafana"
     },
-    "deleted": "voafafa"
+    "deleted": "voafafa",
+    "sentBy": "Nalefan'i"
   },
   "stats": {
     "title": "Antontan'isa mitambatra",
@@ -443,5 +449,9 @@
   },
   "offline": {
     "banner": "Tsy misy fifandraisana. Mety tsy vaovao ny angona aseho ; hitohy rehefa miverina ny tambajotra ny asa."
+  },
+  "contact": {
+    "call": "Antsoy {name} amin'ny {phone}",
+    "noPhone": "Tsy misy laharana voarakitra"
   }
 }

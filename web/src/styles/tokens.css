@@ -31,7 +31,10 @@
   --jaune-bar: #e6b800;
   --success-ink: #11663a; /* 6.2:1 on success-bg */
   --success-bg: #e3f5ea;
-  --success-on-dark: #5fd08f; /* accents on the dark notice */
+  --success-on-dark: #5fd08f;
+  /* WHO reference curves: recessive behind the child's data */
+  --who-curve: #7896ad;
+  --who-median: #46637a; /* accents on the dark notice */
   --warning-on-dark: #ffd29a;
 
   /* Elevation: floating elements only (dialogs, notices) */

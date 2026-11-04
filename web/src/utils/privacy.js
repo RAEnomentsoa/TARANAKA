@@ -1,24 +1,44 @@
-/** @typedef {import('@/api/types').DischargeOutcome} DischargeOutcome */
 /** @typedef {import('@/api/types').Indicator} Indicator */
 /** @typedef {import('@/api/types').StatsBlock} StatsBlock */
 /** @typedef {import('@/api/types').StatsResponse} StatsResponse */
 
 /**
  * Small-group protection (spec §10): no figure about fewer than 5 cases is
- * displayed. The server already hides counts of 1 to 4 (null + "masques");
- * the dashboard checks again, and adds what the server does not do yet
- * (D11): rates whose complement is small, and complementary suppression.
+ * displayed. The server does the masking (D11): counts of 1 to 4, rates and
+ * means over fewer than 5 cases, and complementary suppression across groups
+ * all come back as null and are listed in "masques". The screen shows exactly
+ * what the server masked, so it matches the audited CSV export. As a safety
+ * net, a count of 1 to 4 that would arrive unmasked is still hidden.
  */
 export const SMALL_GROUP_THRESHOLD = 5
 
 /**
  * A figure on screen: a value, or hidden because the group is too small.
- * @typedef {{ hidden: false; value: number } | { hidden: true }} Protected
+ * @typedef {{ hidden: false, value: number } | { hidden: true }} Protected
  */
 
 /** @type {Protected} */
 export const HIDDEN = { hidden: true }
 
+/**
+ * @typedef {'sorties_gueri' | 'sorties_transfere' | 'sorties_non_repondant' | 'sorties_abandon' | 'sorties_decede'} OutcomeIndicator
+ */
+
+/**
+ * @typedef {(
+ *   | 'depistages'
+ *   | 'enfants_depistes'
+ *   | 'cas_mas'
+ *   | 'cas_mam'
+ *   | 'nourrissons_a_risque'
+ *   | 'referencements'
+ *   | 'referencements_arrives'
+ *   | 'rendez_vous_manques'
+ *   | OutcomeIndicator
+ * )} CountIndicator
+ */
+
+/** @type {OutcomeIndicator[]} */
 export const OUTCOME_INDICATORS = [
   'sorties_gueri',
   'sorties_transfere',
@@ -27,6 +47,7 @@ export const OUTCOME_INDICATORS = [
   'sorties_decede',
 ]
 
+/** @type {CountIndicator[]} */
 export const COUNT_INDICATORS = [
   'depistages',
   'enfants_depistes',
@@ -39,8 +60,6 @@ export const COUNT_INDICATORS = [
   ...OUTCOME_INDICATORS,
 ]
 
-/** @typedef {(typeof COUNT_INDICATORS)[number]} CountIndicator */
-
 /**
  * @param {number | null | undefined} value
  * @returns {Protected}
@@ -50,6 +69,15 @@ export function protectCount(value) {
   // Zero describes nobody; 1 to 4 could point at a person.
   if (value > 0 && value < SMALL_GROUP_THRESHOLD) return HIDDEN
   return { hidden: false, value }
+}
+
+/**
+ * A rate or a mean: shown as sent, unless the server masked it.
+ * @param {number | null | undefined} value
+ * @returns {Protected}
+ */
+function protectMeasure(value) {
+  return value === null || value === undefined ? HIDDEN : { hidden: false, value }
 }
 
 /**
@@ -66,51 +94,13 @@ export function protectCount(value) {
 export function protectBlock(block) {
   /** @param {Indicator} key */
   const raw = (key) => (block.masques.includes(key) ? null : (block.indicateurs[key] ?? null))
-  const counts = Object.fromEntries(COUNT_INDICATORS.map((key) => [key, protectCount(raw(key))]))
-
-  const sent = raw('referencements')
-  const arrived = raw('referencements_arrives')
-  const rate = raw('taux_arrivee_pct')
-  // A rate also reveals its complement: 2 children who never arrived.
-  const rateSafe =
-    rate !== null &&
-    sent !== null &&
-    arrived !== null &&
-    sent >= SMALL_GROUP_THRESHOLD &&
-    !protectCount(arrived).hidden &&
-    !protectCount(sent - arrived).hidden
-
-  const delay = raw('delai_moyen_arrivee_heures')
-  const delaySafe = delay !== null && arrived !== null && arrived >= SMALL_GROUP_THRESHOLD
-
   return {
-    counts,
-    arrivalRate: rateSafe ? { hidden: false, value: rate } : HIDDEN,
-    meanDelayHours: delaySafe ? { hidden: false, value: delay } : HIDDEN,
+    counts: /** @type {Record<CountIndicator, Protected>} */ (
+      Object.fromEntries(COUNT_INDICATORS.map((key) => [key, protectCount(raw(key))]))
+    ),
+    arrivalRate: protectMeasure(raw('taux_arrivee_pct')),
+    meanDelayHours: protectMeasure(raw('delai_moyen_arrivee_heures')),
   }
-}
-
-/**
- * Complementary suppression: when a total is visible and only one cell of a
- * column is hidden, that cell can be found by subtraction. Hide the smallest
- * other non-zero cell as well.
- * @param {Protected[]} cells
- * @param {boolean} totalVisible
- * @returns {Protected[]}
- */
-export function suppressComplementary(cells, totalVisible) {
-  const result = [...cells]
-  if (!totalVisible || result.filter((c) => c.hidden).length !== 1) return result
-  let smallest = -1
-  let smallestValue = Infinity
-  result.forEach((cell, index) => {
-    if (!cell.hidden && cell.value > 0 && cell.value < smallestValue) {
-      smallest = index
-      smallestValue = cell.value
-    }
-  })
-  if (smallest !== -1) result[smallest] = HIDDEN
-  return result
 }
 
 /**
@@ -122,22 +112,10 @@ export function suppressComplementary(cells, totalVisible) {
 
 /**
  * @param {StatsResponse['groupes']} groups
- * @param {ProtectedBlock} total
  * @returns {ProtectedGroup[]}
  */
-function protectGroups(groups, total) {
-  const rows = groups.map((g) => ({ key: g.cle, label: g.libelle, block: protectBlock(g) }))
-  for (const key of COUNT_INDICATORS) {
-    const column = suppressComplementary(
-      rows.map((r) => r.block.counts[key]),
-      !total.counts[key].hidden,
-    )
-    column.forEach((cell, i) => {
-      const row = rows[i]
-      if (row) row.block.counts[key] = cell
-    })
-  }
-  return rows
+function protectGroups(groups) {
+  return groups.map((g) => ({ key: g.cle, label: g.libelle, block: protectBlock(g) }))
 }
 
 /**
@@ -155,11 +133,10 @@ function protectGroups(groups, total) {
  * @returns {ProtectedStats}
  */
 export function protectStats(byRegion, byMonth) {
-  const total = protectBlock(byRegion.total)
   return {
     period: { start: byRegion.periode.date_debut, end: byRegion.periode.date_fin },
-    total,
-    byRegion: protectGroups(byRegion.groupes ?? [], total),
-    byMonth: byMonth ? protectGroups(byMonth.groupes ?? [], total) : [],
+    total: protectBlock(byRegion.total),
+    byRegion: protectGroups(byRegion.groupes ?? []),
+    byMonth: byMonth ? protectGroups(byMonth.groupes ?? []) : [],
   }
 }

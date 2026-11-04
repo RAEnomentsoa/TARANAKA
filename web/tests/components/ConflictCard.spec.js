@@ -16,6 +16,7 @@ const conflict = {
   donnees_telephone: { nom: 'Faramalala', sexe: 'F' },
   user_id: '0aa5a6f7-ba14-4ff9-8303-37fef7fdd866',
   device_id: 'tel-b',
+  expediteur: { nom: 'Rabearivelo', prenom: 'Hery', phone: '034 22 333 44' },
   statut: 'a_verifier',
   created_at: '2026-11-04T09:00:00Z',
 }
@@ -27,6 +28,12 @@ describe('ConflictCard', () => {
     expect(wrapper.findAll('tbody tr')).toHaveLength(1)
     expect(wrapper.text()).toContain('Fara')
     expect(wrapper.text()).toContain('Faramalala')
+  })
+
+  it('says who sent the phone version, with a number to call', () => {
+    const wrapper = mountWithApp(ConflictCard, { props: { conflict, busy: false } })
+    expect(wrapper.find('.conflict__sender').text()).toContain('Hery Rabearivelo')
+    expect(wrapper.find('.conflict__sender a').attributes('href')).toBe('tel:0342233344')
   })
 
   it('cannot be validated before a value is chosen for every field', async () => {

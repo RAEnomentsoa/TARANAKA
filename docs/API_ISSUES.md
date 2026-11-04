@@ -11,19 +11,23 @@ Gravité : **bloquant** (une fonction demandée ne marche pas), **gênant** (con
 
 ## État au 4 nov. 2026 (après correction côté backend)
 
-| # | Sujet | État |
-|---|---|---|
-| 1 | Export CSV et `Accept: text/csv` | ✅ Corrigé |
-| 2 | Suppression complémentaire | ✅ Corrigé (serveur, écran et CSV) |
-| 3 | Double authentification non imposée par défaut | 🟡 Documenté : `TOTP_OBLIGATOIRE=True` en production. Codes de secours : **ouvert** |
-| 4 | Nom de l'agent communautaire | ✅ Corrigé |
-| 5 | Date de l'étape « En suivi » | ✅ Corrigé |
-| 6 | Courbes de référence OMS | ✅ Corrigé |
-| 7 | Liens de pagination absolus | ✅ Réglage `USE_X_FORWARDED_HOST` (déploiement) |
-| 8 | CORS | ✅ Réglage `CORS_ALLOWED_ORIGINS` (déploiement) |
-| 9 | Messages d'erreur seulement en français | ❌ **Ouvert** (reporté) |
+| # | Sujet | État API | Tableau de bord web |
+|---|---|---|---|
+| 1 | Export CSV et `Accept: text/csv` | ✅ Corrigé | ✅ Contournement retiré : le client demande `Accept: text/csv` (`web/src/api/http.js`, `blob()`). |
+| 2 | Suppression complémentaire | ✅ Corrigé (serveur, écran et CSV) | ✅ Suppression complémentaire et règle du taux retirées du client : l'écran affiche exactement ce que le serveur masque, comme le CSV. Seul filet de sécurité gardé : un effectif de 1 à 4 qui arriverait non masqué reste caché (`web/src/utils/privacy.js`). |
+| 3 | Double authentification non imposée par défaut | 🟡 Documenté : `TOTP_OBLIGATOIRE=True` en production. Codes de secours : **ouvert** | 🟡 Gardé : le tableau de bord impose toujours l'enrôlement, quel que soit le réglage du serveur. |
+| 4 | Nom de l'agent communautaire | ✅ Corrigé | ✅ Nom et téléphone de l'agent (lien d'appel) sur la fiche de référencement ; expéditeur sur chaque conflit (`AgentContact.vue`). |
+| 5 | Date de l'étape « En suivi » | ✅ Corrigé | ✅ Chaque étape franchie affiche sa date ; une étape sautée par une sortie directe est marquée « non franchie » (`StatusStepper.vue`). |
+| 6 | Courbes de référence OMS | ✅ Corrigé | ✅ Courbes −3, −2, médiane, +2, +3 z sur poids/âge, taille/âge et poids/longueur ou poids/taille (nouveau graphique). Sans table chargée (`404`) : mesures seules, avec un message. |
+| 7 | Liens de pagination absolus | ✅ Réglage `USE_X_FORWARDED_HOST` (déploiement) | Gardé : le client suit `?page=n`, ce qui marche avec ou sans ce réglage. |
+| 8 | CORS | ✅ Réglage `CORS_ALLOWED_ORIGINS` (déploiement) | Rien à faire : proxy Vite en développement, même domaine recommandé en production. |
+| 9 | Messages d'erreur seulement en français | ❌ **Ouvert** (reporté) | Gardé : erreurs connues traduites côté web par leur `code`. |
 
-Le guide de déploiement est `Backend_serveur/docs/deployment.md`, avec l'exemple `Backend_serveur/.env.production.example`. Les contournements côté web (`Accept: */*`, suppression complémentaire, identifiant tronqué de l'agent…) peuvent maintenant être retirés.
+Le guide de déploiement est `Backend_serveur/docs/deployment.md`, avec l'exemple `Backend_serveur/.env.production.example`.
+
+Vérifié le 4 nov. 2026 sur le serveur réel (PostgreSQL 16, `charger_demo`, tables OMS officielles importées avec `importer_tables_oms`) : export CSV avec `Accept: text/csv` (`200`, `text/csv`), contact de l'agent, `date_suivi` à `null` après une sortie directe, 15 courbes OMS sur la fiche enfant.
+
+Depuis, le code web est passé de TypeScript à JavaScript (types en JSDoc) : les chemins `.ts` cités plus bas dans les constats d'origine sont devenus `.js`.
 
 ---
 
@@ -122,6 +126,7 @@ Le guide de déploiement est `Backend_serveur/docs/deployment.md`, avec l'exempl
 | `openapi.yaml`, `/api/stats/export/` | Réponse décrite comme `application/json` `type: string` ; c'est du `text/csv` (voir §1). | ✅ Corrigé : `text/csv` |
 | `openapi.yaml`, `Conflit.donnees_telephone` / `donnees_serveur` | Sans type (`{}`) ; ce sont des objets. **Correction :** pour une suppression, `donnees_telephone` vaut `{}` (objet vide), pas `null` (vérifié dans `synchro/sync.py` et par un test). | ✅ Corrigé : `type: object` |
 | `endpoint.md`, `/api/stats/` | L'exemple de réponse est juste, mais `groupes[]` (`cle`, `libelle`, `indicateurs`, `masques`) n'est décrit que dans `openapi.yaml`. | ✅ Décrit dans `endpoint.md` |
+| `openapi.yaml`, `PointOms` (`/api/who-reference/`) | `cle`, `l`, `m`, `s` sont décrits en chaînes décimales (`type: string, format: decimal`, comme dans l'exemple de `endpoint.md` : `"cle": "75.0"`), mais le serveur renvoie des **nombres** (`"cle": 300.0, "l": -0.1674`). Le web accepte les deux (`Number(cle)`). | ❌ **Ouvert** (mineur) : aligner le schéma ou la réponse. |
 
 ## Ce que le tableau de bord utilise
 
@@ -130,8 +135,8 @@ Le guide de déploiement est `Backend_serveur/docs/deployment.md`, avec l'exempl
 | Connexion | `POST /api/auth/login/` (+ `code_totp`), `GET /api/auth/2fa/`, `POST /api/auth/2fa/setup/`, `POST /api/auth/2fa/activate/`, `POST /api/auth/refresh/`, `POST /api/auth/logout/`, `GET /api/auth/me/` |
 | File | `GET /api/referrals/incoming/`, `GET /api/referrals/?status=`, `POST /api/referrals/{id}/status/` |
 | Recherche | `GET /api/referrals/?code=` |
-| Référencement | `GET /api/referrals/{id}/`, `GET /api/measurements/{id}/`, `GET /api/facilities/`, `POST /api/referrals/{id}/status/` (dont `sortie` + `issue_sortie`) |
-| Fiche enfant | `GET /api/children/{id}/`, `GET /api/children/{id}/measurements/`, `GET /api/referrals/?enfant=` |
+| Référencement | `GET /api/referrals/{id}/` (dont `asc` et `date_suivi`), `GET /api/measurements/{id}/`, `GET /api/facilities/`, `POST /api/referrals/{id}/status/` (dont `sortie` + `issue_sortie`) |
+| Fiche enfant | `GET /api/children/{id}/`, `GET /api/children/{id}/measurements/`, `GET /api/referrals/?enfant=`, `GET /api/who-reference/` (`wfa`, `lhfa`, `wfl` ou `wfh`) |
 | Soins | `GET/POST /api/consultations/?enfant=`, `GET/POST /api/appointments/?enfant=`, `PATCH /api/appointments/{id}/` (`honore`) |
-| Conflits | `GET /api/conflicts/?statut=a_verifier`, `POST /api/conflicts/{id}/resolve/` |
-| Statistiques | `GET /api/regions/`, `GET /api/stats/?grouper_par=region|mois`, `GET /api/stats/export/` |
+| Conflits | `GET /api/conflicts/?statut=a_verifier` (dont `expediteur`), `POST /api/conflicts/{id}/resolve/` |
+| Statistiques | `GET /api/regions/`, `GET /api/stats/?grouper_par=region|mois`, `GET /api/stats/export/` (`Accept: text/csv`) |

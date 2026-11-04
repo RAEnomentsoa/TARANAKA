@@ -122,9 +122,40 @@
  */
 
 /**
- * - issue_sortie: "" until the discharge.
- * - en_retard: Still "envoye" after the delay of the clinical config.
- * @typedef {SyncFields & { code_unique: string, origine: Origine, enfant_id: Uuid | null, grossesse_id: Uuid | null, mesure_id: Uuid | null, asc_id: Uuid, csb_id: number, priorite: Priorite, motif: string, status: ReferralStatus, urgence: Urgency, date_referencement: IsoDateTime, date_reception: IsoDateTime | null, date_prise_en_charge: IsoDateTime | null, date_sortie: IsoDateTime | null, issue_sortie: DischargeOutcome | '', en_retard: boolean, femme: { nom: string, prenom: string } | null }} Referral
+ * ContactAgent: name and phone of a health worker, for staff only
+ * (null for a beneficiary).
+ * @typedef {Object} AgentContact
+ * @property {string} nom
+ * @property {string} prenom
+ * @property {string} phone
+ */
+
+/**
+ * @typedef {SyncFields & ReferralFields} Referral
+ */
+
+/**
+ * @typedef {Object} ReferralFields
+ * @property {string} code_unique
+ * @property {Origine} origine
+ * @property {Uuid | null} enfant_id
+ * @property {Uuid | null} grossesse_id
+ * @property {Uuid | null} mesure_id
+ * @property {Uuid} asc_id
+ * @property {AgentContact | null} asc The community agent who referred, to call back.
+ * @property {number} csb_id
+ * @property {Priorite} priorite
+ * @property {string} motif
+ * @property {ReferralStatus} status
+ * @property {Urgency} urgence
+ * @property {IsoDateTime} date_referencement
+ * @property {IsoDateTime | null} date_reception
+ * @property {IsoDateTime | null} date_prise_en_charge
+ * @property {IsoDateTime | null} date_suivi Null after a discharge means the case skipped "en suivi".
+ * @property {IsoDateTime | null} date_sortie
+ * @property {DischargeOutcome | ''} issue_sortie "" until the discharge.
+ * @property {boolean} en_retard Still "envoye" after the delay of the clinical config.
+ * @property {{ nom: string, prenom: string } | null} femme
  */
 
 /**
@@ -153,7 +184,19 @@
  */
 
 /**
- * @typedef {SyncFields & { nom: string, mere_id: Uuid | null, asc_id: Uuid, grossesse_id: Uuid | null, region_id: number, date_naissance: IsoDate, sexe: Sexe, statut_prise_en_charge: StatutPriseEnCharge }} Child
+ * @typedef {SyncFields & ChildFields} Child
+ */
+
+/**
+ * @typedef {Object} ChildFields
+ * @property {string} nom
+ * @property {Uuid | null} mere_id
+ * @property {Uuid} asc_id
+ * @property {Uuid | null} grossesse_id
+ * @property {number} region_id
+ * @property {IsoDate} date_naissance
+ * @property {Sexe} sexe
+ * @property {StatutPriseEnCharge} statut_prise_en_charge
  */
 
 /** @typedef {'vert' | 'orange' | 'rouge'} Alerte */
@@ -161,13 +204,36 @@
 /** @typedef {'mas' | 'mam' | 'normal' | 'nourrisson_a_risque'} Classification */
 
 /**
- * - poids_kg: DRF sends decimals as strings.
- * - classification: Computed by the server from the published config; "" or null without it.
- * @typedef {SyncFields & { enfant_id: Uuid, asc_id: Uuid, date_mesure: IsoDate, poids_kg: string, taille_cm: string, position: 'couche' | 'debout', pb_mm: number | null, oedemes_bilateraux: Oedemes, age_jour: number, age_mois: number, taille_corrigee_cm: string, waz: string | null, haz: string | null, whz: string | null, flag_aberrant: boolean, alerte: Alerte, classification: Classification | '' | null, orientation_centre: CentreType | '' | null, urgence: Urgency | '' | null, date_prochain_controle: IsoDate | null }} Measurement
+ * @typedef {SyncFields & MeasurementFields} Measurement
+ */
+
+/**
+ * @typedef {Object} MeasurementFields
+ * @property {Uuid} enfant_id
+ * @property {Uuid} asc_id
+ * @property {IsoDate} date_mesure
+ * @property {string} poids_kg DRF sends decimals as strings.
+ * @property {string} taille_cm
+ * @property {'couche' | 'debout'} position
+ * @property {number | null} pb_mm
+ * @property {Oedemes} oedemes_bilateraux
+ * @property {number} age_jour
+ * @property {number} age_mois
+ * @property {string} taille_corrigee_cm
+ * @property {string | null} waz
+ * @property {string | null} haz
+ * @property {string | null} whz
+ * @property {boolean} flag_aberrant
+ * @property {Alerte} alerte
+ * @property {Classification | '' | null} classification Computed by the server from the published config; "" or null without it.
+ * @property {CentreType | '' | null} orientation_centre
+ * @property {Urgency | '' | null} urgence
+ * @property {IsoDate | null} date_prochain_controle
  */
 
 /**
  * Body of any 409 on a synced table.
+ * @template T
  * @typedef {Object} VersionConflictBody
  * @property {string} detail
  * @property {'conflit_version'} code
@@ -179,7 +245,20 @@
 /** @typedef {'conseil' | 'reference' | 'prise_en_charge'} Decision */
 
 /**
- * @typedef {SyncFields & { enfant_id: Uuid, mesure_id: Uuid | null, referencement_id: Uuid | null, csb_id: number, agent_medical_id: Uuid, date: IsoDate, diagnostic: string, decision: Decision, observations: string }} Consultation
+ * @typedef {SyncFields & ConsultationFields} Consultation
+ */
+
+/**
+ * @typedef {Object} ConsultationFields
+ * @property {Uuid} enfant_id
+ * @property {Uuid | null} mesure_id
+ * @property {Uuid | null} referencement_id
+ * @property {number} csb_id
+ * @property {Uuid} agent_medical_id
+ * @property {IsoDate} date
+ * @property {string} diagnostic
+ * @property {Decision} decision
+ * @property {string} observations
  */
 
 /**
@@ -200,8 +279,19 @@
 /** @typedef {'prevu' | 'honore' | 'annule'} AppointmentStatus */
 
 /**
- * - manque: Still "prevu" after its date.
- * @typedef {SyncFields & { enfant_id: Uuid, referencement_id: Uuid | null, csb_id: number | null, date_prevue: IsoDate, type_rendez_vous: AppointmentType, statut: AppointmentStatus, motif: string, manque: boolean }} Appointment
+ * @typedef {SyncFields & AppointmentFields} Appointment
+ */
+
+/**
+ * @typedef {Object} AppointmentFields
+ * @property {Uuid} enfant_id
+ * @property {Uuid | null} referencement_id
+ * @property {number | null} csb_id
+ * @property {IsoDate} date_prevue
+ * @property {AppointmentType} type_rendez_vous
+ * @property {AppointmentStatus} statut
+ * @property {string} motif
+ * @property {boolean} manque Still "prevu" after its date.
  */
 
 /**
@@ -226,9 +316,10 @@
  * @property {'create' | 'update' | 'delete'} operation
  * @property {number | null} version_base
  * @property {number} version_serveur
- * @property {Record<string, unknown> | null} donnees_telephone
- * @property {Record<string, unknown> | null} donnees_serveur
+ * @property {Record<string, unknown>} donnees_telephone Empty object for a deletion.
+ * @property {Record<string, unknown>} donnees_serveur
  * @property {Uuid} user_id
+ * @property {AgentContact | null} expediteur Who sent the phone's version.
  * @property {string} device_id
  * @property {'a_verifier' | 'resolu'} statut
  * @property {IsoDateTime} created_at
@@ -240,6 +331,47 @@
  * @property {ConflictChoice} choix
  * @property {Record<string, unknown>} [donnees]
  * @property {string} [commentaire]
+ */
+
+// ---------- WHO growth standards (GET /api/who-reference/) ----------
+
+/**
+ * wfa: weight for age, lhfa: length/height for age (keys in days);
+ * wfl: weight for length, wfh: weight for height (keys in cm).
+ * @typedef {'wfa' | 'lhfa' | 'wfl' | 'wfh'} WhoIndicator
+ */
+
+/**
+ * PointOms. openapi.yaml describes the keys and LMS values as decimal
+ * strings, the server sends numbers: both are read with Number().
+ * "courbes" maps a z-score ("-3", "-2", "0", "2", "3") to its value.
+ * @typedef {Object} WhoPoint
+ * @property {string | number} cle
+ * @property {string | number} l
+ * @property {string | number} m
+ * @property {string | number} s
+ * @property {string} mesure_type
+ * @property {Record<string, number>} courbes
+ */
+
+/**
+ * ReferenceOms
+ * @typedef {Object} WhoReference
+ * @property {string} source
+ * @property {WhoIndicator} indicateur
+ * @property {Sexe} sexe
+ * @property {string} unite_cle "jours" or "cm"
+ * @property {string} unite_valeur "kg" or "cm"
+ * @property {WhoPoint[]} points
+ */
+
+/**
+ * @typedef {Object} WhoReferenceQuery
+ * @property {WhoIndicator} indicateur
+ * @property {Sexe} sexe
+ * @property {number} [cle_min]
+ * @property {number} [cle_max]
+ * @property {number} [pas] Keep one key every `pas` (days or cm).
  */
 
 // ---------- Aggregated statistics ----------

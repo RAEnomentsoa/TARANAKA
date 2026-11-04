@@ -74,7 +74,11 @@ watch(() => props.id, record.run)
 
     <div class="stack">
       <SectionPanel :title="t('charts.growth')">
-        <GrowthCharts v-if="record.data.value?.measurements.length" :measurements="record.data.value.measurements" />
+        <GrowthCharts
+          v-if="record.data.value?.measurements.length"
+          :measurements="record.data.value.measurements"
+          :sexe="record.data.value.child.sexe"
+        />
         <p v-else class="muted">{{ t('measurements.empty') }}</p>
       </SectionPanel>
 

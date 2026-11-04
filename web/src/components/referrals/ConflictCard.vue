@@ -3,6 +3,7 @@ import { computed, reactive, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppField from '@/components/ui/AppField.vue'
+import AgentContact from '@/components/ui/AgentContact.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useFormatters } from '@/composables/useFormatters'
 import { buildResolution, differingFields, displayValue, sideData } from '@/utils/conflicts'
@@ -81,6 +82,10 @@ function confirm() {
         {{ t('conflicts.detectedAt', { date: fmt.dateTime(conflict.created_at) }) }} —
         {{ t('conflicts.deviceLabel', { device: conflict.device_id || '—' }) }}
       </p>
+      <div class="conflict__sender">
+        <span class="muted">{{ t('conflicts.sentBy') }}</span>
+        <AgentContact :contact="conflict.expediteur" />
+      </div>
       <p v-if="!isDeletion" class="muted">{{ t('conflicts.differentFields', fields.length) }}</p>
     </header>
 
@@ -161,6 +166,14 @@ function confirm() {
 }
 
 .conflict__head p {
+  margin-bottom: var(--space-1);
+}
+
+.conflict__sender {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
 
