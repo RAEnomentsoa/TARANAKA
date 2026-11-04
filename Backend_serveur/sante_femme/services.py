@@ -9,7 +9,7 @@ from referencement.models import Referencement
 from referencement.services import referencer_danger
 from referentiel.models import CSB
 from synchro.exceptions import LigneProtegee
-from synchro.services import creer_ligne, supprimer_ligne, verrouiller
+from synchro.services import creer_ligne, lignes, supprimer_ligne, verrouiller
 
 from .models import Cycle, DangerGrossesse, Grossesse
 
@@ -18,18 +18,19 @@ AVERTISSEMENT_CSB_INCONNU = "Référencement non créé : CSB inconnu"
 AVERTISSEMENT_ERREUR = "Référencement non créé : erreur d'enregistrement"
 
 
-def cycles_visibles(user):
+def cycles_visibles(user, inclure_supprimes=False):
+    cycles = lignes(Cycle, inclure_supprimes)
     code = user.profile.code
     if code == CodeProfile.ADMIN:
-        return Cycle.objects.all()
+        return cycles
     if code == CodeProfile.BENEFICIAIRE:
-        return Cycle.objects.filter(user=user)
-    return Cycle.objects.none()
+        return cycles.filter(user=user)
+    return cycles.none()
 
 
-def grossesses_visibles(user):
+def grossesses_visibles(user, inclure_supprimes=False):
     code = user.profile.code
-    grossesses = Grossesse.objects.select_related("user")
+    grossesses = lignes(Grossesse, inclure_supprimes).select_related("user")
     if code == CodeProfile.ADMIN:
         return grossesses
     if code == CodeProfile.BENEFICIAIRE:
@@ -50,8 +51,10 @@ def grossesses_visibles(user):
     return grossesses.none()
 
 
-def dangers_visibles(user):
-    return DangerGrossesse.objects.filter(grossesse__in=grossesses_visibles(user))
+def dangers_visibles(user, inclure_supprimes=False):
+    return lignes(DangerGrossesse, inclure_supprimes).filter(
+        grossesse__in=grossesses_visibles(user, inclure_supprimes)
+    )
 
 
 def filtrer_dangers_sans_referencement(grossesses, valeur):

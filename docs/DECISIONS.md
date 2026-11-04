@@ -97,3 +97,41 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   the table (for example a length under 45 cm).
 - `flag_aberrant`: the phone's flag is kept; the server adds one when a z-score
   is outside the config's `plausibilite` range.
+
+## D7. Referral lifecycle follows the spec
+
+- Spec §7: `Référé → Reçu → Pris en charge → En suivi → Sortie`. The old
+  `envoye → recu → vu → pris_en_charge → clos` conflicted with it, so the
+  values are now `envoye` (Référé), `recu`, `pris_en_charge`, `en_suivi`,
+  `sortie`. Migration: `vu` → `recu`, `clos` → `sortie` (no outcome: it was
+  never recorded).
+- Steps are one at a time, except that a discharge is allowed as soon as the
+  child has arrived (`recu`, `pris_en_charge` or `en_suivi`): a child can be
+  transferred or die before being followed up. A referral never goes back.
+- A discharge needs `issue_sortie` (`gueri`, `transfere`, `non_repondant`,
+  `abandon`, `decede`) and can only be recorded by an `agent_csb` of the
+  destination centre (P6: "seul un professionnel habilité"). The admin keeps
+  the other transitions (existing behaviour) but not the discharge.
+- "Patient arrivé" is `POST /api/referrals/{id}/status/` with `recu`. Dates
+  `date_reception`, `date_prise_en_charge`, `date_sortie` are set by the server.
+- New `date_referencement`, sent by the phone (the referral is made offline
+  and may sync days later). It is what the "not arrived after 48 h" list and
+  the "delay referral → arrival" statistic use. Default: server time.
+- The child's `statut_prise_en_charge` follows: `pris_en_charge`, `suivi`, then
+  the exit outcome. New child statuses `transfere`, `non_repondant`, `decede`.
+- The "not arrived" delay comes from the config
+  (`malnutrition.suivi.delai_alerte_non_arrivee_heures`). With no published
+  config the list is empty rather than using a hard-coded 48 h.
+
+## D8. Appointments, consultations, food logs
+
+- New synced table `rendez_vous` (follow-up or screening visit). "Manqué" is
+  computed (still `prevu` after `date_prevue`), never stored, so it can't go
+  stale. A centre agent always books in their own centre.
+- "Enfants à revoir" = children whose latest measurement has a
+  `date_prochain_controle` (from the orientation rule of the config) that is
+  due. Dead children are left out.
+- `consultation_nutritionnelle` and `journal_alimentaire` existed in the
+  database without an API; they now have `/api/consultations/` (written by the
+  centre agent, who is forced as `agent_medical` and their centre as `csb`) and
+  `/api/food-logs/` (written by the mother, the ASC or an admin).

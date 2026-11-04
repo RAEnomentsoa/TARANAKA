@@ -1,3 +1,5 @@
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
@@ -15,8 +17,8 @@ from synchro.serializers import (
     SyncSerializer,
 )
 
-from .models import Origine, Referencement, Status
-from .services import MESSAGE_CODE_UTILISE
+from .models import IssueSortie, Origine, Referencement, RendezVous, Status, StatutRendezVous
+from .services import MESSAGE_CODE_UTILISE, en_retard, referencements_visibles, urgence
 
 MESSAGE_LIEN_REQUIS = (
     "Un référencement enfant doit indiquer l'enfant, "
@@ -61,8 +63,11 @@ class ReferencementSerializer(SyncSerializer):
         queryset=CSB.objects.all(),
     )
     femme = FemmeSerializer(source="grossesse.user", read_only=True, allow_null=True)
+    date_referencement = serializers.DateTimeField(required=False)
+    urgence = serializers.SerializerMethodField()
+    en_retard = serializers.SerializerMethodField()
 
-    champs_fixes = ("code_unique", "origine", "enfant", "grossesse")
+    champs_fixes = ("code_unique", "origine", "enfant", "grossesse", "date_referencement")
 
     class Meta:
         model = Referencement
@@ -78,10 +83,33 @@ class ReferencementSerializer(SyncSerializer):
             "priorite",
             "motif",
             "status",
+            "urgence",
+            "date_referencement",
+            "date_reception",
+            "date_prise_en_charge",
+            "date_sortie",
+            "issue_sortie",
+            "en_retard",
             "femme",
             *CHAMPS_SYNC,
         )
-        read_only_fields = ("status", *CHAMPS_SYNC_LECTURE)
+        read_only_fields = (
+            "status",
+            "date_reception",
+            "date_prise_en_charge",
+            "date_sortie",
+            "issue_sortie",
+            *CHAMPS_SYNC_LECTURE,
+        )
+
+    @extend_schema_field(serializers.ChoiceField(choices=["rouge", "orange", "jaune"]))
+    def get_urgence(self, referencement):
+        return urgence(referencement)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_en_retard(self, referencement):
+        """Not arrived after the config's delay (spec §7: 48 h, configurable)."""
+        return en_retard(referencement, self.context.setdefault("_delais", {}))
 
     def validate(self, attrs):
         def valeur(champ):
@@ -136,3 +164,66 @@ class ReferencementSerializer(SyncSerializer):
 class StatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=Status.choices)
     version = serializers.IntegerField(min_value=1)
+    issue_sortie = serializers.ChoiceField(
+        choices=IssueSortie.choices,
+        required=False,
+        allow_blank=True,
+    )
+
+
+class RendezVousSerializer(SyncSerializer):
+    enfant_id = LienVisible(enfants_visibles, source="enfant")
+    referencement_id = LienVisible(
+        referencements_visibles,
+        source="referencement",
+        required=False,
+        allow_null=True,
+    )
+    csb_id = serializers.PrimaryKeyRelatedField(
+        source="csb",
+        queryset=CSB.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    manque = serializers.SerializerMethodField()
+
+    champs_fixes = ("enfant",)
+
+    class Meta:
+        model = RendezVous
+        fields = (
+            "id",
+            "enfant_id",
+            "referencement_id",
+            "csb_id",
+            "date_prevue",
+            "type_rendez_vous",
+            "statut",
+            "motif",
+            "manque",
+            *CHAMPS_SYNC,
+        )
+        read_only_fields = CHAMPS_SYNC_LECTURE
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_manque(self, rendez_vous):
+        return (
+            rendez_vous.statut == StatutRendezVous.PREVU
+            and rendez_vous.date_prevue < timezone.localdate()
+        )
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        def valeur(champ):
+            return attrs.get(champ, getattr(self.instance, champ, None))
+
+        referencement, enfant = valeur("referencement"), valeur("enfant")
+        if referencement is not None and referencement.enfant_id != enfant.pk:
+            raise serializers.ValidationError(
+                {"referencement_id": ["Ce référencement ne concerne pas cet enfant."]}
+            )
+        # A centre agent always books in their own centre.
+        if self.utilisateur.profile.code == CodeProfile.AGENT_CSB:
+            attrs["csb"] = self.utilisateur.csb
+        return attrs

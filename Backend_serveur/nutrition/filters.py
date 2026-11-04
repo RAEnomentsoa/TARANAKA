@@ -2,7 +2,16 @@ from django_filters import rest_framework as filters
 
 from synchro.filters import SyncFilterSet
 
-from .models import Alerte, Enfant, Mesure, StatutPriseEnCharge
+from .models import (
+    Alerte,
+    Classification,
+    ConsultationNutritionnelle,
+    Decision,
+    Enfant,
+    JournalAlimentaire,
+    Mesure,
+    StatutPriseEnCharge,
+)
 
 
 class EnfantFilter(SyncFilterSet):
@@ -20,7 +29,27 @@ class MesureFilter(SyncFilterSet):
     date_min = filters.DateFilter(field_name="date_mesure", lookup_expr="gte")
     date_max = filters.DateFilter(field_name="date_mesure", lookup_expr="lte")
     alerte = filters.ChoiceFilter(choices=Alerte.choices)
+    classification = filters.ChoiceFilter(choices=Classification.choices)
 
     class Meta:
         model = Mesure
+        fields = []
+
+
+class JournalAlimentaireFilter(SyncFilterSet):
+    enfant = filters.UUIDFilter(field_name="enfant_id")
+    date_min = filters.DateFilter(field_name="date_jour", lookup_expr="gte")
+    date_max = filters.DateFilter(field_name="date_jour", lookup_expr="lte")
+
+    class Meta:
+        model = JournalAlimentaire
+        fields = []
+
+
+class ConsultationFilter(SyncFilterSet):
+    enfant = filters.UUIDFilter(field_name="enfant_id")
+    decision = filters.ChoiceFilter(choices=Decision.choices)
+
+    class Meta:
+        model = ConsultationNutritionnelle
         fields = []

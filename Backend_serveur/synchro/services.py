@@ -20,6 +20,12 @@ class Contexte:
     device_id: str = ""
 
 
+def lignes(modele, inclure_supprimes=False):
+    """All rows of a synced table; soft-deleted ones only for /sync/pull/."""
+    manager = modele.all_objects if inclure_supprimes else modele.objects
+    return manager.all()
+
+
 def contexte_depuis(request):
     return Contexte(
         user=request.user,

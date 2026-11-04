@@ -8,6 +8,7 @@ from referencement.models import Referencement
 from synchro.exceptions import LigneProtegee
 from synchro.services import (
     creer_ligne,
+    lignes,
     enregistrer_modification,
     supprimer_ligne,
     verifier_version,
@@ -15,7 +16,13 @@ from synchro.services import (
 )
 
 from .classification import classer_mesure
-from .models import Enfant, Mesure, Position
+from .models import (
+    ConsultationNutritionnelle,
+    Enfant,
+    JournalAlimentaire,
+    Mesure,
+    Position,
+)
 from .zscores import calculer_zscores
 
 JOURS_PAR_MOIS = Decimal("30.4375")
@@ -32,27 +39,42 @@ MESSAGE_NAISSANCE_INCOMPATIBLE = (
 )
 
 
-def enfants_visibles(user):
+def enfants_visibles(user, inclure_supprimes=False):
+    enfants = lignes(Enfant, inclure_supprimes)
     code = user.profile.code
     if code == CodeProfile.ADMIN:
-        return Enfant.objects.all()
+        return enfants
     if code == CodeProfile.BENEFICIAIRE:
-        return Enfant.objects.filter(mere=user)
+        return enfants.filter(mere=user)
     if code == CodeProfile.ASC:
-        return Enfant.objects.filter(asc=user)
+        return enfants.filter(asc=user)
     # Guard against filter(csb_id=None), which would match rows without a CSB.
     if code == CodeProfile.AGENT_CSB and user.csb_id is not None:
-        return Enfant.objects.filter(
+        return enfants.filter(
             pk__in=Referencement.objects.filter(
                 csb_id=user.csb_id,
                 enfant__isnull=False,
             ).values("enfant_id")
         )
-    return Enfant.objects.none()
+    return enfants.none()
 
 
-def mesures_visibles(user):
-    return Mesure.objects.filter(enfant__in=enfants_visibles(user))
+def mesures_visibles(user, inclure_supprimes=False):
+    return lignes(Mesure, inclure_supprimes).filter(
+        enfant__in=enfants_visibles(user, inclure_supprimes)
+    )
+
+
+def journaux_visibles(user, inclure_supprimes=False):
+    return lignes(JournalAlimentaire, inclure_supprimes).filter(
+        enfant__in=enfants_visibles(user, inclure_supprimes)
+    )
+
+
+def consultations_visibles(user, inclure_supprimes=False):
+    return lignes(ConsultationNutritionnelle, inclure_supprimes).filter(
+        enfant__in=enfants_visibles(user, inclure_supprimes)
+    )
 
 
 def calculer_champs_mesure(enfant, date_mesure, taille_cm, position, pb_mm):

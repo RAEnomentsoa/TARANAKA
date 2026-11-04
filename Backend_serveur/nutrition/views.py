@@ -9,8 +9,13 @@ from comptes.permissions import PROFILS_DOSSIERS, acces
 from synchro.views import SyncViewSet
 
 from . import services
-from .filters import EnfantFilter, MesureFilter
-from .serializers import EnfantSerializer, MesureSerializer
+from .filters import ConsultationFilter, EnfantFilter, JournalAlimentaireFilter, MesureFilter
+from .serializers import (
+    ConsultationSerializer,
+    EnfantSerializer,
+    JournalAlimentaireSerializer,
+    MesureSerializer,
+)
 
 PROFILS = acces(
     lecture=PROFILS_DOSSIERS,
@@ -84,3 +89,31 @@ class MesureEnfantViewSet(MesureViewSet):
             donnees["enfant_id"] = str(self.enfant.pk)
             kwargs["data"] = donnees
         return super().get_serializer(*args, **kwargs)
+
+
+class JournalAlimentaireViewSet(SyncViewSet):
+    """/food-logs/: 8-group food diary of a child of 6 to 23 months (spec §6)."""
+
+    serializer_class = JournalAlimentaireSerializer
+    filterset_class = JournalAlimentaireFilter
+    profils_par_action = acces(
+        lecture=PROFILS_DOSSIERS,
+        ecriture=(CodeProfile.BENEFICIAIRE, CodeProfile.ASC, CodeProfile.ADMIN),
+    )
+
+    def visibles(self):
+        return services.journaux_visibles(self.request.user)
+
+
+class ConsultationViewSet(SyncViewSet):
+    """/consultations/: what the centre's health worker records (spec §10)."""
+
+    serializer_class = ConsultationSerializer
+    filterset_class = ConsultationFilter
+    profils_par_action = acces(
+        lecture=PROFILS_DOSSIERS,
+        ecriture=(CodeProfile.AGENT_CSB, CodeProfile.ADMIN),
+    )
+
+    def visibles(self):
+        return services.consultations_visibles(self.request.user)

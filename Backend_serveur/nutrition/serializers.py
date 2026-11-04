@@ -1,10 +1,13 @@
 from decimal import Decimal
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from comptes.models import CodeProfile
+from comptes.models import CodeProfile, User
 from comptes.services import asc_visibles, beneficiaires_visibles
-from referentiel.models import Region
+from config_clinique.services import config_active
+from referencement.services import referencements_visibles
+from referentiel.models import CSB, Region
 from sante_femme.services import grossesses_visibles
 from synchro.serializers import (
     CHAMPS_SYNC,
@@ -14,8 +17,14 @@ from synchro.serializers import (
     SyncSerializer,
 )
 
-from .models import Enfant, Mesure
-from .services import enfants_visibles
+from .models import (
+    GROUPES_ALIMENTAIRES,
+    ConsultationNutritionnelle,
+    Enfant,
+    JournalAlimentaire,
+    Mesure,
+)
+from .services import enfants_visibles, mesures_visibles
 
 
 class EnfantSerializer(SyncSerializer):
@@ -153,3 +162,109 @@ class MesureSerializer(SyncSerializer):
                 "Le périmètre brachial doit être compris entre 70 et 250 mm."
             )
         return valeur
+
+
+class JournalAlimentaireSerializer(SyncSerializer):
+    enfant_id = LienVisible(enfants_visibles, source="enfant")
+    diversite_minimale_atteinte = serializers.SerializerMethodField()
+
+    champs_fixes = ("enfant",)
+
+    class Meta:
+        model = JournalAlimentaire
+        fields = (
+            "id",
+            "enfant_id",
+            "date_jour",
+            "type_allaitement",
+            *GROUPES_ALIMENTAIRES,
+            "score_diversite",
+            "diversite_minimale_atteinte",
+            "notes",
+            *CHAMPS_SYNC,
+        )
+        read_only_fields = ("score_diversite", *CHAMPS_SYNC_LECTURE)
+
+    @extend_schema_field(serializers.BooleanField(allow_null=True))
+    def get_diversite_minimale_atteinte(self, journal):
+        """Spec §6: at least N of the 8 groups, N from the clinical config."""
+        cache = self.context.setdefault("_config", {})
+        if "config" not in cache:
+            cache["config"] = config_active()
+        config = cache["config"]
+        seuil = (
+            config.contenu.get("alimentation_enfant", {}).get("diversite_minimale_groupes")
+            if config
+            else None
+        )
+        if seuil is None:
+            return None
+        return journal.calculer_score_diversite() >= seuil
+
+
+class ConsultationSerializer(SyncSerializer):
+    """A visit at the centre, written by its health worker (spec §10)."""
+
+    enfant_id = LienVisible(enfants_visibles, source="enfant")
+    mesure_id = LienVisible(
+        mesures_visibles,
+        source="mesure",
+        required=False,
+        allow_null=True,
+    )
+    referencement_id = LienVisible(
+        referencements_visibles,
+        source="referencement",
+        required=False,
+        allow_null=True,
+    )
+    csb_id = serializers.PrimaryKeyRelatedField(
+        source="csb",
+        queryset=CSB.objects.all(),
+        required=False,
+    )
+    agent_medical_id = LienVisible(
+        lambda user: User.objects.filter(profile__code=CodeProfile.AGENT_CSB),
+        source="agent_medical",
+        required=False,
+    )
+
+    champs_fixes = ("enfant",)
+
+    class Meta:
+        model = ConsultationNutritionnelle
+        fields = (
+            "id",
+            "enfant_id",
+            "mesure_id",
+            "referencement_id",
+            "csb_id",
+            "agent_medical_id",
+            "date",
+            "diagnostic",
+            "decision",
+            "observations",
+            *CHAMPS_SYNC,
+        )
+        read_only_fields = CHAMPS_SYNC_LECTURE
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        def valeur(champ):
+            return attrs.get(champ, getattr(self.instance, champ, None))
+
+        enfant = valeur("enfant")
+        for champ, lien in (("mesure_id", valeur("mesure")), ("referencement_id", valeur("referencement"))):
+            if lien is not None and lien.enfant_id != enfant.pk:
+                raise serializers.ValidationError(
+                    {champ: ["Cette ligne ne concerne pas cet enfant."]}
+                )
+        if self.utilisateur.profile.code == CodeProfile.AGENT_CSB:
+            attrs["csb"] = self.utilisateur.csb
+            attrs["agent_medical"] = self.utilisateur
+        elif self.instance is None:
+            for champ, nom in (("csb", "csb_id"), ("agent_medical", "agent_medical_id")):
+                if champ not in attrs:
+                    raise serializers.ValidationError({nom: [MESSAGE_OBLIGATOIRE]})
+        return attrs

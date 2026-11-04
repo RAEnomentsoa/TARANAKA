@@ -1,6 +1,12 @@
 from rest_framework.routers import SimpleRouter
 
-from .views import EnfantViewSet, MesureEnfantViewSet, MesureViewSet
+from .views import (
+    ConsultationViewSet,
+    EnfantViewSet,
+    JournalAlimentaireViewSet,
+    MesureEnfantViewSet,
+    MesureViewSet,
+)
 
 router = SimpleRouter()
 router.register("children", EnfantViewSet, basename="child")
@@ -10,5 +16,7 @@ router.register(
     basename="child-measurement",
 )
 router.register("measurements", MesureViewSet, basename="measurement")
+router.register("food-logs", JournalAlimentaireViewSet, basename="food-log")
+router.register("consultations", ConsultationViewSet, basename="consultation")
 
 urlpatterns = router.urls

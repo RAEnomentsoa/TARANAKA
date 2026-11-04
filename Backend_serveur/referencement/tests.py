@@ -218,13 +218,13 @@ class AccesTest(BaseApiTest):
             code="R-3",
             enfant=self.enfant_femme,
             priorite="urgente",
-            status="vu",
+            status="pris_en_charge",
         )
         grossesse = self.referencement(code="R-4", grossesse=self.grossesse())
         self.comme(self.admin)
         cas = [
             ("priorite=urgente", {urgent}),
-            ("status=vu", {urgent}),
+            ("status=pris_en_charge", {urgent}),
             ("origine=grossesse", {grossesse}),
             (f"csb={self.autre_csb.pk}", {self.vers_autre_csb}),
         ]
@@ -263,18 +263,30 @@ class StatusTest(BaseApiTest):
 
     def test_agent_avance_le_statut_etape_par_etape(self):
         self.comme(self.agent)
-        for version, status in enumerate(("recu", "vu", "pris_en_charge", "clos"), 1):
+        etapes = ("recu", "pris_en_charge", "en_suivi")
+        for version, status in enumerate(etapes, 1):
             reponse = self.changer(status, version)
             self.assertEqual(reponse.status_code, 200, reponse.data)
             self.assertEqual(reponse.data["status"], status)
             self.assertEqual(reponse.data["version"], version + 1)
+        reponse = self.client.post(
+            url_status(self.ligne),
+            {"status": "sortie", "version": 4, "issue_sortie": "gueri"},
+            format="json",
+            headers={"X-Device-Id": "csb-1"},
+        )
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(reponse.data["issue_sortie"], "gueri")
         self.ligne.refresh_from_db()
         self.assertEqual(self.ligne.device_id, "csb-1")
+        self.assertIsNotNone(self.ligne.date_reception)
+        self.assertIsNotNone(self.ligne.date_prise_en_charge)
+        self.assertIsNotNone(self.ligne.date_sortie)
 
     def test_retour_en_arriere_refuse(self):
-        Referencement.objects.filter(pk=self.ligne.pk).update(status="vu")
+        Referencement.objects.filter(pk=self.ligne.pk).update(status="pris_en_charge")
         self.comme(self.agent)
-        for status in ("recu", "envoye", "vu"):
+        for status in ("recu", "envoye", "pris_en_charge"):
             with self.subTest(status=status):
                 reponse = self.changer(status)
                 self.assertEqual(reponse.status_code, 400)
@@ -283,18 +295,18 @@ class StatusTest(BaseApiTest):
                     ["Le statut ne peut pas revenir en arrière."],
                 )
         self.ligne.refresh_from_db()
-        self.assertEqual(self.ligne.status, "vu")
+        self.assertEqual(self.ligne.status, "pris_en_charge")
 
     def test_sauter_une_etape_refuse(self):
         self.comme(self.agent)
-        reponse = self.changer("vu")
+        reponse = self.changer("pris_en_charge")
         self.assertEqual(reponse.status_code, 400)
         self.assertIn("recu", reponse.data["status"][0])
 
     def test_admin_suit_le_meme_ordre(self):
-        Referencement.objects.filter(pk=self.ligne.pk).update(status="vu")
+        Referencement.objects.filter(pk=self.ligne.pk).update(status="recu")
         self.comme(self.admin)
-        self.assertEqual(self.changer("recu").status_code, 400)
+        self.assertEqual(self.changer("en_suivi").status_code, 400)
         self.assertEqual(self.changer("pris_en_charge").status_code, 200)
 
     def test_version_differente_renvoie_409(self):
@@ -329,7 +341,7 @@ class StatusTest(BaseApiTest):
         self.comme(self.admin)
         reponse = self.client.patch(
             url(self.ligne),
-            {"status": "clos", "version": 1},
+            {"status": "sortie", "version": 1},
             format="json",
         )
         self.assertEqual(reponse.status_code, 200, reponse.data)
