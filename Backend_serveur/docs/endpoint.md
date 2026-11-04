@@ -374,25 +374,57 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 | `/api/children/{id}/measurements/` | GET, POST, PUT, PATCH, DELETE | Mesures d'un enfant |
 | `/api/measurements/` | GET, POST, PUT, PATCH, DELETE | Toutes les mesures visibles |
 | `/api/referrals/` | GET, POST, PUT, PATCH, DELETE | Référencements |
-| `/api/referrals/{id}/status/` | POST | Changer le statut d'un référencement |
+| `/api/referrals/{id}/status/` | POST | Faire avancer le dossier (patient arrivé, prise en charge, suivi, sortie) |
+| `/api/referrals/incoming/` | GET | File entrante du centre, triée par urgence puis ancienneté |
+| `/api/appointments/` | GET, POST, PUT, PATCH, DELETE | Rendez-vous de contrôle ou de dépistage |
+| `/api/consultations/` | GET, POST, PUT, PATCH, DELETE | Consultations nutritionnelles au centre |
+| `/api/food-logs/` | GET, POST, PUT, PATCH, DELETE | Journal alimentaire (8 groupes) |
+| `/api/follow-ups/` | GET | Relances : non arrivés, rendez-vous manqués, enfants à revoir |
+| `/api/sync/push/` | POST | Envoyer la file d'attente (outbox) du téléphone |
+| `/api/sync/pull/` | GET | Recevoir les changements, suppressions comprises |
+| `/api/conflicts/` | GET | Conflits de synchronisation à arbitrer |
+| `/api/conflicts/{id}/resolve/` | POST | Arbitrer un conflit |
+| `/api/clinical-config/` | GET, POST, PUT, PATCH | Configuration clinique versionnée |
+| `/api/clinical-config/current/` | GET | Version à utiliser par les applications |
+| `/api/clinical-config/{version}/publish/`, `/retire/` | POST | Publier ou retirer une version (admin) |
+| `/api/stats/`, `/api/stats/export/` | GET | Statistiques agrégées et anonymes, export CSV |
+| `/api/audit/` | GET | Journal d'audit (admin) |
+| `/api/profiles/{id}/reset-pin/` | POST | Réinitialiser le PIN (superviseur, admin) |
+
+Le fichier OpenAPI complet est dans `docs/openapi.yaml` à la racine du dépôt.
 
 Un endpoint de détail ajoute `{id}/`, par exemple `/api/children/{id}/`. `PUT` remplace toute la ligne, `PATCH` seulement les champs envoyés.
 
 ## Qui peut faire quoi
 
-| Profil | Enfants et mesures | Grossesses | Cycles | Référencements | Comptes |
+L = lecture, É = écriture (création, modification), — = refusé (`403`). Le tableau est vérifié par `comptes/tests_permissions.py`.
+
+| Ressource | `beneficiaire` | `asc` | `agent_csb` | `superviseur` | `admin` |
 |---|---|---|---|---|---|
-| `beneficiaire` | Lecture de ses enfants (`mere` = elle) | Accès complet aux siennes | Accès complet aux siens | Lecture des siens et de ceux de ses enfants | Lecture de son compte |
-| `asc` | Création et modification de ses enfants (`asc` = lui) | Lecture et modification de celles des bénéficiaires de sa région | Aucun accès | Création et lecture : ses enfants et les grossesses de sa région | Création de bénéficiaires, lecture de celles de sa région |
-| `agent_csb` | Lecture de ceux liés à un référencement vers son CSB | Lecture de celles liées à un référencement vers son CSB, avec le nom de la femme | Aucun accès | Lecture de ceux envoyés à son CSB, changement du `status` | Aucun accès (voir `/api/auth/me/`) |
-| `admin` | Tout | Tout | Tout | Tout | Tout |
+| Enfants, mesures | L (ses enfants) | L É (ses enfants) | L (enfants référés à son centre) | — | L É |
+| Grossesses, signes de danger | L É (les siennes) | L É (sa région) | L (référées à son centre) | — | L É |
+| Cycles | L É (les siens) | — | — | — | L É |
+| Journal alimentaire | L É (ses enfants) | L É | L | — | L É |
+| Référencements | L | L, création | L, statut (sauf sortie : agent du centre seulement) | — | L É, statut sauf sortie |
+| File entrante | — | — | L | — | L |
+| Rendez-vous | L | L É | L É (dans son centre) | — | L É |
+| Consultations | L | L | L É (son centre) | — | L É |
+| Relances | — | L | L | — | L |
+| Conflits | L (les siens) | L (les siens) | L, arbitrage | — | L, arbitrage |
+| Comptes | L (le sien) | L, création de bénéficiaires | — | L et création d'ASC de sa zone, réinitialisation du PIN | L É |
+| Configuration clinique | L (publiées) | L (publiées) | L (publiées) | L (publiées) | L É, publication |
+| Statistiques | — | — | — | L (sa région) | L |
+| Journal d'audit | — | — | — | — | L |
+| `/sync/push/`, `/sync/pull/` | Selon les droits ci-dessus, table par table | | | | |
+
+Le superviseur ne lit **aucun dossier individuel**, même par son identifiant.
 
 - **`403`** : le profil n'a pas le droit de faire cette action.
 - **`404`** : la ligne n'existe pas, a été supprimée, ou n'est pas accessible à cet utilisateur. La réponse ne révèle pas laquelle de ces trois situations s'applique.
 
 ## Règles des tables synchronisées
 
-Elles s'appliquent à `cycles`, `pregnancies`, `dangers`, `children`, `measurements` et `referrals`.
+Elles s'appliquent à `cycles`, `pregnancies`, `dangers`, `children`, `measurements`, `food-logs`, `referrals`, `consultations` et `appointments`.
 
 **`id` :** le téléphone peut envoyer un UUID créé hors ligne. Sinon, le serveur en crée un.
 
@@ -418,7 +450,7 @@ Si la version ne correspond pas, la réponse est `409` avec la ligne actuelle, e
 }
 ```
 
-**`DELETE` :** répond `204`. La ligne est masquée (suppression logique) et n'apparaît plus dans les listes ni les détails. `version` n'est pas demandée. Pour l'instant, un téléphone ne peut donc pas apprendre une suppression avec `updated_since` : ce sera le rôle de `/sync`.
+**`DELETE` :** répond `204`. La ligne est masquée (suppression logique) et n'apparaît plus dans les listes ni les détails. `version` n'est pas demandée. Un téléphone apprend les suppressions avec `GET /api/sync/pull/`, qui renvoie aussi les lignes supprimées (avec `deleted_at`).
 
 **`X-Device-Id` :** envoyez l'identifiant du téléphone dans cet en-tête. Le serveur le copie dans `device_id` (100 caractères au plus).
 
@@ -438,10 +470,15 @@ Toutes les listes sont paginées par 50 et triées du plus récent au plus ancie
 |---|---|
 | Toutes les tables synchronisées | `updated_since` (date et heure ISO, lignes modifiées à ce moment ou après) |
 | `/api/children/` | `region`, `asc`, `statut_prise_en_charge`, `search` (nom) |
-| `/api/measurements/` et `/api/children/{id}/measurements/` | `date_min`, `date_max`, `alerte` |
-| `/api/referrals/` | `status`, `priorite`, `csb`, `origine` |
+| `/api/measurements/` et `/api/children/{id}/measurements/` | `date_min`, `date_max`, `alerte`, `classification` |
+| `/api/referrals/` | `status`, `priorite`, `csb`, `type_centre`, `origine`, `enfant`, `code` (sans tenir compte des majuscules), `en_retard` (`true`/`false`) |
+| `/api/appointments/` | `statut`, `type_rendez_vous`, `enfant`, `csb`, `date_min`, `date_max`, `manque` (`true`/`false`) |
+| `/api/consultations/` | `enfant`, `decision` |
+| `/api/food-logs/` | `enfant`, `date_min`, `date_max` |
 | `/api/pregnancies/` | `danger_sans_referencement` (`true` ou `false`) |
-| `/api/facilities/` | `region` |
+| `/api/facilities/` | `region`, `type_centre` (`csb`, `crenam`, `crenas`, `creni`) |
+| `/api/conflicts/` | `statut` (`a_verifier`, `resolu`), `table`, `ligne_id` |
+| `/api/audit/` | `user`, `action`, `table`, `ligne_id`, `depuis`, `jusqu_a` |
 
 Les filtres s'appliquent uniquement aux lignes que l'utilisateur a le droit de voir. Dans une date avec un fuseau horaire, encodez `+` en `%2B`.
 
@@ -466,7 +503,11 @@ Les filtres s'appliquent uniquement aux lignes que l'utilisateur a le droit de v
 
 **Créer (admin) :** ajoutez `profile_code` (`beneficiaire`, `asc`, `agent_csb` ou `admin`). `region_id` est obligatoire pour une bénéficiaire et `csb_id` pour un agent de CSB. Un compte `admin` créé ici se connecte avec un PIN et n'a pas accès à `/admin/`.
 
+**Créer (superviseur) :** `POST`, sans `profile_code`. Le compte est toujours `asc`, dans la région du superviseur s'il en a une (sinon `region_id` peut être envoyé). Le superviseur lit les comptes ASC de sa zone.
+
 **Modifier (admin seulement) :** `PUT` ou `PATCH`. Ces routes ne changent pas le PIN.
+
+**PIN oublié (mode agent) :** `POST /api/profiles/{id}/reset-pin/` avec `{"nouveau_pin": "4321"}`. Réservé au superviseur (ASC de sa zone) et à l'admin. Le compte est débloqué, toutes ses sessions sont fermées, et l'action est journalisée (`reinitialiser_pin`). Après connexion, le téléphone récupère ses données avec `/api/sync/pull/`. Réponse `200` : `{"detail": "PIN réinitialisé."}`. Un compte hors de la zone donne `404`.
 
 `201` – Le PIN n'est jamais renvoyé.
 
@@ -529,8 +570,10 @@ Chaque liste a le même format paginé. Voici le contenu de `results`.
 `GET /api/facilities/?region=1`
 
 ```json
-[{ "id": 1, "name": "CSB A", "region_id": 1, "tel": "1" }]
+[{ "id": 1, "name": "CSB A", "type_centre": "csb", "region_id": 1, "tel": "1" }]
 ```
+
+`type_centre` vaut `csb`, `crenam`, `crenas` ou `creni` : les CRENAS, CRENI et CRENAM sont des lignes de cette liste.
 
 `GET /api/danger-types/`
 
@@ -743,7 +786,21 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 | `age_mois` | `age_jour / 30.4375`, arrondi vers le bas |
 | `taille_corrigee_cm` | Moins de 731 jours et `debout` : `taille_cm + 0.7`. 731 jours ou plus et `couche` : `taille_cm - 0.7`. Sinon : `taille_cm`. |
 
-**Pour l'instant :** `waz`, `haz`, `whz`, `alerte`, `motif_alerte` et `flag_aberrant` sont gardés tels que le téléphone les envoie. Le serveur les recalculera à l'étape des Z-scores.
+**Z-scores :** `waz`, `haz` et `whz` sont calculés par le serveur (OMS 2006) quand les tables OMS sont chargées (`python manage.py importer_tables_oms <dossier>`). Sinon, les valeurs du téléphone sont gardées.
+
+**Classification (calculée par le serveur avec la configuration clinique publiée) :**
+
+| Champ | Contenu |
+|---|---|
+| `classification` | `mas`, `mam`, `normal`, `nourrisson_a_risque`, ou vide sans configuration publiée ou hors de 0 à 59 mois |
+| `orientation_centre` | `creni`, `crenas`, `crenam`, `csb` ou vide |
+| `urgence` | `rouge`, `orange`, `jaune` ou vide |
+| `date_prochain_controle` | Prochain dépistage ou contrôle |
+| `config_version` | Version de la configuration utilisée |
+
+`flag_aberrant` : la valeur du téléphone est gardée, et le serveur le met à `true` si un z-score sort des bornes de plausibilité de la configuration. `alerte` et `motif_alerte` sont gardés tels que le téléphone les envoie.
+
+**Saisie de l'ASC :** `signes_danger` (liste de codes de la configuration, par exemple `["convulsions"]`), `complications_medicales`, `appetit` (`non_teste`, `bon`, `mauvais`), `difficultes_allaitement`.
 
 **Créer :** `POST /api/children/{id}/measurements/`
 
@@ -781,6 +838,15 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
   "alerte": "vert",
   "motif_alerte": "",
   "ref_oms": "WHO2006",
+  "signes_danger": [],
+  "complications_medicales": false,
+  "appetit": "non_teste",
+  "difficultes_allaitement": false,
+  "classification": "normal",
+  "orientation_centre": "",
+  "urgence": "",
+  "date_prochain_controle": "2027-02-02",
+  "config_version": 1,
   "version": 1,
   "created_at": "2026-11-04T05:12:15.462092Z",
   "updated_at": "2026-11-04T05:12:15.462101Z",
@@ -804,6 +870,9 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 - Seul le lien correspondant à `origine` est accepté, et `mesure_id` doit être une mesure de cet enfant.
 - Un référencement d'origine `enfant` passe l'enfant à `statut_prise_en_charge` = `refere`, et la `version` de l'enfant augmente. Le téléphone doit relire l'enfant, sinon sa prochaine modification recevra `409`.
 - `femme` donne le nom de la femme pour une grossesse, et vaut `null` pour un enfant.
+- `code_unique` : le téléphone envoie le code créé hors ligne (par exemple `TRK-7F3K-92`).
+- `date_referencement` : date et heure du référencement sur le téléphone. Sans elle, l'heure du serveur.
+- En lecture : `urgence` (`urgente` = `rouge`, `haute` = `orange`, `normale` = `jaune`) et `en_retard` (toujours `envoye` après le délai de la configuration, 48 h dans l'exemple).
 
 **Créer :** `POST`
 
@@ -833,6 +902,13 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
   "priorite": "haute",
   "motif": "PB bas",
   "status": "envoye",
+  "urgence": "orange",
+  "date_referencement": "2026-11-04T05:12:15.487541Z",
+  "date_reception": null,
+  "date_prise_en_charge": null,
+  "date_sortie": null,
+  "issue_sortie": "",
+  "en_retard": false,
   "femme": null,
   "version": 1,
   "created_at": "2026-11-04T05:12:15.487541Z",
@@ -850,14 +926,22 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 
 ## POST `/api/referrals/{id}/status/`
 
-**Ce qu'il fait :** fait avancer le statut d'une étape. Réservé à l'agent du CSB destinataire et à l'admin.
+**Ce qu'il fait :** fait avancer le dossier (spec §7). Réservé à l'agent du centre destinataire et à l'admin. **La sortie est réservée à l'agent du centre destinataire** (`403` pour l'admin).
 
-`envoye` → `recu` → `vu` → `pris_en_charge` → `clos`
+`envoye` (Référé) → `recu` (patient arrivé) → `pris_en_charge` → `en_suivi` → `sortie`
 
-**Ce dont il a besoin :**
+La sortie est aussi possible depuis `recu` et `pris_en_charge` (transfert, décès…). Le serveur remplit `date_reception`, `date_prise_en_charge` et `date_sortie`. Pour un enfant, `statut_prise_en_charge` suit : `pris_en_charge`, `suivi`, puis l'issue de sortie, et la `version` de l'enfant augmente.
+
+**Patient arrivé :**
 
 ```json
 { "status": "recu", "version": 1 }
+```
+
+**Sortie :** `issue_sortie` est obligatoire : `gueri`, `transfere`, `non_repondant`, `abandon` ou `decede`.
+
+```json
+{ "status": "sortie", "version": 4, "issue_sortie": "gueri" }
 ```
 
 `200` – Le référencement complet, avec le nouveau `status` et `version` augmentée de 1.
@@ -871,10 +955,248 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 `400` – Étape sautée.
 
 ```json
-{ "status": ["Le statut suivant doit être « vu »."] }
+{ "status": ["Le statut suivant doit être « recu »."] }
 ```
 
+`400` – Issue manquante pour une sortie, ou envoyée pour un autre statut.
+
+```json
+{ "issue_sortie": ["L'issue de sortie est obligatoire."] }
+```
+
+`403` – Sortie demandée par quelqu'un d'autre que l'agent du centre.
+
 `409` – Version différente, même format que plus haut.
+
+## GET `/api/referrals/incoming/`
+
+**Ce qu'il fait :** la file des référencements entrants du centre (`envoye` et `recu`), triée par urgence (`rouge`, `orange`, `jaune`) puis du plus ancien au plus récent (`date_referencement`). Même format paginé et mêmes filtres que `/api/referrals/`. Pour l'agent de CSB et l'admin.
+
+Recherche par code : `GET /api/referrals/?code=TRK-7F3K-92`.
+
+## `/api/appointments/`
+
+**Ce qu'il fait :** programme un contrôle (`controle`) ou un dépistage (`depistage`). L'agent de CSB crée toujours le rendez-vous dans son centre (`csb_id` imposé). `manque` vaut `true` quand le rendez-vous est encore `prevu` après sa date ; `?manque=true` liste les rendez-vous manqués.
+
+```json
+{
+  "enfant_id": "4c09f399-823d-4c4d-9209-21464f87cc2d",
+  "referencement_id": "ee711d85-d6bf-4cdc-a3d8-54469227d2c6",
+  "date_prevue": "2026-11-11",
+  "type_rendez_vous": "controle",
+  "motif": "Contrôle PB"
+}
+```
+
+Réponse : les mêmes champs, plus `id`, `csb_id`, `statut` (`prevu`, `honore`, `annule`), `manque` et les colonnes de synchronisation. Pour noter la venue : `PATCH` avec `{"statut": "honore", "version": 1}`.
+
+## `/api/consultations/`
+
+**Ce qu'il fait :** la prise en charge enregistrée par l'agent du centre : `enfant_id`, `mesure_id` et `referencement_id` (facultatifs, du même enfant), `date`, `diagnostic`, `decision` (`conseil`, `reference`, `prise_en_charge`), `observations`. Pour un agent de CSB, `csb_id` et `agent_medical_id` sont imposés (son centre, lui-même). Un admin doit les envoyer.
+
+## `/api/food-logs/`
+
+**Ce qu'il fait :** le journal alimentaire d'un enfant de 6 à 23 mois, un par jour : `enfant_id`, `date_jour`, `type_allaitement`, `g1_lait_maternel` … `g8_autres_fruits_legumes`, `notes`. En lecture : `score_diversite` (nombre de groupes) et `diversite_minimale_atteinte` (seuil de la configuration, `null` sans configuration).
+
+## GET `/api/follow-ups/`
+
+**Ce qu'il fait :** ce qu'il faut relancer (spec §7, §10), pour l'ASC (ses enfants), l'agent de CSB (son centre) et l'admin.
+
+```json
+{
+  "delai_non_arrivee_heures": 48,
+  "referencements_non_arrives": [{ "id": "…", "code_unique": "TRK-DEMO-06", "urgence": "jaune", "...": "..." }],
+  "rendez_vous_manques": [{ "id": "…", "date_prevue": "2026-11-02", "manque": true, "...": "..." }],
+  "enfants_a_revoir": [
+    {
+      "id": "…",
+      "nom": "Lova",
+      "date_naissance": "2024-08-11",
+      "sexe": "M",
+      "statut_prise_en_charge": "aucun",
+      "prochain_controle": "2026-11-03",
+      "derniere_classification": "mam"
+    }
+  ]
+}
+```
+
+Sans configuration publiée, `delai_non_arrivee_heures` vaut `null` et la liste des non arrivés est vide. Chaque liste est limitée à 200 lignes.
+
+---
+
+# Synchronisation hors ligne
+
+## POST `/api/sync/push/`
+
+**Ce qu'il fait :** applique la file d'attente du téléphone (modèle outbox, spec §9), **dans l'ordre envoyé**, chaque opération séparément : une opération refusée ne bloque pas les suivantes. Chaque opération passe par les mêmes droits et les mêmes règles que l'endpoint REST de sa table. Corps compressé accepté (`Content-Encoding: gzip`). 100 opérations au plus.
+
+```json
+{
+  "operations": [
+    {
+      "cle_idempotence": "0b6f8f0e-0f43-4c55-9a51-6f3c1c6b8a01",
+      "table": "mesure",
+      "operation": "create",
+      "id": "5a0c9d55-6c47-4a40-8b47-3a2f0c1d7e01",
+      "donnees": { "enfant_id": "…", "date_mesure": "2026-11-04", "poids_kg": "8.60", "taille_cm": "77.5", "position": "couche", "pb_mm": 112, "alerte": "rouge" }
+    },
+    {
+      "cle_idempotence": "0b6f8f0e-0f43-4c55-9a51-6f3c1c6b8a02",
+      "table": "enfant",
+      "operation": "update",
+      "id": "4c09f399-823d-4c4d-9209-21464f87cc2d",
+      "version": 2,
+      "donnees": { "nom": "Soa Fanja" }
+    }
+  ]
+}
+```
+
+- `table` : `cycle`, `grossesse`, `danger_grossesse`, `enfant`, `mesure`, `journal_alimentaire`, `referencement`, `consultation_nutritionnelle`, `rendez_vous`.
+- `operation` : `create`, `update` (`version` obligatoire : celle que le téléphone connaît) ou `delete` (`version` facultative, vérifiée si envoyée).
+- `cle_idempotence` : un UUID par opération, gardé jusqu'à la réponse. **Le même envoi répété ne fait rien deux fois** : la réponse enregistrée est renvoyée avec `rejoue: true`.
+
+`200` – Une réponse par opération, dans le même ordre :
+
+```json
+{
+  "horodatage_serveur": "2026-11-04T08:00:00.123456Z",
+  "resultats": [
+    {
+      "cle_idempotence": "0b6f8f0e-…01",
+      "table": "mesure",
+      "operation": "create",
+      "id": "5a0c9d55-…01",
+      "statut": "applique",
+      "ligne": { "classification": "mas", "orientation_centre": "crenas", "urgence": "orange", "...": "..." },
+      "conflit_id": null,
+      "erreurs": null,
+      "rejoue": false
+    },
+    {
+      "cle_idempotence": "0b6f8f0e-…02",
+      "table": "enfant",
+      "operation": "update",
+      "id": "4c09f399-…",
+      "statut": "conflit",
+      "ligne": { "nom": "Soa Nirina", "version": 3, "...": "..." },
+      "conflit_id": "d3c1…",
+      "erreurs": null,
+      "rejoue": false
+    }
+  ]
+}
+```
+
+| `statut` | Signification | Affichage conseillé (spec §9) |
+|---|---|---|
+| `applique` | Enregistré | Synchronisé (vert) |
+| `deja_applique` | La ligne existait déjà (renvoi), rien n'est créé | Synchronisé (vert) |
+| `conflit` | La ligne a changé entre-temps. `ligne` = version du serveur. Données cliniques : rien n'est écrasé, les deux versions sont gardées et `conflit_id` est en file d'arbitrage. Données personnelles (`cycle`, `journal_alimentaire`) : pas de file, le téléphone décide. | Conflit (rouge) |
+| `erreur` | Données refusées, détail dans `erreurs`. Non mémorisé : le même envoi peut être refait une fois corrigé. | À synchroniser (orange) |
+| `refuse` | Profil sans ce droit | À synchroniser (orange) |
+| `introuvable` | Ligne inconnue, supprimée ou hors de portée | — |
+
+`400` – Enveloppe invalide (pas de liste, plus de 100 opérations). Un référencement reste « Non transmis » sur le téléphone tant que sa réponse n'est pas `applique` ou `deja_applique`.
+
+## GET `/api/sync/pull/`
+
+**Ce qu'il fait :** renvoie, table par table, les lignes que l'utilisateur peut lire et qui ont changé depuis `depuis`, **suppressions comprises** (`deleted_at` rempli), l'état de ses conflits et la configuration clinique si elle est plus récente.
+
+| Paramètre | Rôle |
+|---|---|
+| `depuis` | Date et heure ISO. Absent : tout (première synchronisation) |
+| `tables` | Liste séparée par des virgules. Absent : toutes les tables lisibles |
+| `limite` | Lignes par table, 500 par défaut, 1000 au plus |
+| `apres_id` | Avec `depuis`, pour continuer une table (voir `suite`) |
+| `config_version` | Version de configuration du téléphone |
+
+```json
+{
+  "horodatage_serveur": "2026-11-04T07:59:55.123456Z",
+  "tables": {
+    "referencement": {
+      "lignes": [{ "id": "…", "status": "recu", "...": "..." }],
+      "suite": false,
+      "prochain_depuis": "2026-11-04T07:59:55.123456Z",
+      "apres_id": null
+    }
+  },
+  "conflits": [{ "id": "d3c1…", "table_nom": "enfant", "ligne_id": "…", "statut": "resolu", "resolution": "serveur", "version_finale": 4, "resolu_le": "…" }],
+  "config_clinique": { "version": 1, "mise_a_jour": null }
+}
+```
+
+- Enregistrez `horodatage_serveur` et renvoyez-le comme `depuis` la prochaine fois. Il est 5 secondes avant la requête : une ligne peut revenir deux fois, sans conséquence.
+- Si `suite` vaut `true`, rappelez avec `tables=<cette table>&depuis=<prochain_depuis>&apres_id=<apres_id>`.
+- `config_clinique.mise_a_jour` contient la configuration complète si `config_version` est absente ou plus ancienne.
+
+## `/api/conflicts/`
+
+**Ce qu'il fait :** la file des conflits sur les données cliniques (spec §9, §10). L'agent de CSB voit ceux des dossiers de son centre, l'admin tous, l'ASC et la bénéficiaire ceux qu'ils ont envoyés (lecture seule). Chaque conflit contient `donnees_telephone`, `donnees_serveur`, `version_base`, `version_serveur`, `user_id` et `device_id` de l'envoi.
+
+**Arbitrer :** `POST /api/conflicts/{id}/resolve/` (agent de CSB, admin)
+
+```json
+{ "choix": "fusion", "donnees": { "nom": "Soa Nirina" }, "commentaire": "Nom vérifié avec la mère" }
+```
+
+`choix` : `serveur` (garder la version du serveur), `telephone` (appliquer celle du téléphone) ou `fusion` (`donnees` obligatoire). La ligne reçoit toujours une nouvelle version, pour que chaque téléphone récupère la décision. `400` si le conflit est déjà résolu ou si les données sont refusées. L'arbitrage est journalisé (`conflit_resolu`).
+
+---
+
+# Configuration clinique
+
+## `/api/clinical-config/`
+
+**Ce qu'il fait :** les règles cliniques versionnées (spec §11) : seuils et orientation de la malnutrition, signes de danger, calendriers PEV, CPN et postnatal, conseils et aliments. Aucune de ces règles n'est dans le code.
+
+- `GET /api/clinical-config/current/` : la version publiée la plus récente, avec `contenu`. En-tête `ETag: "v<version>"` ; avec `If-None-Match`, réponse `304` si rien n'a changé. `404` si aucune version n'est publiée.
+- `GET /api/clinical-config/` : les versions (sans `contenu`). Les brouillons ne sont visibles que par l'admin.
+- `POST` (admin) : crée un brouillon `{ "libelle": "…", "contenu": { … }, "notes": "…" }`. La section `malnutrition` est vérifiée par `config_clinique/schema.json`.
+- `PATCH /api/clinical-config/{version}/` (admin) : seulement un brouillon, y compris `statut_validation`, `valide_par`, `reference_validation`, `date_validation`.
+- `POST /api/clinical-config/{version}/publish/` et `/retire/` (admin). Une version publiée ne change plus. Avec `CONFIG_VALIDEE_OBLIGATOIRE=True`, seule une version validée par écrit peut être publiée.
+
+Le fichier d'exemple, marqué « À VALIDER », est `config_clinique/exemples/config_clinique_exemple.json` : `python manage.py charger_config_clinique --publier`.
+
+---
+
+# Supervision
+
+## GET `/api/stats/` et `/api/stats/export/`
+
+**Ce qu'il fait :** statistiques **agrégées et sans identité** (spec §10), pour le superviseur (limité à sa région s'il en a une) et l'admin. `export/` renvoie le même contenu en CSV (`groupe,indicateur,valeur`) et chaque export est journalisé.
+
+| Paramètre | Rôle |
+|---|---|
+| `date_debut`, `date_fin` | Période (30 derniers jours par défaut) |
+| `region` ou `province` | Zone. Une autre région que la sienne : `403` |
+| `grouper_par` | `region` ou `mois` |
+
+```json
+{
+  "periode": { "date_debut": "2026-10-05", "date_fin": "2026-11-04" },
+  "seuil_petits_effectifs": 5,
+  "grouper_par": null,
+  "total": {
+    "indicateurs": {
+      "depistages": 17, "enfants_depistes": 17, "cas_mas": 7, "cas_mam": null, "nourrissons_a_risque": 0,
+      "referencements": 9, "referencements_arrives": 6, "rendez_vous_manques": null,
+      "taux_arrivee_pct": 66.7, "delai_moyen_arrivee_heures": 27.5,
+      "sorties_gueri": null, "sorties_transfere": 0, "sorties_non_repondant": 0, "sorties_abandon": null, "sorties_decede": 0
+    },
+    "masques": ["cas_mam", "rendez_vous_manques", "sorties_gueri", "sorties_abandon"]
+  },
+  "groupes": []
+}
+```
+
+Un effectif de 1 à 4 est remplacé par `null` et cité dans `masques` (`<5` dans le CSV). Un taux ou un délai moyen calculé sur moins de 5 cas est masqué aussi.
+
+## GET `/api/audit/`
+
+**Ce qu'il fait :** le journal d'audit, en lecture seule, pour l'admin : `id`, `user_id`, `action`, `table_nom`, `ligne_id`, `details` (adresse IP, `device_id`, noms des champs changés, jamais de valeurs de santé), `date_creation`.
 
 ## Créer les premiers comptes
 
@@ -888,3 +1210,5 @@ python manage.py createsuperuser
 
 2. Connectez-vous à `/api/auth/login/` avec son identifiant et son mot de passe dans le champ `pin`.
 3. Créez les autres comptes avec `POST /api/profiles/`.
+
+Pour une démonstration, `python manage.py charger_demo` remplit une base vide avec des données fictives et la configuration d'exemple (voir `docs/DEMO.md` à la racine). Les tables OMS se chargent avec `python manage.py importer_tables_oms <dossier>`.

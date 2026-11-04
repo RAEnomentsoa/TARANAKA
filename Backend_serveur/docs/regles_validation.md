@@ -43,14 +43,17 @@ These matter most, because the database refuses the whole record if they fail.
 | referencement | `code_unique` | Unique across all rows, including soft-deleted rows | – | Ce code de référencement existe déjà. **(same on server)** |
 | referencement | `origine`, `enfant_id`, `grossesse_id` | Only the link that matches `origine` may be filled | – | Un référencement enfant ne peut pas indiquer de grossesse. / Un référencement grossesse ne peut pas indiquer d'enfant. **(same on server)** |
 | referencement | `mesure_id`, `enfant_id` | The visit must belong to that child | – | Cette mesure ne correspond pas à cet enfant. **(same on server)** |
-| referencement | `status` | One step forward at a time: `envoye` → `recu` → `vu` → `pris_en_charge` → `clos` | – | Le statut ne peut pas revenir en arrière. / Le statut suivant doit être « … ». **(same on server)** |
+| referencement | `status` | Forward only: `envoye` → `recu` → `pris_en_charge` → `en_suivi` → `sortie`. `sortie` is also allowed from `recu` and `pris_en_charge`. | – | Le statut ne peut pas revenir en arrière. / Le statut suivant doit être « … ». **(same on server)** |
+| referencement | `status`, `issue_sortie` | `sortie` needs `issue_sortie`; any other status refuses it. Only an `agent_csb` of the destination centre records a `sortie` (`403` otherwise). | `gueri`, `transfere`, `non_repondant`, `abandon`, `decede` | L'issue de sortie est obligatoire. / L'issue ne s'indique que pour une sortie. **(same on server)** |
+| rendez_vous | `referencement_id`, `enfant_id` | The referral must be about that child | – | Ce référencement ne concerne pas cet enfant. **(same on server)** |
+| consultation_nutritionnelle | `mesure_id` / `referencement_id`, `enfant_id` | Must be about that child | – | Cette ligne ne concerne pas cet enfant. **(same on server)** |
 | mesure | `date_mesure`, `date_naissance` | The visit can't be before the birth date | – | La date de mesure ne peut pas être avant la date de naissance. **(same on server)** |
 | enfant | `date_naissance` | A new birth date is refused if it makes a saved visit invalid | – | Cette date de naissance rend une mesure déjà enregistrée invalide. **(same on server)** |
 | enfant | `grossesse_id`, `mere_id` | The pregnancy must be the mother's | – | Cette grossesse n'est pas celle de la mère indiquée. **(same on server)** |
 
 ## Fields of the synced tables
 
-### Sync columns (all 8 synced tables)
+### Sync columns (all 9 synced tables)
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
@@ -116,6 +119,11 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `position` | Required | `couche`, `debout` | CHOIX |
 | `pb_mm` | Optional (null), whole number | See limits above | NOMBRE |
 | `oedemes_bilateraux` | Default `aucun` | `aucun`, `+`, `++`, `+++` | CHOIX |
+| `signes_danger` | Optional, default `[]`. Codes from `signes_danger.enfant` of the clinical config. | List of up to 20 texts of up to 50 characters | – |
+| `complications_medicales` | Default `false` | `true`, `false` | – |
+| `appetit` | Default `non_teste` | `non_teste`, `bon`, `mauvais` | CHOIX |
+| `difficultes_allaitement` | Default `false` (used under 6 months) | `true`, `false` | – |
+| `classification`, `orientation_centre`, `urgence`, `date_prochain_controle`, `config_version` | Calculated by the server. A value in the body is ignored. | – | – |
 | `age_jour` | Calculated by the server. A value in the body is ignored. | – | – |
 | `age_mois` | Calculated by the server. A value in the body is ignored. | – | – |
 | `taille_corrigee_cm` | Calculated by the server. A value in the body is ignored. | – | – |
@@ -133,7 +141,10 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 - `age_mois` = `age_jour / 30.4375`, rounded down.
 - `taille_corrigee_cm`: under 731 days and `debout`, `taille_cm + 0.7`. From 731 days and `couche`, `taille_cm - 0.7`. Otherwise `taille_cm`.
 
-`waz`, `haz`, `whz`, `alerte`, `motif_alerte` and `flag_aberrant` are kept as the phone sends them for now. The server will recalculate them in the Z-score step.
+- `waz`, `haz`, `whz`: WHO 2006 LMS formula (WHO's restricted method beyond ±3 SD for weight-based indicators), from `reference_oms`. Weight-for-length under 731 days, weight-for-height from 731 days, both on `taille_corrigee_cm`. Rounded to 2 decimals. **Only when the WHO table of the indicator is loaded**; otherwise the phone's value is kept. Empty when the child is outside the table.
+- `classification`, `orientation_centre`, `urgence`, `date_prochain_controle`: rules of the published clinical config (`malnutrition` section), saved with its `config_version`. Empty when no config is published.
+- `flag_aberrant`: the phone's value is kept; the server sets it to `true` when a z-score is outside `malnutrition.plausibilite` of the config.
+- `alerte` and `motif_alerte` are kept as the phone sends them.
 
 ### journal_alimentaire
 
@@ -149,7 +160,7 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 
 | Field | Rule | Allowed values | Error message |
 |---|---|---|---|
-| `code_unique` | Optional: the server creates `R-<first 4 chars of the ASC id>-<MMDD>-<n>` if it's missing. Can't change. | Up to 30 characters | LONGUEUR |
+| `code_unique` | Optional: the server creates `R-<first 4 chars of the ASC id>-<MMDD>-<n>` if it's missing. Can't change. The phone normally sends its offline code, for example `TRK-7F3K-92`. | Up to 30 characters | LONGUEUR |
 | `origine` | Required | `enfant`, `grossesse` | CHOIX |
 | `enfant_id` | Optional (null), see linked rule above | Child UUID | – |
 | `grossesse_id` | Optional (null), see linked rule above | Pregnancy UUID | – |
@@ -158,7 +169,10 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `csb_id` | Required | Id from `csb` | OBLIGATOIRE |
 | `priorite` | Required | `urgente`, `haute`, `normale` | CHOIX |
 | `motif` | Required | Any text | OBLIGATOIRE |
-| `status` | Starts at `envoye`. Only changes through `/api/referrals/{id}/status/`. | `envoye`, `recu`, `vu`, `pris_en_charge`, `clos` | CHOIX |
+| `status` | Starts at `envoye`. Only changes through `/api/referrals/{id}/status/`. | `envoye`, `recu`, `pris_en_charge`, `en_suivi`, `sortie` | CHOIX |
+| `date_referencement` | Optional: when the ASC referred, on the phone. Default: the server's time. Can't change. | Date and time | DATE |
+| `date_reception`, `date_prise_en_charge`, `date_sortie`, `issue_sortie` | Set by the server when the status changes. A value in the body is ignored. | – | – |
+| `urgence`, `en_retard` | Calculated, read only: `urgence` from `priorite` (`urgente` = `rouge`, `haute` = `orange`, `normale` = `jaune`); `en_retard` = still `envoye` after the config's delay. | – | – |
 
 ### consultation_nutritionnelle
 
@@ -167,12 +181,44 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `enfant_id` | Required | Child UUID | OBLIGATOIRE |
 | `mesure_id` | Optional (null) | Visit UUID | – |
 | `referencement_id` | Optional (null) | Referral UUID | – |
-| `csb_id` | Required | Id from `csb` | OBLIGATOIRE |
-| `agent_medical_id` | Required | User UUID | OBLIGATOIRE |
+| `csb_id` | An agent_csb leaves it out: it is their centre. An admin must send it. | Id from `csb` | OBLIGATOIRE |
+| `agent_medical_id` | An agent_csb leaves it out: it is them. An admin must send an agent_csb. | User UUID | OBLIGATOIRE |
 | `date` | Required | Date | OBLIGATOIRE |
 | `diagnostic` | Required | Any text | OBLIGATOIRE |
 | `decision` | Required | `conseil`, `reference`, `prise_en_charge` | CHOIX |
 | `observations` | Optional (empty text) | Any text | – |
+
+### journal_alimentaire (read only fields)
+
+| Field | Rule |
+|---|---|
+| `score_diversite` | Calculated by the server: number of `g1`–`g8` that are true. |
+| `diversite_minimale_atteinte` | Calculated, read only: `score_diversite` ≥ `alimentation_enfant.diversite_minimale_groupes` of the config, or `null` without config. |
+
+### rendez_vous
+
+| Field | Rule | Allowed values | Error message |
+|---|---|---|---|
+| `enfant_id` | Required, a child the user can see. Can't change. | Child UUID | OBLIGATOIRE |
+| `referencement_id` | Optional (null), see linked rule above | Referral UUID | – |
+| `csb_id` | Optional (null). An agent_csb leaves it out: it is their centre. | Id from `csb` | – |
+| `date_prevue` | Required | Date | OBLIGATOIRE |
+| `type_rendez_vous` | Default `controle` | `controle`, `depistage` | CHOIX |
+| `statut` | Default `prevu` | `prevu`, `honore`, `annule` | CHOIX |
+| `motif` | Optional (empty text) | Any text | – |
+| `manque` | Calculated, read only: `prevu` and `date_prevue` before today | – | – |
+
+## Sync operations (`/api/sync/push/`)
+
+| Field | Rule | Allowed values |
+|---|---|---|
+| `operations` | Required, 1 to 100 operations, applied in order | List |
+| `cle_idempotence` | Required, one new UUID per operation, kept until the server answers | UUID |
+| `table` | Required | `cycle`, `grossesse`, `danger_grossesse`, `enfant`, `mesure`, `journal_alimentaire`, `referencement`, `consultation_nutritionnelle`, `rendez_vous` |
+| `operation` | Required | `create`, `update`, `delete` |
+| `id` | Required: the row's UUID, created on the phone | UUID |
+| `version` | Required for `update`: the version the phone knows. Optional for `delete` (checked if sent). | Whole number ≥ 1 |
+| `donnees` | The row's fields, with the same rules as the REST endpoint of the table. For `danger_grossesse`, `grossesse_id` is required on create. | Object |
 
 ## Accounts
 
@@ -185,7 +231,7 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 | `prenom` | Required | Up to 100 characters | OBLIGATOIRE, LONGUEUR |
 | `email` | Optional (empty text), valid email format | Up to 254 characters | Saisissez une adresse e-mail valide. |
 | `phone` | Optional (empty text), **not unique** | Up to 20 characters | LONGUEUR |
-| `profile_code` | An ASC leaves it out and can only create `beneficiaire`. An admin must send it. | Code from `profile` | OBLIGATOIRE |
+| `profile_code` | An ASC leaves it out and can only create `beneficiaire`. A supervisor leaves it out and can only create `asc` (in their region, if they have one). An admin must send it. | Code from `profile` | OBLIGATOIRE |
 | `consentement` | Default `false` | `true`, `false` | – |
 | `region_id` | Required for a beneficiaire. An ASC can't choose it: the account takes the ASC's region. Optional (null) for the other profiles. | Id from `region` | La région est obligatoire pour une bénéficiaire. **(same on server)** |
 | `csb_id` | Required for an agent_csb. Always empty for the other profiles. | Id from `csb` | Le CSB est obligatoire pour un agent de CSB. **(same on server)** |
@@ -220,11 +266,12 @@ The phone reads these tables and never changes them, so it doesn't need to apply
 | province | `nom` | Required | Up to 100 characters |
 | region | `nom` | Required | Up to 100 characters |
 | region | `province_id` | Required | Id from `province` |
-| profile | `code` | Required, unique | Up to 30 characters. Known to the API: `beneficiaire`, `asc`, `agent_csb`, `admin` |
+| profile | `code` | Required, unique | Up to 30 characters. Known to the API: `beneficiaire`, `asc`, `agent_csb`, `superviseur`, `admin` |
 | profile | `libelle` | Required | Up to 100 characters |
 | csb | `name` | Required | Up to 150 characters |
 | csb | `region_id` | Required | Id from `region` |
 | csb | `tel` | Required | Up to 20 characters |
+| csb | `type_centre` | Default `csb` | `csb`, `crenam`, `crenas`, `creni` |
 | type_danger_grossesse | `description` | Required | Any text |
 | reference_oms | `indicateur` | Required | `wfa`, `lhfa`, `wfl`, `wfh` |
 | reference_oms | `sexe` | Required | `M`, `F` |
@@ -244,10 +291,15 @@ The phone reads these tables and never changes them, so it doesn't need to apply
 | historique_version | `donnees` | Required | JSON |
 | historique_version | `device_id` | Optional (empty text) | Up to 100 characters |
 | historique_version | `table_nom` + `ligne_id` + `version` + `device_id` | Unique together | – |
+| configuration_clinique | `contenu` | Required; the `malnutrition` section must follow `config_clinique/schema.json` | JSON |
+| configuration_clinique | `contenu`, `libelle`… | Can't change once `publiee` | – |
+| configuration_clinique | publication | With `CONFIG_VALIDEE_OBLIGATOIRE=True`: `statut_validation = validee` and `valide_par`, `reference_validation`, `date_validation` filled | – |
+| operation_sync | `cle_idempotence` | Unique | UUID |
+| conflit_sync | resolution | Once only; `fusion` needs `donnees` | `serveur`, `telephone`, `fusion` |
 
 ## What the server does not check
 
 The models don't enforce these. If the app needs them, they have to be added on the app side:
 
 - `date_fin` is on or after `date_debut`, or `dpa` is after `ddr`.
-- When `flag_aberrant` should be set. The rule for unusual values is not in the models.
+- When `flag_aberrant` should be set for unusual raw values (weight, length): the server only adds the flag from the z-scores, when the WHO tables are loaded.

@@ -1,6 +1,6 @@
-# TARANAKA – Central server database (PostgreSQL) – v2
+# TARANAKA – Central server database (PostgreSQL) – v3
 
-Version 2, 3 Nov 2026. This version follows the Django plan from Claude Code, with the decisions applied.
+Version 3, 4 Nov 2026: MVP backend finished (see "What changed for the MVP backend" below, and `docs/DECISIONS.md` at the root of the repository). Version 2 (3 Nov 2026) followed the Django plan from Claude Code, with the decisions applied.
 
 ## What changed since v1
 
@@ -44,6 +44,18 @@ Version 2, 3 Nov 2026. This version follows the Django plan from Claude Code, wi
 27. `journal_audit.action` also records `status_change`.
 28. A soft delete now also saves `device_id`.
 
+## What changed for the MVP backend (4 Nov 2026)
+
+29. `profile` gets a 5th code, `superviseur` (data migration `comptes/0005`). A supervisor's zone is `utilisateur.region_id` (empty = national). Supervisors never read health records.
+30. `csb` gets `type_centre` (`csb`, `crenam`, `crenas`, `creni`, default `csb`). CRENAS, CRENI and CRENAM are rows of this table.
+31. `enfant.statut_prise_en_charge` also accepts `transfere`, `non_repondant` and `decede` (exit outcomes).
+32. `mesure` gets the screening inputs `signes_danger` (JSON list of codes), `complications_medicales`, `appetit` (`non_teste`, `bon`, `mauvais`) and `difficultes_allaitement`, and the server-computed `classification` (`mas`, `mam`, `normal`, `nourrisson_a_risque`), `orientation_centre`, `urgence` (`rouge`, `orange`, `jaune`), `date_prochain_controle` and `config_version`. `waz`, `haz` and `whz` are computed by the server when the WHO tables are loaded in `reference_oms`.
+33. `referencement.status` follows the spec: `envoye` (Référé) → `recu` → `pris_en_charge` → `en_suivi` → `sortie`. Migration: `vu` → `recu`, `clos` → `sortie`. New columns `date_referencement` (sent by the phone), `date_reception`, `date_prise_en_charge`, `date_sortie` and `issue_sortie` (`gueri`, `transfere`, `non_repondant`, `abandon`, `decede`). A check makes sure a `sortie` has a `date_sortie`, and that `issue_sortie` is empty before.
+34. New synced table `rendez_vous` (18). There are now **9 synced tables**.
+35. New server tables `configuration_clinique` (19), `operation_sync` (20) and `conflit_sync` (21).
+36. `historique_version` is now written: both versions of each sync conflict, with `conflit = true`.
+37. `journal_audit` is append-only (the code refuses to change or delete a line). New actions: `reinitialiser_pin`, `conflit_sync`, `conflit_resolu`, `config_creee`, `config_modifiee`, `config_publiee`, `config_retiree`, `export_csv`. Login lines also store `device_id` in `details`.
+
 ---
 
 ## Types used
@@ -62,7 +74,7 @@ Version 2, 3 Nov 2026. This version follows the Django plan from Claude Code, wi
 
 ## Sync columns
 
-These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mesure, journal_alimentaire, referencement, consultation_nutritionnelle. In these tables, `id` is a UUID.
+These go on the 9 synced tables: cycle, grossesse, danger_grossesse, enfant, mesure, journal_alimentaire, referencement, consultation_nutritionnelle, rendez_vous. In these tables, `id` is a UUID.
 
 | Column | Type | What it's for |
 |---|---|---|
@@ -94,7 +106,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | Column | Type | What it's for |
 |---|---|---|
 | id | INTEGER, PK | Profile id |
-| code | TEXT, unique | **NEW**: used by the code: beneficiaire, asc, agent_csb, admin |
+| code | TEXT, unique | Used by the code: beneficiaire, asc, agent_csb, superviseur, admin |
 | libelle | TEXT | **NEW**: name shown on screen |
 
 ## 4. utilisateur (was User)
@@ -173,7 +185,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | region_id | INTEGER, FK → region | Where the child lives |
 | date_naissance | DATE | Birth date |
 | sexe | ENUM (M, F) | Sex |
-| statut_prise_en_charge | ENUM (aucun, suivi, refere, pris_en_charge, gueri, abandon) | Care status |
+| statut_prise_en_charge | ENUM (aucun, suivi, refere, pris_en_charge, gueri, abandon, transfere, non_repondant, decede) | Care status, follows the referral |
 | + sync columns | | |
 
 ## 10. mesure (synced)
@@ -199,6 +211,15 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | alerte | ENUM (vert, orange, rouge) | Traffic light |
 | motif_alerte | TEXT | Why that colour |
 | ref_oms | TEXT | "WHO2006" |
+| signes_danger | JSON (list of codes) | **NEW**: IMCI danger signs seen by the ASC |
+| complications_medicales | BOOLEAN | **NEW**: medical complication |
+| appetit | ENUM (non_teste, bon, mauvais) | **NEW**: appetite test |
+| difficultes_allaitement | BOOLEAN | **NEW**: feeding difficulty (under 6 months) |
+| classification | ENUM (mas, mam, normal, nourrisson_a_risque), can be empty | **NEW**, server: result of the clinical config |
+| orientation_centre | ENUM (csb, crenam, crenas, creni), can be empty | **NEW**, server: where to refer |
+| urgence | ENUM (rouge, orange, jaune), can be empty | **NEW**, server |
+| date_prochain_controle | DATE, can be empty | **NEW**, server: next screening or check |
+| config_version | INTEGER, can be empty | **NEW**, server: config version used |
 | + sync columns | | |
 
 ## 11. journal_alimentaire (synced)
@@ -220,6 +241,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 |---|---|---|
 | id | INTEGER, PK | Health centre id |
 | name | TEXT | Name |
+| type_centre | ENUM (csb, crenam, crenas, creni) | **NEW**: kind of facility, default csb |
 | region_id | INTEGER, FK → region | Where |
 | tel | TEXT | Phone |
 
@@ -235,9 +257,14 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | mesure_id | UUID, FK → mesure, can be empty | Visit that caused it |
 | asc_id | UUID, FK → utilisateur | ASC who referred |
 | csb_id | INTEGER, FK → csb | Destination |
-| priorite | ENUM (urgente, haute, normale) | Priority |
+| priorite | ENUM (urgente, haute, normale) | Priority: urgente = rouge, haute = orange, normale = jaune |
 | motif | TEXT | Reason |
-| status | ENUM (envoye, recu, vu, pris_en_charge, clos) | Progress |
+| status | ENUM (envoye, recu, pris_en_charge, en_suivi, sortie) | Lifecycle: Référé → Reçu → Pris en charge → En suivi → Sortie |
+| date_referencement | TIMESTAMP | **NEW**: when the ASC referred, on the phone |
+| date_reception | TIMESTAMP, can be empty | **NEW**: patient arrived |
+| date_prise_en_charge | TIMESTAMP, can be empty | **NEW** |
+| date_sortie | TIMESTAMP, can be empty | **NEW**: required when status = sortie |
+| issue_sortie | ENUM (gueri, transfere, non_repondant, abandon, decede), can be empty | **NEW**: exit outcome, only with sortie |
 | + sync columns | | |
 
 ## 14. consultation_nutritionnelle (synced)
@@ -275,7 +302,7 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 |---|---|---|
 | id | INTEGER, PK, automatic | Line id |
 | user_id | UUID, FK → utilisateur, can be empty | Who (empty for a failed login) |
-| action | TEXT | login, create, update, delete, status_change, export_csv… |
+| action | TEXT | login_…, create, update, delete, status_change, conflit_sync, conflit_resolu, config_…, reinitialiser_pin, export_csv… |
 | table_nom | TEXT, can be empty | Which table |
 | ligne_id | UUID, can be empty | Which row |
 | details | JSON | Extra info |
@@ -295,3 +322,72 @@ These go on the 8 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | date_creation | TIMESTAMP | When received |
 
 `table_nom` + `ligne_id` + `version` + `device_id` must be unique together.
+
+## 18. rendez_vous (synced)
+
+| Column | Type | What it's for |
+|---|---|---|
+| id | UUID, PK | Appointment id |
+| enfant_id | UUID, FK → enfant (protected) | Child |
+| referencement_id | UUID, FK → referencement, can be empty | Referral it follows |
+| csb_id | INTEGER, FK → csb, can be empty | Where (empty for a community screening) |
+| date_prevue | DATE | Planned day |
+| type_rendez_vous | ENUM (controle, depistage) | Kind of visit |
+| statut | ENUM (prevu, honore, annule) | "Manqué" is computed: still prevu after date_prevue |
+| motif | TEXT | Reason |
+| + sync columns | | |
+
+## 19. configuration_clinique (server only, read by the phones)
+
+| Column | Type | What it's for |
+|---|---|---|
+| id | INTEGER, PK, automatic | Line id |
+| version | INTEGER, unique | Version number, given by the server |
+| libelle | TEXT | Name |
+| contenu | JSON | Thresholds, referral rules, calendars, danger signs, advice |
+| statut | ENUM (brouillon, publiee, retiree) | A published version never changes |
+| statut_validation | ENUM (a_valider, validee) | Written validation (spec §11) |
+| valide_par | TEXT | Authority and signatory |
+| reference_validation | TEXT | Reference of the validation document |
+| date_validation | DATE, can be empty | |
+| notes | TEXT | |
+| cree_par | UUID, FK → utilisateur, can be empty | |
+| created_at, updated_at | TIMESTAMP | |
+| publiee_le | TIMESTAMP, can be empty | |
+
+## 20. operation_sync (server only)
+
+| Column | Type | What it's for |
+|---|---|---|
+| id | INTEGER, PK, automatic | Line id |
+| cle_idempotence | UUID, unique | Key sent by the phone with each outbox operation |
+| user_id | UUID, FK → utilisateur | Who sent it |
+| device_id | TEXT | Which phone |
+| table_nom | TEXT | Which table |
+| operation | ENUM (create, update, delete) | |
+| ligne_id | UUID | Which row |
+| statut | ENUM (applique, deja_applique, conflit) | Final answer |
+| reponse | JSON | Answer given, sent again if the key comes back |
+| date_creation | TIMESTAMP | |
+
+## 21. conflit_sync (server only)
+
+| Column | Type | What it's for |
+|---|---|---|
+| id | UUID, PK | Conflict id |
+| table_nom | TEXT | Which table |
+| ligne_id | UUID | Which row |
+| operation | ENUM (create, update, delete) | What the phone tried |
+| version_base | INTEGER, can be empty | Version the phone knew |
+| version_serveur | INTEGER | Version on the server |
+| donnees_telephone | JSON | The phone's version |
+| donnees_serveur | JSON | The server's version |
+| user_id | UUID, FK → utilisateur | Who sent it |
+| device_id | TEXT | Which phone |
+| statut | ENUM (a_verifier, resolu) | |
+| resolution | ENUM (serveur, telephone, fusion), can be empty | Decision |
+| resolu_par | UUID, FK → utilisateur, can be empty | Who decided |
+| resolu_le | TIMESTAMP, can be empty | |
+| version_finale | INTEGER, can be empty | Row version after the decision |
+| commentaire | TEXT | |
+| created_at, updated_at | TIMESTAMP | |
