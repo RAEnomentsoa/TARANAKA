@@ -303,7 +303,7 @@ class ProfilTests(BaseAuthTest):
             {"detail": "Votre profil ne permet pas d'accéder à cette ressource."},
         )
 
-    def test_quatre_profils_crees_par_la_migration(self):
+    def test_profils_crees_par_les_migrations(self):
         codes = set(Profile.objects.values_list("code", flat=True))
         self.assertEqual(codes, set(CodeProfile.values))
 
@@ -361,7 +361,13 @@ class MigrationProfilsTests(TestCase):
     def test_retour_arriere_supprime_les_4_profils(self):
         migration = import_module("comptes.migrations.0003_profils_initiaux")
         migration.supprimer_profils(apps, None)
-        self.assertFalse(Profile.objects.filter(code__in=CodeProfile.values).exists())
+        codes = [code for code, _ in migration.PROFILS]
+        self.assertFalse(Profile.objects.filter(code__in=codes).exists())
+
+    def test_retour_arriere_supprime_le_superviseur(self):
+        migration = import_module("comptes.migrations.0005_profil_superviseur")
+        migration.supprimer_profil(apps, None)
+        self.assertFalse(Profile.objects.filter(code="superviseur").exists())
 
 
 class ValidateurPinTests(SimpleTestCase):

@@ -18,6 +18,7 @@ class CodeProfile(models.TextChoices):
     BENEFICIAIRE = "beneficiaire", "Bénéficiaire"
     ASC = "asc", "Agent de santé communautaire"
     AGENT_CSB = "agent_csb", "Agent de CSB"
+    SUPERVISEUR = "superviseur", "Superviseur"
     ADMIN = "admin", "Administrateur"
 
 

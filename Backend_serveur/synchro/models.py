@@ -39,7 +39,13 @@ class SyncModel(models.Model):
         self.save(update_fields=["deleted_at", "version", "device_id", "updated_at"])
 
 
+class JournalImmuable(Exception):
+    pass
+
+
 class JournalAudit(models.Model):
+    """Append-only: a line can be added, never changed or deleted."""
+
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -62,6 +68,14 @@ class JournalAudit(models.Model):
 
     def __str__(self):
         return f"{self.action} - {self.date_creation:%Y-%m-%d %H:%M}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None or kwargs.get("force_update"):
+            raise JournalImmuable("Une ligne du journal d'audit ne peut pas être modifiée.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise JournalImmuable("Une ligne du journal d'audit ne peut pas être supprimée.")
 
 
 class HistoriqueVersion(models.Model):

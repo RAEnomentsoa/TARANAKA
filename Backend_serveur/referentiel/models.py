@@ -39,9 +39,26 @@ class Region(models.Model):
         return self.nom
 
 
+class TypeCentre(models.TextChoices):
+    """Kinds of health facility a child can be referred to (spec §7)."""
+
+    CSB = "csb", "CSB"
+    CRENAM = "crenam", "CRENAM"
+    CRENAS = "crenas", "CRENAS"
+    CRENI = "creni", "CRENI"
+
+
 class CSB(models.Model):
+    """A health facility. The table keeps its v1 name: CRENAS, CRENI and CRENAM
+    are rows with another type_centre."""
+
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=150)
+    type_centre = models.CharField(
+        max_length=10,
+        choices=TypeCentre.choices,
+        default=TypeCentre.CSB,
+    )
     region = models.ForeignKey(
         Region,
         on_delete=models.PROTECT,

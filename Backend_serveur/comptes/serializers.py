@@ -78,12 +78,14 @@ class CompteSerializer(serializers.ModelSerializer):
         return self.context["request"].user
 
     def validate_profile_code(self, profil):
-        if (
-            self.utilisateur.profile.code == CodeProfile.ASC
-            and profil.code != CodeProfile.BENEFICIAIRE
-        ):
+        code = self.utilisateur.profile.code
+        if code == CodeProfile.ASC and profil.code != CodeProfile.BENEFICIAIRE:
             raise PermissionDenied(
                 "Un agent de santé communautaire ne peut créer que des bénéficiaires."
+            )
+        if code == CodeProfile.SUPERVISEUR and profil.code != CodeProfile.ASC:
+            raise PermissionDenied(
+                "Un superviseur ne peut créer que des agents de santé communautaires."
             )
         return profil
 
@@ -106,6 +108,11 @@ class CompteSerializer(serializers.ModelSerializer):
                 )
             attrs["profile"] = Profile.objects.get(code=CodeProfile.BENEFICIAIRE)
             attrs["region"] = self.utilisateur.region
+            attrs.pop("is_active", None)
+        elif self.utilisateur.profile.code == CodeProfile.SUPERVISEUR:
+            attrs["profile"] = Profile.objects.get(code=CodeProfile.ASC)
+            if self.utilisateur.region_id is not None:
+                attrs["region"] = self.utilisateur.region
             attrs.pop("is_active", None)
         elif "profile" not in attrs:
             raise serializers.ValidationError(
@@ -152,6 +159,13 @@ class MessageSerializer(serializers.Serializer):
 class ChangerPinReponseSerializer(MessageSerializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
+
+
+class ReinitialiserPinSerializer(serializers.Serializer):
+    nouveau_pin = serializers.CharField(
+        trim_whitespace=False,
+        validators=[valider_pin],
+    )
 
 
 class ChangerPinSerializer(serializers.Serializer):

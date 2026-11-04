@@ -5,7 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from comptes.models import CodeProfile
-from comptes.permissions import acces
+from comptes.permissions import PROFILS_DOSSIERS, acces
 from synchro.views import SyncViewSet
 
 from . import services
@@ -13,7 +13,7 @@ from .filters import EnfantFilter, MesureFilter
 from .serializers import EnfantSerializer, MesureSerializer
 
 PROFILS = acces(
-    lecture=tuple(CodeProfile.values),
+    lecture=PROFILS_DOSSIERS,
     ecriture=(CodeProfile.ASC, CodeProfile.ADMIN),
 )
 

@@ -1,10 +1,11 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from synchro.services import contexte_depuis
+from synchro.services import LONGUEUR_DEVICE_ID, contexte_depuis
 
 from . import services
 from .models import CodeProfile, Profile
@@ -18,6 +19,7 @@ from .serializers import (
     LogoutSerializer,
     MessageSerializer,
     ProfileSerializer,
+    ReinitialiserPinSerializer,
     UtilisateurSerializer,
 )
 from .throttles import LoginRateThrottle
@@ -38,6 +40,7 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user, refresh = services.connecter(
             ip=_adresse_ip(request),
+            device_id=request.headers.get("X-Device-Id", "")[:LONGUEUR_DEVICE_ID],
             **serializer.validated_data,
         )
         return Response(
@@ -104,9 +107,15 @@ class CompteViewSet(
     serializer_class = CompteSerializer
     permission_classes = [AccesParAction]
     profils_par_action = acces(
-        lecture=(CodeProfile.BENEFICIAIRE, CodeProfile.ASC, CodeProfile.ADMIN),
+        lecture=(
+            CodeProfile.BENEFICIAIRE,
+            CodeProfile.ASC,
+            CodeProfile.SUPERVISEUR,
+            CodeProfile.ADMIN,
+        ),
         ecriture=(CodeProfile.ADMIN,),
-        create=(CodeProfile.ASC, CodeProfile.ADMIN),
+        create=(CodeProfile.ASC, CodeProfile.SUPERVISEUR, CodeProfile.ADMIN),
+        reinitialiser_pin=(CodeProfile.SUPERVISEUR, CodeProfile.ADMIN),
     )
 
     def get_queryset(self):
@@ -128,6 +137,19 @@ class CompteViewSet(
             serializer.validated_data,
             contexte_depuis(self.request),
         )
+
+    @extend_schema(request=ReinitialiserPinSerializer, responses=MessageSerializer)
+    @action(detail=True, methods=["post"], url_path="reset-pin")
+    def reinitialiser_pin(self, request, pk=None):
+        """PIN forgotten: a supervisor (their ASCs) or an admin sets a new one."""
+        serializer = ReinitialiserPinSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.reinitialiser_pin(
+            self.get_object(),
+            serializer.validated_data["nouveau_pin"],
+            contexte_depuis(request),
+        )
+        return Response({"detail": "PIN réinitialisé."})
 
 
 class ProfileTypeViewSet(viewsets.ReadOnlyModelViewSet):

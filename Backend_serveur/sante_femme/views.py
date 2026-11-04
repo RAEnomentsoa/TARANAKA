@@ -3,7 +3,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from comptes.models import CodeProfile
-from comptes.permissions import acces
+from comptes.permissions import PROFILS_DOSSIERS, acces
 from synchro.views import SyncViewSet
 
 from . import services
@@ -32,7 +32,7 @@ class GrossesseViewSet(SyncViewSet):
     serializer_class = GrossesseSerializer
     filterset_class = GrossesseFilter
     profils_par_action = acces(
-        lecture=tuple(CodeProfile.values),
+        lecture=PROFILS_DOSSIERS,
         ecriture=(CodeProfile.BENEFICIAIRE, CodeProfile.ASC, CodeProfile.ADMIN),
     )
 

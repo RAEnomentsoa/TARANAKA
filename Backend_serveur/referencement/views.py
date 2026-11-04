@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from comptes.models import CodeProfile
-from comptes.permissions import acces
+from comptes.permissions import PROFILS_DOSSIERS, acces
 from synchro.views import SyncViewSet
 
 from . import services
@@ -15,7 +15,7 @@ class ReferencementViewSet(SyncViewSet):
     serializer_class = ReferencementSerializer
     filterset_class = ReferencementFilter
     profils_par_action = acces(
-        lecture=tuple(CodeProfile.values),
+        lecture=PROFILS_DOSSIERS,
         ecriture=(CodeProfile.ADMIN,),
         create=(CodeProfile.ASC, CodeProfile.ADMIN),
         changer_status=(CodeProfile.AGENT_CSB, CodeProfile.ADMIN),

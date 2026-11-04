@@ -56,9 +56,48 @@ def asc_visibles(user):
 
 
 def comptes_visibles(user):
-    if user.profile.code == CodeProfile.ADMIN:
+    code = user.profile.code
+    if code == CodeProfile.ADMIN:
         return User.objects.all()
+    if code == CodeProfile.SUPERVISEUR:
+        # The supervisor manages the ASC accounts of their zone (spec §2, §8).
+        ascs = User.objects.filter(profile__code=CodeProfile.ASC)
+        if user.region_id is None:
+            return ascs
+        return ascs.filter(region_id=user.region_id)
     return beneficiaires_visibles(user)
+
+
+def reinitialiser_pin(cible, nouveau_pin, contexte):
+    """PIN forgotten in agent mode: the supervisor sets a new one (spec §8).
+
+    The account is unblocked and every session is closed. The phone gets its
+    synced data back with /api/sync/pull/ after the next login.
+    """
+    if cible.is_staff:
+        raise PinNonModifiable()
+    with transaction.atomic():
+        cible = User.objects.select_for_update(of=("self",)).get(pk=cible.pk)
+        cible.set_password(nouveau_pin)
+        cible.tentatives_echouees = 0
+        cible.bloque_jusqu_a = None
+        cible.save(
+            update_fields=[
+                "password",
+                "tentatives_echouees",
+                "bloque_jusqu_a",
+                "updated_at",
+            ]
+        )
+        _revoquer_tokens(cible)
+        journaliser(
+            "reinitialiser_pin",
+            contexte.user,
+            contexte.ip,
+            cible=cible,
+            device_id=contexte.device_id,
+        )
+    return cible
 
 
 def creer_compte(donnees, contexte):
@@ -101,7 +140,7 @@ def est_bloque(user):
     return bool(user.bloque_jusqu_a and user.bloque_jusqu_a > timezone.now())
 
 
-def connecter(identifiant, pin, ip):
+def connecter(identifiant, pin, ip, device_id=""):
     """Check the PIN and return the user with a new refresh token."""
     # The errors are raised outside the transaction, so that the failed
     # attempt and the audit line are kept.
@@ -111,7 +150,7 @@ def connecter(identifiant, pin, ip):
             .filter(identifiant=identifiant)
             .first()
         )
-        erreur = _verifier_connexion(user, identifiant, pin, ip)
+        erreur = _verifier_connexion(user, identifiant, pin, ip, device_id)
     if erreur:
         raise erreur
     return user, RefreshToken.for_user(user)
@@ -168,7 +207,7 @@ def journaliser(action, user, ip, cible=None, **details):
     )
 
 
-def _verifier_connexion(user, identifiant, pin, ip):
+def _verifier_connexion(user, identifiant, pin, ip, device_id=""):
     if user is None or not user.is_active:
         # Hash anyway, so the response time doesn't reveal if the account exists.
         User().set_password(pin)
@@ -178,16 +217,23 @@ def _verifier_connexion(user, identifiant, pin, ip):
             ip,
             identifiant=identifiant,
             motif="identifiant_inconnu" if user is None else "compte_inactif",
+            device_id=device_id,
         )
         return IdentifiantsIncorrects()
 
     if est_bloque(user):
-        journaliser("login_bloque", user, ip)
+        journaliser("login_bloque", user, ip, device_id=device_id)
         return _erreur_blocage(user)
 
     if not user.check_password(pin):
         _enregistrer_echec(user)
-        journaliser("login_echec", user, ip, tentatives=user.tentatives_echouees)
+        journaliser(
+            "login_echec",
+            user,
+            ip,
+            tentatives=user.tentatives_echouees,
+            device_id=device_id,
+        )
         return _erreur_blocage(user) if est_bloque(user) else IdentifiantsIncorrects()
 
     user.tentatives_echouees = 0
@@ -196,10 +242,16 @@ def _verifier_connexion(user, identifiant, pin, ip):
     user.save(update_fields=["tentatives_echouees", "bloque_jusqu_a", "last_login"])
 
     if user.profile.code not in CodeProfile.values:
-        journaliser("login_refuse", user, ip, profil=user.profile.code)
+        journaliser(
+            "login_refuse",
+            user,
+            ip,
+            profil=user.profile.code,
+            device_id=device_id,
+        )
         return ProfilInconnu()
 
-    journaliser("login_succes", user, ip)
+    journaliser("login_succes", user, ip, device_id=device_id)
     return None
 
 

@@ -2,6 +2,15 @@ from rest_framework.permissions import BasePermission
 
 from .models import CodeProfile
 
+# Profiles that may read individual health records. The supervisor is left out
+# on purpose: spec §10 gives them aggregated, anonymous statistics only.
+PROFILS_DOSSIERS = (
+    CodeProfile.BENEFICIAIRE,
+    CodeProfile.ASC,
+    CodeProfile.AGENT_CSB,
+    CodeProfile.ADMIN,
+)
+
 
 class ProfilRequis(BasePermission):
     """Allow only the logged-in users whose profile code is listed in codes."""
@@ -36,6 +45,10 @@ class IsAgentCSB(ProfilRequis):
 
 class IsAdmin(ProfilRequis):
     codes = (CodeProfile.ADMIN,)
+
+
+class IsSuperviseurOuAdmin(ProfilRequis):
+    codes = (CodeProfile.SUPERVISEUR, CodeProfile.ADMIN)
 
 
 class AccesParAction(ProfilRequis):

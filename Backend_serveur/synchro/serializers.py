@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .exceptions import MESSAGE_ID_UTILISE
+from .models import JournalAudit
 
 CHAMPS_SYNC = ("version", "created_at", "updated_at", "device_id", "deleted_at")
 CHAMPS_SYNC_LECTURE = ("created_at", "updated_at", "device_id", "deleted_at")
@@ -66,3 +67,12 @@ class SyncSerializer(serializers.ModelSerializer):
                 )
             attrs.pop(champ, None)
         return attrs
+
+
+class JournalAuditSerializer(serializers.ModelSerializer):
+    user_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = JournalAudit
+        fields = ("id", "user_id", "action", "table_nom", "ligne_id", "details", "date_creation")
+        read_only_fields = fields

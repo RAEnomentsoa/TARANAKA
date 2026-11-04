@@ -18,7 +18,7 @@ class RegionSerializer(serializers.ModelSerializer):
 class CSBSerializer(serializers.ModelSerializer):
     class Meta:
         model = CSB
-        fields = ("id", "name", "region_id", "tel")
+        fields = ("id", "name", "type_centre", "region_id", "tel")
 
 
 class TypeDangerGrossesseSerializer(serializers.ModelSerializer):

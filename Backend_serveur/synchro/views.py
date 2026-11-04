@@ -4,10 +4,13 @@ from collections.abc import Mapping
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
-from comptes.permissions import AccesParAction
+from comptes.permissions import AccesParAction, IsAdmin
 
 from . import services
 from .exceptions import ConflitVersion
+from .filters import JournalAuditFilter
+from .models import JournalAudit
+from .serializers import JournalAuditSerializer
 
 
 class SyncViewSet(viewsets.ModelViewSet):
@@ -75,3 +78,14 @@ class SyncViewSet(viewsets.ModelViewSet):
         except ValueError:
             return None
         return self.get_queryset().filter(pk=identifiant).first()
+
+
+class JournalAuditViewSet(viewsets.ReadOnlyModelViewSet):
+    """/audit/: read-only audit log, for admins (spec §2: who, what, when, device)."""
+
+    permission_classes = [IsAdmin]
+    serializer_class = JournalAuditSerializer
+    filterset_class = JournalAuditFilter
+
+    def get_queryset(self):
+        return JournalAudit.objects.order_by("-date_creation", "-id")

@@ -19,8 +19,8 @@ class RegionAdmin(admin.ModelAdmin):
 
 @admin.register(CSB)
 class CSBAdmin(admin.ModelAdmin):
-    list_display = ("name", "region", "tel")
-    list_filter = ("region",)
+    list_display = ("name", "type_centre", "region", "tel")
+    list_filter = ("type_centre", "region")
     search_fields = ("name", "tel", "region__nom")
     list_select_related = ("region",)
 
