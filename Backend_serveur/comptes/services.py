@@ -41,7 +41,11 @@ MESSAGE_IDENTIFIANT_UTILISE = "Cet identifiant est déjà utilisé."
 
 def beneficiaires_visibles(user):
     """The women this user may link a row to."""
-    beneficiaires = User.objects.filter(profile__code=CodeProfile.BENEFICIAIRE)
+    # An erased account can't be linked to or listed any more.
+    beneficiaires = User.objects.filter(
+        profile__code=CodeProfile.BENEFICIAIRE,
+        efface_le__isnull=True,
+    )
     code = user.profile.code
     if code == CodeProfile.ADMIN:
         return beneficiaires

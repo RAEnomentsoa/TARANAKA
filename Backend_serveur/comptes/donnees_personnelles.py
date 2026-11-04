@@ -201,7 +201,8 @@ def _anonymiser(user):
     user.phone = ""
     user.consentement = False
     user.is_active = False
-    user.region = None
+    # The region stays: alone it identifies nobody, and the ASCs of the region
+    # see her rows through it, so their phones receive the deletions.
     user.csb = None
     user.totp_secret = ""
     user.totp_active = False

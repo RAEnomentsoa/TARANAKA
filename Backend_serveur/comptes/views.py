@@ -11,6 +11,7 @@ from rest_framework.exceptions import ValidationError
 from synchro.services import LONGUEUR_DEVICE_ID, contexte_depuis
 
 from . import donnees_personnelles, services
+from .exceptions import TotpNonDisponible
 from .models import CodeProfile, Profile
 from .permissions import AccesParAction, IsBeneficiaire, acces
 from .serializers import (
@@ -250,6 +251,8 @@ class TotpActiverView(APIView):
 
     @extend_schema(request=TotpCodeSerializer, responses=ChangerPinReponseSerializer)
     def post(self, request):
+        if not services.totp_requis_pour(request.user):
+            raise TotpNonDisponible()
         serializer = TotpCodeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         refresh = services.activer_totp(

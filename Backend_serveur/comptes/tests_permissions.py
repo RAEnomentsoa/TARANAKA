@@ -32,6 +32,8 @@ LECTURES = {
     "/api/sync/pull/": (OK, OK, OK, OK, OK),
     "/api/facilities/": (OK, OK, OK, OK, OK),
     "/api/auth/me/": (OK, OK, OK, OK, OK),
+    "/api/auth/my-data/": (OK, OK, OK, OK, OK),
+    "/api/auth/2fa/": (OK, OK, OK, OK, OK),
 }
 
 ECRITURES = {
@@ -46,6 +48,8 @@ ECRITURES = {
     "/api/clinical-config/": (NON, NON, NON, NON, VALIDE),
     "/api/profiles/": (NON, VALIDE, NON, VALIDE, VALIDE),
     "/api/sync/push/": (VALIDE, VALIDE, VALIDE, VALIDE, VALIDE),
+    "/api/auth/my-data/erase/": (VALIDE, NON, NON, NON, NON),
+    "/api/auth/2fa/activate/": (NON, NON, VALIDE, VALIDE, VALIDE),
 }
 
 

@@ -56,6 +56,11 @@ Version 3, 4 Nov 2026: MVP backend finished (see "What changed for the MVP backe
 36. `historique_version` is now written: both versions of each sync conflict, with `conflit = true`.
 37. `journal_audit` is append-only (the code refuses to change or delete a line). New actions: `reinitialiser_pin`, `conflit_sync`, `conflit_resolu`, `config_creee`, `config_modifiee`, `config_publiee`, `config_retiree`, `export_csv`. Login lines also store `device_id` in `details`.
 
+## What changed for 2FA and data protection (4 Nov 2026, second pass)
+
+38. `utilisateur` gets `totp_secret` (TEXT, can be empty), `totp_active` (BOOLEAN), `totp_dernier_pas` (INTEGER, can be empty: last TOTP step used, against replay) and `efface_le` (TIMESTAMP, can be empty: data erased under loi 2014-038, account anonymised).
+39. `journal_audit.action` also records `login_totp_requis`, `totp_preparation`, `totp_active`, `totp_desactive`, `totp_desactivation_echec`, `totp_reinitialise`, `acces_donnees`, `effacement_donnees` and `effacement_echec`.
+
 ---
 
 ## Types used
@@ -130,6 +135,10 @@ These go on the 9 synced tables: cycle, grossesse, danger_grossesse, enfant, mes
 | last_login | TIMESTAMP, can be empty | **NEW**: needed by Django |
 | tentatives_echouees | INTEGER, default 0 | **NEW**: wrong PINs in a row |
 | bloque_jusqu_a | TIMESTAMP, can be empty | **NEW**: end of the current block |
+| totp_secret | TEXT, can be empty | **NEW**: TOTP secret (web accounts) |
+| totp_active | BOOLEAN | **NEW**: two-factor login on |
+| totp_dernier_pas | INTEGER, can be empty | **NEW**: last TOTP step used (no replay) |
+| efface_le | TIMESTAMP, can be empty | **NEW**: personal data erased, account anonymised |
 
 ## 5. cycle (synced)
 

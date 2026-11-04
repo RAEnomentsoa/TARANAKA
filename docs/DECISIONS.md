@@ -211,3 +211,67 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
 - Known limit: no complementary suppression. With `grouper_par`, a hidden
   group value can sometimes be deduced from the total minus the other groups.
 - Each CSV export is written to the audit log (`export_csv`).
+
+## D12. Two-factor login (TOTP) for web accounts
+
+- Spec §2: CSB/CRENAS/CRENI staff and supervisors use the web with "double
+  authentification". TOTP (RFC 6238: HMAC-SHA1, 30 s, 6 digits) works offline
+  with any authenticator app and needs no SMS. It is written with the Python
+  standard library: no new dependency.
+- Concerns `agent_csb`, `superviseur` and `admin`. ASCs and beneficiaries use
+  the phone with a PIN (spec §2 table) and are not concerned.
+- `/api/auth/login/` stays compatible: an optional `code_totp` field. Once 2FA
+  is active, a right PIN without code answers `401 totp_requis`, a wrong code
+  `401 totp_invalide` and **counts as a failed attempt** (same lockout as a
+  wrong PIN). The failure counter is only reset when both factors are right.
+  A code is accepted one step before or after the current one, never twice.
+  The response gets one additive field, `totp_a_configurer`.
+- Enrolment: `POST /api/auth/2fa/setup/` (secret + `otpauth://` URI for a QR
+  code), then `POST /api/auth/2fa/activate/` with a first code. Activation
+  closes the other sessions and returns new tokens.
+- `TOTP_OBLIGATOIRE=True` (environment variable, production): a web account
+  without 2FA can still log in, but its token is marked `totp_a_configurer`
+  and only opens `/api/auth/me/`, `/api/auth/changer-pin/` and
+  `/api/auth/2fa/…`; every other endpoint answers `403`. Disabling 2FA is then
+  refused. Default `False`, so development and the demo keep working.
+- Lost phone: an admin calls `POST /api/profiles/{id}/reset-2fa/` (audited),
+  and the person enrols again. No recovery codes in the MVP.
+- Limits: the TOTP secret is stored in clear in the database (protect the
+  database and its backups; encrypting it needs a key-management decision).
+  Django's `/admin/` (staff accounts with a password) is not covered.
+
+## D13. Rights of access and erasure (loi 2014-038)
+
+- **Access**: `GET /api/auth/my-data/` for oneself, `GET /api/profiles/{id}/data/`
+  for an admin answering a written request. The export holds the account (no
+  PIN hash), and for a beneficiary every health row the server holds about her
+  and her children (same scope as what she can read), plus the list of audit
+  actions about her account. A health worker's export holds their account and
+  audit trail, not their patients' records. Every export is audited
+  (`acces_donnees`).
+- **Erasure**: `POST /api/auth/my-data/erase/` by the beneficiary herself
+  (PIN required; a wrong PIN counts as a failed attempt), or
+  `POST /api/profiles/{id}/erase/` by an admin. Only beneficiary accounts:
+  a professional account is deactivated instead, because its actions must stay
+  traceable.
+- What erasure does:
+  - cycles: deleted for good (intimate data, spec §4);
+  - pregnancies (and danger signs) without a referral: soft-deleted, so the
+    ASCs' phones drop them at their next `/sync/pull/` (no endpoint changed);
+  - pregnancies with a referral: **kept**, because the health facility must
+    keep its clinical record, but they no longer point to an identifiable
+    person;
+  - children: the link to the mother (and her pregnancy) is removed. With
+    `inclure_enfants: true` (she is the legal guardian), the child's name is
+    replaced and, when there is no referral, the child and its measurements,
+    food logs, appointments and consultations are soft-deleted;
+  - the account is anonymised (name, identifier, phone, email), deactivated,
+    its PIN made unusable and its sessions closed. The region is kept: alone
+    it identifies nobody, and the ASCs see her rows through it, so their
+    phones receive the deletions;
+  - copies kept by the sync (`operation_sync`, `historique_version`,
+    `conflit_sync`) for the erased rows and her own pushes are deleted.
+- The audit log is **not** erased (traceability obligation); it only points to
+  the anonymised account. The erasure itself is audited with counts only
+  (`effacement_donnees`), never names or health values.
+- Statistics already computed are anonymous and unaffected.

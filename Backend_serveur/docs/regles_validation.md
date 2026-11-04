@@ -243,7 +243,16 @@ The limits on `poids_kg`, `taille_cm` and `pb_mm` are listed above under "Rules 
 |---|---|---|---|
 | `nouveau_pin` | Required, digits 0–9 only | 4 to 6 digits | Le PIN doit contenir de 4 à 6 chiffres. **(same on server)** |
 
-The login doesn't check the PIN format: a badly formatted PIN just counts as a wrong PIN. Administration accounts (`is_staff`) use a password instead of a PIN, and it follows Django's password rules.
+The login doesn't check the PIN format: a badly formatted PIN just counts as a wrong PIN.
+
+### Two-factor login and erasure
+
+| Field | Rule | Allowed values | Error message |
+|---|---|---|---|
+| `code_totp` (login) | Required once the account turned 2FA on, ignored otherwise. A wrong code counts as a failed attempt. A code is accepted once. | 6 digits | Saisissez le code à 6 chiffres… / Code d'authentification incorrect. **(same on server)** |
+| `code` (`/2fa/activate/`, `/2fa/disable/`) | Required | 6 digits | Code d'authentification incorrect. **(same on server)** |
+| `pin` (`/my-data/erase/`, `/2fa/disable/`) | Required; a wrong PIN counts as a failed attempt | The account's PIN | Le PIN est incorrect. **(same on server)** |
+| `inclure_enfants` (erasure) | Default `false` | `true`, `false` | – | Administration accounts (`is_staff`) use a password instead of a PIN, and it follows Django's password rules.
 
 ### Failed attempts
 

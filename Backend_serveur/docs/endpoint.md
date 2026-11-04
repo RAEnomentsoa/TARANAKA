@@ -33,6 +33,10 @@ Après 7 jours hors ligne, le `access` a expiré mais le `refresh` reste valable
 | POST | `/api/auth/logout/` | Non | Se déconnecter |
 | GET | `/api/auth/me/` | Oui | Lire l'utilisateur connecté |
 | POST | `/api/auth/changer-pin/` | Oui | Changer le PIN |
+| GET | `/api/auth/2fa/` | Oui | État de la double authentification |
+| POST | `/api/auth/2fa/setup/`, `/activate/`, `/disable/` | Oui | Mettre en place, activer, désactiver la double authentification |
+| GET | `/api/auth/my-data/` | Oui | Mes données (droit d'accès, loi 2014-038) |
+| POST | `/api/auth/my-data/erase/` | Oui | Effacer mes données (droit à l'effacement, bénéficiaires) |
 
 ---
 
@@ -48,6 +52,8 @@ Après 7 jours hors ligne, le `access` a expiré mais le `refresh` reste valable
   "pin": "1234"
 }
 ```
+
+`code_totp` (facultatif) : le code à 6 chiffres de l'application d'authentification, **obligatoire seulement pour un compte qui a activé la double authentification** (voir plus bas). Les autres comptes ne l'envoient pas.
 
 **Réponses :**
 
@@ -67,8 +73,26 @@ Après 7 jours hors ligne, le `access` a expiré mais le `refresh` reste valable
     },
     "region_id": null,
     "csb_id": null
-  }
+  },
+  "totp_a_configurer": false
 }
+```
+
+`totp_a_configurer` vaut `true` seulement si `TOTP_OBLIGATOIRE=True` et que ce compte web n'a pas encore activé la double authentification : le jeton n'ouvre alors que `/api/auth/me/`, `/api/auth/changer-pin/` et `/api/auth/2fa/…` (`403` ailleurs).
+
+`401` – Compte avec double authentification : PIN correct mais `code_totp` absent. Redemandez avec le code. Cet essai ne compte pas comme un échec.
+
+```json
+{
+  "detail": "Saisissez le code à 6 chiffres de votre application d'authentification.",
+  "code": "totp_requis"
+}
+```
+
+`401` – Code faux, expiré ou déjà utilisé. **Compte comme un échec** (même blocage qu'un mauvais PIN).
+
+```json
+{ "detail": "Code d'authentification incorrect.", "code": "totp_invalide" }
 ```
 
 `400` – Champ manquant.
@@ -339,6 +363,58 @@ Le nouveau PIN doit contenir de 4 à 6 chiffres.
 
 ---
 
+## Double authentification (comptes web)
+
+Pour `agent_csb`, `superviseur` et `admin` (spec §2). Codes TOTP à 6 chiffres, 30 secondes, compatibles avec Google Authenticator, FreeOTP, Aegis… Les autres profils reçoivent `403` (`totp_non_disponible`).
+
+| Méthode | Endpoint | Rôle |
+|---|---|---|
+| GET | `/api/auth/2fa/` | `{"active", "requise_pour_ce_profil", "obligatoire", "a_configurer"}` |
+| POST | `/api/auth/2fa/setup/` | Nouveau secret : `{"secret": "JBSW…", "uri": "otpauth://totp/TARANAKA:…"}`. Affichez `uri` en QR code. `400 totp_deja_actif` si déjà active. |
+| POST | `/api/auth/2fa/activate/` | `{"code": "123456"}`. Active, ferme les autres sessions et renvoie `{"detail", "access", "refresh"}` : remplacez les deux tokens. `400 totp_invalide` ou `totp_non_prepare`. |
+| POST | `/api/auth/2fa/disable/` | `{"pin": "1234", "code": "123456"}`. Un mauvais PIN ou code compte comme un échec (`401 totp_invalide`, `423`). `403 totp_obligatoire` si `TOTP_OBLIGATOIRE=True`. |
+| POST | `/api/profiles/{id}/reset-2fa/` | Admin : téléphone perdu. Désactive la double authentification du compte et ferme ses sessions. |
+
+Un code n'est accepté qu'une fois, avec une tolérance de 30 secondes avant ou après.
+
+---
+
+## Données personnelles (loi n° 2014-038)
+
+**`GET /api/auth/my-data/`** (tout profil) : toutes les données du serveur sur la personne connectée : `compte` (sans le PIN), et pour une bénéficiaire `cycles`, `grossesses`, `signes_danger`, `enfants`, `mesures`, `journaux_alimentaires`, `referencements`, `rendez_vous`, `consultations`, plus `journal` (actions du journal d'audit sur son compte : date, action, table). Chaque export est journalisé (`acces_donnees`).
+
+**`GET /api/profiles/{id}/data/`** (admin) : le même export, pour répondre à une demande écrite.
+
+**`POST /api/auth/my-data/erase/`** (bénéficiaire) :
+
+```json
+{ "pin": "1234", "inclure_enfants": false }
+```
+
+Un mauvais PIN répond `400` (`pin_incorrect`) et compte comme un échec. `200` :
+
+```json
+{
+  "detail": "Les données ont été effacées.",
+  "resume": {
+    "cycles_supprimes": 3,
+    "grossesses_supprimees": 1,
+    "grossesses_conservees_anonymes": 0,
+    "enfants_detaches": 1,
+    "enfants_supprimes": 0,
+    "enfants_conserves_anonymes": 0
+  }
+}
+```
+
+- Cycles supprimés définitivement. Grossesses sans référencement supprimées (les téléphones des ASC l'apprennent par `/api/sync/pull/`). Grossesses avec référencement conservées par le centre, sans identité.
+- Enfants : détachés de la mère. Avec `inclure_enfants: true`, le nom est effacé, et un enfant sans référencement est supprimé avec ses mesures, journaux, rendez-vous et consultations.
+- Le compte est anonymisé, désactivé et toutes ses sessions sont fermées. Le journal d'audit est conservé (traçabilité) et l'effacement y est noté (`effacement_donnees`, avec des nombres seulement).
+
+**`POST /api/profiles/{id}/erase/`** (admin) : `{"inclure_enfants": false}`, même effet, pour une demande écrite. Seuls les comptes `beneficiaire` s'effacent (`400` sinon : un compte professionnel se désactive). `400` si déjà effacé.
+
+---
+
 ## Profils
 
 | `code` | `libelle` |
@@ -415,6 +491,8 @@ L = lecture, É = écriture (création, modification), — = refusé (`403`). Le
 | Configuration clinique | L (publiées) | L (publiées) | L (publiées) | L (publiées) | L É, publication |
 | Statistiques | — | — | — | L (sa région) | L |
 | Journal d'audit | — | — | — | — | L |
+| Double authentification (`/auth/2fa/`) | — | — | Oui | Oui | Oui, et réinitialisation pour un autre compte |
+| Mes données (`/auth/my-data/`) | L, effacement | L | L | L | L, et export ou effacement d'une bénéficiaire sur demande |
 | `/sync/push/`, `/sync/pull/` | Selon les droits ci-dessus, table par table | | | | |
 
 Le superviseur ne lit **aucun dossier individuel**, même par son identifiant.

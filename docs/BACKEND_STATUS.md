@@ -107,7 +107,7 @@ stores what the phone syncs and serves the configuration these screens read.
 ## 2. What was done
 
 The decisions taken where the spec was ambiguous are in `docs/DECISIONS.md`
-(D1–D11). The API is described in `Backend_serveur/docs/endpoint.md` and
+(D1–D13). The API is described in `Backend_serveur/docs/endpoint.md` and
 `docs/openapi.yaml`; the schema in `Backend_serveur/database/taranaka_tables_serveur.md`;
 the demo in `docs/DEMO.md`.
 
@@ -123,7 +123,9 @@ the demo in `docs/DEMO.md`.
 | Malnutrition classification | ✅ MAS / MAM / normal / at-risk infant and CRENI / CRENAS / CRENAM / CSB orientation, recomputed by the server from the published config | `nutrition/classification.py`, `config_clinique/regles.py` |
 | WHO z-scores | ✅ LMS with WHO's restricted method, from `reference_oms`; `importer_tables_oms` loads WHO's official files | `nutrition/zscores.py` |
 | Food log, consultations | ✅ The two existing tables now have an API | `nutrition/views.py` |
-| Tests | ✅ 317 tests, all passing (see §4) | |
+| **Two-factor login (TOTP)** for `agent_csb`, `superviseur`, `admin` | ✅ RFC 6238, enrolment under `/api/auth/2fa/`, optional `code_totp` at login, lockout shared with the PIN, no replay, mandatory mode (`TOTP_OBLIGATOIRE`), admin reset (added 4 Nov 2026, second pass) | `comptes/totp.py`, `comptes/services.py` |
+| **Rights of access and erasure** (loi 2014-038) | ✅ Export for oneself or by an admin, erasure by anonymisation for beneficiaries, propagated to phones by the usual pull, audited (added 4 Nov 2026, second pass) | `comptes/donnees_personnelles.py` |
+| Tests | ✅ 352 tests, all passing (see §4) | |
 | OpenAPI | ✅ `docs/openapi.yaml`, no warnings, a test fails if it drifts from the code | |
 | Demo data | ✅ `python manage.py charger_demo`, acceptance tests replaying the scenarios | `demo/`, `docs/DEMO.md` |
 
@@ -144,6 +146,9 @@ Everything else is additive (new fields in responses, new endpoints).
 | `DELETE` on synced tables | Unchanged, but deletions now reach phones through `/api/sync/pull/` (the doc said "ce sera le rôle de /sync"). | Spec §9. |
 | Login | Audit line also stores `device_id`. No API change. | Spec §2. D3. |
 | Every response | May be gzip-compressed when the client sends `Accept-Encoding: gzip`. | Spec §9, §12 (< 100 KB/day). |
+| `POST /api/auth/login/` | New optional input `code_totp`; new answers `401 totp_requis` / `401 totp_invalide` **only for accounts that turned 2FA on**; new response field `totp_a_configurer` (always `false` unless `TOTP_OBLIGATOIRE=True`). Accounts without 2FA log in exactly as before. | Spec §2, D12. The login is the one place 2FA has to act. |
+| All endpoints except `/me/`, `/changer-pin/`, `/2fa/` | Unchanged, except with `TOTP_OBLIGATOIRE=True`: a token marked `totp_a_configurer` gets `403` until 2FA is set up. | Spec §2, D12. Off by default. |
+| `/api/profiles/` (ASC's list, `mere_id` links) | An erased account no longer appears in the beneficiaries an ASC lists or links. | Loi 2014-038, D13. Only affects erased accounts. |
 
 No existing endpoint was removed or renamed. One existing test was adapted to
 the new lifecycle (`referencement/tests.py`, `StatusTest`), and one to the 5th
@@ -157,11 +162,11 @@ Run on PostgreSQL 16, Python 3.13, from `Backend_serveur/`:
 python manage.py test
 ```
 
-Result on 4 Nov 2026: **317 tests, OK** (174 before this work).
+Result on 4 Nov 2026: **352 tests, OK** (174 before this work, 317 after the first pass).
 
 | App | Tests | Covers |
 |---|---|---|
-| `comptes` | 73 | Login, lockout, PIN, accounts, supervisor, audit log, **permission matrix** (19 reads × 5 profiles, 11 writes × 5 profiles, no token) |
+| `comptes` | 108 | Login, lockout, PIN, accounts, supervisor, audit log, **TOTP** (RFC 6238 reference vectors, enrolment, two-step login, replay, lockout, mandatory mode, admin reset), **access and erasure** (export content and scope, erasure rules, propagation to the ASC's phone, audit), **permission matrix** (21 reads × 5 profiles, 13 writes × 5 profiles, no token) |
 | `nutrition` | 80 | Children, measurements, **classification** (WHO reference cases, MAS/MAM limits, orientation, under 6 months, config-driven thresholds, plausibility) |
 | `referencement` | 61 | Referrals, lifecycle and discharge, queue order, appointments, consultations, food logs, follow-ups |
 | `synchro` | 35 | **Sync**: forced resend, idempotency key, order, errors, rights, conflicts and arbitration, pull with deletions, cursor, gzip, OpenAPI file |
@@ -178,9 +183,9 @@ phone, field tests (spec §12).
 
 | Item | State | Note |
 |---|---|---|
-| Two-factor authentication for web accounts (spec §2) | ❌ | Not in the requested scope. Recommended next step: TOTP for `agent_csb`, `superviseur`, `admin`. |
+| Two-factor authentication for web accounts (spec §2) | ✅ | Done (D12). Remaining: no recovery codes (admin reset instead), TOTP secret stored in clear in the database, Django `/admin/` not covered. Set `TOTP_OBLIGATOIRE=True` in production. |
 | Server-side check of the personal-data sync opt-in (spec §4, §9) | 🟡 | The server stores what the phone sends; the opt-in is the phone's job. There is a single `consentement` flag, not one per module. |
-| Right of access / erasure (loi 2014-038) | ❌ | No self-service export or erasure endpoint; an admin can deactivate an account. |
+| Right of access / erasure (loi 2014-038) | ✅ | Done (D13). Remaining: the audit log is kept (traceability); records with a referral are kept anonymised; copies on phones that never sync again can't be reached. A CMIL declaration and a retention policy are still to be written (not code). |
 | Vaccination records, ANC attendance, pregnancy follow-up (weight, movements, delivery) | ⏭️ | Personal-mode data with no server table; the calendars are in the config. Add tables if these must be synced. |
 | Measurements recorded by the centre | 🟡 | Only ASCs/admins write measurements; centre agents record consultations. |
 | Update pushed for a row deleted on the server | 🟡 | Answers `introuvable`, not put in the conflict queue (D10). |
