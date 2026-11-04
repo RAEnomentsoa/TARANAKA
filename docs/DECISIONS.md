@@ -135,3 +135,54 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   database without an API; they now have `/api/consultations/` (written by the
   centre agent, who is forced as `agent_medical` and their centre as `csb`) and
   `/api/food-logs/` (written by the mother, the ASC or an admin).
+
+## D9. Outbox sync: one push endpoint, one pull endpoint
+
+- `POST /api/sync/push/` takes up to 100 operations
+  `{cle_idempotence, table, operation (create|update|delete), id, version, donnees}`.
+  They are applied **in the order sent** (a child before its measurement),
+  each in its own savepoint: one refused operation never blocks the others.
+  Every operation goes through the same ViewSet, serializer, services and
+  permissions as the REST endpoint of its table, so the rules can't drift.
+- Each operation gets its own answer: `applique`, `deja_applique`, `conflit`,
+  `erreur`, `refuse` or `introuvable`. The phone maps them to the statuses of
+  spec §9 (`applique`/`deja_applique` → Synchronisé, `conflit` → Conflit).
+- Idempotency: the answer to a final operation (`applique`, `deja_applique`,
+  `conflit`) is stored with its key (`operation_sync`); the same key gets the
+  same answer with `rejoue: true` and nothing is applied twice. Errors are
+  **not** stored, so the phone can retry once the cause is fixed (for example
+  a referral sent before its child). A key reused by another user is refused.
+  A create with a known `id` but a new key also answers `deja_applique`.
+- `GET /api/sync/pull/?depuis=…` returns, per table, the rows the user may
+  read changed since `depuis`, **soft-deleted rows included** (with
+  `deleted_at`), which is how deletions now reach other phones. It also returns
+  the state of the user's conflicts and the clinical config when the phone's
+  `config_version` is older. `horodatage_serveur` is the request time minus
+  5 seconds, so a row committed during the pull is sent again next time rather
+  than missed (receiving a row twice is harmless).
+- Gzip request bodies are accepted (`Content-Encoding: gzip`, size capped) and
+  responses are gzipped when the phone accepts it. TLS is the reverse proxy's
+  job (deployment).
+- The per-row REST endpoints are unchanged and keep answering `409` on a
+  version mismatch: they are used online by the web dashboard, where the user
+  sees the conflict at once.
+
+## D10. Conflict queue
+
+- On a **clinical** table (pregnancy, danger sign, child, measurement,
+  referral, consultation, appointment), a push whose `version` is not the
+  server's never overwrites: both versions are stored (`conflit_sync`, and two
+  `historique_version` rows with `conflit = true`), the row is unchanged, and
+  the phone gets `conflit` with the server row and the conflict id.
+- Personal data (`cycle`, `journal_alimentaire`) is not shown to health workers
+  (P5): the phone gets `conflit` with the server row and decides itself.
+- A centre agent sees the conflicts on rows they can see; an admin sees all;
+  an ASC or a beneficiary sees the ones they sent (read only); a supervisor
+  sees none. Only a centre agent or an admin resolves:
+  `serveur`, `telephone` or `fusion` (with the merged data).
+- The decided data is validated in the **sender's** scope (as if their change
+  had gone through) and recorded in the audit log under the **arbiter's**
+  name. The row always gets a new version, even when the server's version is
+  kept, so every phone pulls the decision.
+- Known limit: an update pushed for a row that was deleted on the server meanwhile
+  answers `introuvable`; the deletion is not put in the conflict queue.

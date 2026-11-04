@@ -1,16 +1,30 @@
 import uuid
 from collections.abc import Mapping
 
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from comptes.permissions import AccesParAction, IsAdmin
+from comptes.models import CodeProfile
+from comptes.permissions import AccesParAction, IsAdmin, ProfilReconnu, acces
 
-from . import services
+from . import services, sync
 from .exceptions import ConflitVersion
-from .filters import JournalAuditFilter
-from .models import JournalAudit
-from .serializers import JournalAuditSerializer
+from .filters import ConflitFilter, JournalAuditFilter
+from .models import ConflitSync, JournalAudit, StatutOperation
+from .serializers import (
+    ConflitSerializer,
+    JournalAuditSerializer,
+    OperationSerializer,
+    PullParametresSerializer,
+    PullReponseSerializer,
+    PushReponseSerializer,
+    PushSerializer,
+    ResolutionSerializer,
+)
 
 
 class SyncViewSet(viewsets.ModelViewSet):
@@ -89,3 +103,89 @@ class JournalAuditViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return JournalAudit.objects.order_by("-date_creation", "-id")
+
+
+class PushView(APIView):
+    """POST /sync/push/: apply the phone's outbox (spec §9)."""
+
+    permission_classes = [ProfilReconnu]
+
+    @extend_schema(request=PushSerializer, responses=PushReponseSerializer)
+    def post(self, request):
+        enveloppe = PushSerializer(data=request.data)
+        enveloppe.is_valid(raise_exception=True)
+        resultats = []
+        for brute in enveloppe.validated_data["operations"]:
+            operation = OperationSerializer(data=brute)
+            if not operation.is_valid():
+                resultats.append(
+                    sync._resultat(
+                        brute if isinstance(brute, dict) else {},
+                        StatutOperation.ERREUR,
+                        erreurs=operation.errors,
+                    )
+                )
+                continue
+            resultats.append(sync.executer(request, operation.validated_data))
+        return Response(
+            {
+                "horodatage_serveur": timezone.now(),
+                "resultats": sync.en_json(resultats),
+            }
+        )
+
+
+class PullView(APIView):
+    """GET /sync/pull/: rows changed since `depuis`, deletions included."""
+
+    permission_classes = [ProfilReconnu]
+
+    @extend_schema(
+        parameters=[PullParametresSerializer],
+        responses=PullReponseSerializer,
+    )
+    def get(self, request):
+        parametres = PullParametresSerializer(data=request.query_params)
+        parametres.is_valid(raise_exception=True)
+        donnees = parametres.validated_data
+        return Response(
+            sync.en_json(
+                sync.tirer(
+                    request,
+                    depuis=donnees.get("depuis"),
+                    noms=donnees.get("tables"),
+                    limite=donnees["limite"],
+                    config_version=donnees.get("config_version"),
+                )
+            )
+        )
+
+
+class ConflitViewSet(viewsets.ReadOnlyModelViewSet):
+    """/conflicts/: clinical conflicts waiting for a person (spec §9, §10)."""
+
+    serializer_class = ConflitSerializer
+    filterset_class = ConflitFilter
+    permission_classes = [AccesParAction]
+    profils_par_action = acces(
+        lecture=(
+            CodeProfile.BENEFICIAIRE,
+            CodeProfile.ASC,
+            CodeProfile.AGENT_CSB,
+            CodeProfile.ADMIN,
+        ),
+        resoudre=(CodeProfile.AGENT_CSB, CodeProfile.ADMIN),
+    )
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return ConflitSync.objects.none()
+        return sync.conflits_visibles(self.request.user).order_by("-created_at", "-id")
+
+    @extend_schema(request=ResolutionSerializer, responses=ConflitSerializer)
+    @action(detail=True, methods=["post"], url_path="resolve")
+    def resoudre(self, request, pk=None):
+        serializer = ResolutionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conflit = sync.resoudre(request, self.get_object(), **serializer.validated_data)
+        return Response(ConflitSerializer(conflit).data)

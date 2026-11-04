@@ -1,6 +1,6 @@
 from django_filters import rest_framework as filters
 
-from .models import JournalAudit
+from .models import ConflitSync, JournalAudit, StatutConflit
 
 
 class SyncFilterSet(filters.FilterSet):
@@ -22,4 +22,14 @@ class JournalAuditFilter(filters.FilterSet):
 
     class Meta:
         model = JournalAudit
+        fields = []
+
+
+class ConflitFilter(filters.FilterSet):
+    statut = filters.ChoiceFilter(choices=StatutConflit.choices)
+    table = filters.CharFilter(field_name="table_nom")
+    ligne_id = filters.UUIDFilter()
+
+    class Meta:
+        model = ConflitSync
         fields = []

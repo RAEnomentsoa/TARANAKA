@@ -1,7 +1,14 @@
 from rest_framework import serializers
 
 from .exceptions import MESSAGE_ID_UTILISE
-from .models import JournalAudit
+from .models import (
+    ConflitSync,
+    JournalAudit,
+    Resolution,
+    StatutOperation,
+    TypeOperation,
+)
+from .registre import NOMS_TABLES
 
 CHAMPS_SYNC = ("version", "created_at", "updated_at", "device_id", "deleted_at")
 CHAMPS_SYNC_LECTURE = ("created_at", "updated_at", "device_id", "deleted_at")
@@ -76,3 +83,119 @@ class JournalAuditSerializer(serializers.ModelSerializer):
         model = JournalAudit
         fields = ("id", "user_id", "action", "table_nom", "ligne_id", "details", "date_creation")
         read_only_fields = fields
+
+
+MAX_OPERATIONS = 100
+
+
+class OperationSerializer(serializers.Serializer):
+    """One entry of the phone's outbox."""
+
+    cle_idempotence = serializers.UUIDField()
+    table = serializers.ChoiceField(choices=NOMS_TABLES)
+    operation = serializers.ChoiceField(choices=TypeOperation.choices)
+    id = serializers.UUIDField()
+    version = serializers.IntegerField(min_value=1, required=False)
+    donnees = serializers.DictField(required=False, default=dict)
+
+    def validate(self, attrs):
+        if attrs["operation"] == TypeOperation.UPDATE and "version" not in attrs:
+            raise serializers.ValidationError({"version": [MESSAGE_OBLIGATOIRE]})
+        return attrs
+
+
+class PushSerializer(serializers.Serializer):
+    operations = serializers.ListField(
+        child=serializers.JSONField(),
+        min_length=1,
+        max_length=MAX_OPERATIONS,
+    )
+
+
+class ResultatOperationSerializer(serializers.Serializer):
+    cle_idempotence = serializers.UUIDField(allow_null=True)
+    table = serializers.CharField(allow_null=True)
+    operation = serializers.CharField(allow_null=True)
+    id = serializers.UUIDField(allow_null=True)
+    statut = serializers.ChoiceField(choices=StatutOperation.choices)
+    ligne = serializers.DictField(allow_null=True)
+    conflit_id = serializers.UUIDField(allow_null=True)
+    erreurs = serializers.JSONField(allow_null=True)
+    rejoue = serializers.BooleanField()
+
+
+class PushReponseSerializer(serializers.Serializer):
+    horodatage_serveur = serializers.DateTimeField()
+    resultats = ResultatOperationSerializer(many=True)
+
+
+class PullParametresSerializer(serializers.Serializer):
+    depuis = serializers.DateTimeField(required=False)
+    tables = serializers.CharField(required=False)
+    limite = serializers.IntegerField(required=False, min_value=1, max_value=1000, default=500)
+    config_version = serializers.IntegerField(required=False, min_value=0)
+
+    def validate_tables(self, valeur):
+        noms = {nom.strip() for nom in valeur.split(",") if nom.strip()}
+        inconnues = noms - set(NOMS_TABLES)
+        if inconnues:
+            raise serializers.ValidationError(f"Tables inconnues : {', '.join(sorted(inconnues))}")
+        return noms
+
+
+class TablePullSerializer(serializers.Serializer):
+    lignes = serializers.ListField(child=serializers.DictField())
+    suite = serializers.BooleanField()
+    prochain_depuis = serializers.DateTimeField()
+
+
+class ConflitResumeSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    table_nom = serializers.CharField()
+    ligne_id = serializers.UUIDField()
+    statut = serializers.CharField()
+    resolution = serializers.CharField()
+    version_finale = serializers.IntegerField(allow_null=True)
+    resolu_le = serializers.DateTimeField(allow_null=True)
+
+
+class PullReponseSerializer(serializers.Serializer):
+    horodatage_serveur = serializers.DateTimeField()
+    tables = serializers.DictField(child=TablePullSerializer())
+    conflits = ConflitResumeSerializer(many=True)
+    config_clinique = serializers.DictField()
+
+
+class ConflitSerializer(serializers.ModelSerializer):
+    user_id = serializers.UUIDField(read_only=True)
+    resolu_par_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = ConflitSync
+        fields = (
+            "id",
+            "table_nom",
+            "ligne_id",
+            "operation",
+            "version_base",
+            "version_serveur",
+            "donnees_telephone",
+            "donnees_serveur",
+            "user_id",
+            "device_id",
+            "statut",
+            "resolution",
+            "resolu_par_id",
+            "resolu_le",
+            "version_finale",
+            "commentaire",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+
+class ResolutionSerializer(serializers.Serializer):
+    choix = serializers.ChoiceField(choices=Resolution.choices)
+    donnees = serializers.DictField(required=False)
+    commentaire = serializers.CharField(required=False, allow_blank=True, default="")

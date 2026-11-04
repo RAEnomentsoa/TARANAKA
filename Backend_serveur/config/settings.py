@@ -103,6 +103,9 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Spec §9: compressed batches, both ways.
+    'django.middleware.gzip.GZipMiddleware',
+    'synchro.middleware.DecompressionGzip',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
