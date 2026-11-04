@@ -1,0 +1,39 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import type { ReferralStatus } from '@/api/types'
+
+defineProps<{ status: ReferralStatus }>()
+const { t } = useI18n()
+</script>
+
+<template>
+  <span class="status" :class="`status--${status}`">
+    <span class="visually-hidden">{{ t('status.label') }} : </span>{{ t(`status.${status}`) }}
+  </span>
+</template>
+
+<style scoped>
+.status {
+  display: inline-block;
+  padding: 0.125rem var(--space-2);
+  border: 2px solid var(--sky-200);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--white);
+  white-space: nowrap;
+}
+
+.status--envoye {
+  border-style: dashed;
+  border-color: var(--field-border);
+  color: var(--ink-muted);
+}
+
+.status--clos {
+  background: var(--sky-100);
+  border-color: var(--sky-100);
+  color: var(--ink-muted);
+}
+</style>

@@ -1,0 +1,415 @@
+{
+  "app": {
+    "name": "TARANAKA",
+    "tagline": "Tableau de bord des centres de santé",
+    "skipToContent": "Aller au contenu principal",
+    "loading": "Chargement…",
+    "pageLoaded": "Page chargée : {title}"
+  },
+  "language": {
+    "label": "Langue",
+    "fr": "Français",
+    "mg": "Malagasy"
+  },
+  "nav": {
+    "label": "Navigation principale",
+    "referrals": "Référencements",
+    "conflicts": "Conflits de synchronisation",
+    "stats": "Statistiques",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
+  },
+  "user": {
+    "signedInAs": "Connecté : {name}",
+    "logout": "Se déconnecter",
+    "idleLogout": "Vous avez été déconnecté après {minutes} minutes d'inactivité."
+  },
+  "roles": {
+    "agent_csb": "Infirmier / médecin",
+    "superviseur": "Superviseur",
+    "admin": "Administrateur",
+    "asc": "Agent communautaire",
+    "beneficiaire": "Bénéficiaire"
+  },
+  "login": {
+    "title": "Connexion",
+    "intro": "Espace réservé aux professionnels des CSB, CRENAS, CRENI et aux superviseurs.",
+    "identifier": "Identifiant",
+    "identifierHelp": "Votre numéro de téléphone ou l'identifiant donné par votre superviseur.",
+    "pin": "Code PIN",
+    "pinHelp": "4 à 6 chiffres.",
+    "submit": "Continuer",
+    "submitting": "Vérification…",
+    "stepCredentials": "Étape 1 sur 2 : identifiant et PIN",
+    "stepTotp": "Étape 2 sur 2 : code de vérification",
+    "totpTitle": "Code de vérification",
+    "totpIntro": "Ouvrez votre application d'authentification et saisissez le code à 6 chiffres affiché pour TARANAKA.",
+    "totpCode": "Code à 6 chiffres",
+    "totpHelp": "Le code change toutes les 30 secondes.",
+    "totpSubmit": "Valider le code",
+    "enrollTitle": "Activer la double authentification",
+    "enrollIntro": "Première connexion : scannez ce QR code avec une application d'authentification (par exemple FreeOTP ou Google Authenticator), puis saisissez le code qu'elle affiche.",
+    "enrollQrAlt": "QR code de configuration de l'application d'authentification",
+    "enrollManual": "Impossible de scanner ? Saisissez cette clé dans l'application :",
+    "enrollSubmit": "Activer et me connecter",
+    "back": "Revenir à l'identifiant",
+    "errors": {
+      "credentials": "Identifiant ou PIN incorrect.",
+      "locked": "Compte bloqué. Réessayez dans {minutes} minute(s).",
+      "lockedAdmin": "Compte bloqué. Contactez un administrateur pour le débloquer.",
+      "profile": "Votre profil n'a pas accès à ce tableau de bord.",
+      "throttled": "Trop de tentatives. Patientez une minute avant de réessayer.",
+      "totpInvalid": "Code incorrect ou expiré. Saisissez le nouveau code affiché.",
+      "totpFormat": "Le code doit contenir exactement 6 chiffres.",
+      "totpUnavailable": "Le serveur ne propose pas encore la double authentification. Contactez l'administrateur.",
+      "totpNotOffered": "Le serveur n'a pas demandé de code de vérification. Pour votre sécurité, la connexion est refusée. Contactez l'administrateur.",
+      "required": "Ce champ est obligatoire."
+    }
+  },
+  "access": {
+    "title": "Accès non autorisé",
+    "body": "Votre profil ne donne pas accès à ce tableau de bord. Les agents communautaires utilisent l'application mobile.",
+    "forbidden": "Vous n'avez pas le droit d'ouvrir cette page.",
+    "backHome": "Revenir à l'accueil"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "L'adresse ne correspond à aucune page du tableau de bord."
+  },
+  "errors": {
+    "network": "Le serveur ne répond pas. Vérifiez la connexion puis réessayez.",
+    "session_expired": "Votre session a expiré. Reconnectez-vous.",
+    "unauthorized": "Votre session a expiré. Reconnectez-vous.",
+    "forbidden": "Votre profil ne permet pas cette action.",
+    "not_found": "Cet élément n'existe pas ou n'est pas visible pour votre centre.",
+    "not_implemented": "Cette fonction n'est pas encore disponible sur le serveur.",
+    "conflict": "Ce dossier a été modifié entre-temps. La version à jour est affichée : vérifiez-la puis recommencez.",
+    "validation": "Certaines informations sont invalides. Corrigez-les puis réessayez.",
+    "locked": "Compte bloqué.",
+    "throttled": "Trop de requêtes. Patientez une minute.",
+    "server": "Le serveur a rencontré une erreur. Réessayez plus tard.",
+    "unknown": "Une erreur inattendue s'est produite.",
+    "serverSays": "Message du serveur : {detail}",
+    "retry": "Réessayer"
+  },
+  "common": {
+    "refresh": "Actualiser",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "close": "Fermer",
+    "back": "Retour",
+    "seeTable": "Voir les données en tableau",
+    "hideTable": "Masquer le tableau",
+    "updatedAt": "Mis à jour à {time}",
+    "none": "Aucun",
+    "unknown": "Inconnu",
+    "optional": "facultatif",
+    "saved": "Enregistré.",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "duration": {
+    "minutes": "{n} min | {n} min",
+    "hours": "{n} h | {n} h",
+    "days": "{n} jour | {n} jours",
+    "waiting": "En attente depuis {duration}"
+  },
+  "urgency": {
+    "label": "Urgence",
+    "rouge": "Rouge",
+    "orange": "Orange",
+    "jaune": "Jaune",
+    "rougeHint": "Urgence vitale",
+    "orangeHint": "À voir rapidement",
+    "jauneHint": "À voir"
+  },
+  "status": {
+    "label": "Statut",
+    "envoye": "Référé",
+    "recu": "Patient arrivé",
+    "vu": "Examiné",
+    "pris_en_charge": "Pris en charge",
+    "clos": "Sortie"
+  },
+  "origin": {
+    "enfant": "Enfant",
+    "grossesse": "Grossesse"
+  },
+  "queue": {
+    "title": "Référencements entrants",
+    "intro": "Triés par urgence (rouge, orange, jaune), puis du plus ancien au plus récent.",
+    "tabs": {
+      "label": "Filtrer par étape",
+      "incoming": "À recevoir",
+      "in_care": "En cours",
+      "closed": "Sortis"
+    },
+    "count": "Aucun référencement | 1 référencement | {n} référencements",
+    "empty": "Aucun référencement dans cette liste.",
+    "emptyHint": "Les nouveaux référencements apparaissent ici dès que l'agent communautaire synchronise son téléphone.",
+    "columns": {
+      "urgency": "Urgence",
+      "code": "Code",
+      "patient": "Patient",
+      "reason": "Motif",
+      "waiting": "Attente",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "open": "Ouvrir le dossier {code}",
+    "patientChild": "Enfant",
+    "patientMother": "{prenom} {nom}",
+    "arrived": "Patient arrivé",
+    "arrivedDone": "Arrivée du patient {code} enregistrée."
+  },
+  "search": {
+    "label": "Rechercher par code de référencement",
+    "placeholder": "R-0AA5-1104-03",
+    "submit": "Rechercher",
+    "title": "Recherche par code",
+    "searching": "Recherche du code {code}…",
+    "notFound": "Aucun référencement ne porte le code {code} pour votre centre.",
+    "hint": "Le code figure sur la fiche que présente la famille. Vérifiez chaque caractère avec elle.",
+    "required": "Saisissez un code de référencement."
+  },
+  "referral": {
+    "title": "Référencement {code}",
+    "code": "Code de référencement",
+    "origin": "Origine",
+    "reason": "Motif",
+    "priority": "Urgence",
+    "createdAt": "Référé le",
+    "facility": "Centre de destination",
+    "agent": "Agent communautaire",
+    "agentId": "Agent n° {id}",
+    "mother": "Femme enceinte",
+    "child": "Enfant",
+    "openChild": "Ouvrir la fiche de l'enfant",
+    "progress": "Étapes du dossier",
+    "stepDone": "terminée",
+    "stepCurrent": "étape actuelle",
+    "stepTodo": "à venir",
+    "measurement": "Mesure du dépistage",
+    "nextAction": "Prochaine étape",
+    "closed": "Ce dossier est clos.",
+    "outcome": "Issue de sortie",
+    "disclaimer": "TARANAKA oriente, il ne pose pas de diagnostic. Les décisions de soin et de sortie restent sous la responsabilité du professionnel.",
+    "actions": {
+      "recu": "Patient arrivé",
+      "vu": "Patient examiné",
+      "pris_en_charge": "Enregistrer la prise en charge",
+      "clos": "Enregistrer la sortie"
+    },
+    "confirm": {
+      "recu": "Confirmer l'arrivée du patient {code} ? L'agent communautaire verra « Reçu par le centre » à sa prochaine synchronisation.",
+      "vu": "Confirmer que le patient {code} a été examiné ?",
+      "pris_en_charge": "Confirmer la prise en charge du patient {code} ?"
+    },
+    "done": {
+      "recu": "Arrivée du patient enregistrée.",
+      "vu": "Examen enregistré.",
+      "pris_en_charge": "Prise en charge enregistrée.",
+      "clos": "Sortie enregistrée."
+    }
+  },
+  "care": {
+    "title": "Soins et suivi",
+    "consultations": "Consultations",
+    "noConsultations": "Aucune consultation enregistrée.",
+    "add": "Ajouter une consultation",
+    "date": "Date",
+    "diagnostic": "Constat clinique",
+    "decision": "Décision",
+    "observations": "Observations",
+    "decisions": {
+      "conseil": "Conseils",
+      "reference": "Référence vers un autre centre",
+      "prise_en_charge": "Prise en charge"
+    },
+    "followUps": "Rendez-vous de contrôle",
+    "noFollowUps": "Aucun rendez-vous programmé.",
+    "addFollowUp": "Programmer un contrôle",
+    "followUpDate": "Date du contrôle",
+    "followUpReason": "Motif du contrôle",
+    "followUpStatus": {
+      "prevu": "Prévu",
+      "honore": "Honoré",
+      "manque": "Manqué"
+    },
+    "dateInPast": "La date du contrôle doit être aujourd'hui ou plus tard.",
+    "dateInFuture": "La date ne peut pas être dans le futur.",
+    "consultationSaved": "Consultation enregistrée.",
+    "followUpSaved": "Contrôle programmé pour le {date}."
+  },
+  "discharge": {
+    "title": "Enregistrer la sortie",
+    "intro": "Seul un professionnel habilité peut enregistrer une sortie. Cette action clôt le dossier.",
+    "outcome": "Issue",
+    "date": "Date de sortie",
+    "notes": "Notes",
+    "outcomes": {
+      "gueri": "Guéri",
+      "transfere": "Transféré",
+      "non_repondant": "Non-répondant",
+      "abandon": "Abandon / perdu de vue",
+      "deces": "Décédé"
+    },
+    "submit": "Clore le dossier",
+    "confirm": "Clore le dossier {code} avec l'issue « {outcome} » ? Cette action est définitive."
+  },
+  "child": {
+    "title": "Fiche enfant",
+    "name": "Nom",
+    "sex": "Sexe",
+    "sexes": {
+      "M": "Garçon",
+      "F": "Fille"
+    },
+    "birthDate": "Date de naissance",
+    "age": "Âge",
+    "ageMonths": "{n} mois | {n} mois",
+    "careStatus": "Prise en charge",
+    "careStatuses": {
+      "aucun": "Aucune",
+      "suivi": "En suivi",
+      "refere": "Référé",
+      "pris_en_charge": "Pris en charge",
+      "gueri": "Guéri",
+      "abandon": "Abandon"
+    },
+    "referrals": "Référencements de l'enfant",
+    "noReferrals": "Aucun référencement visible pour votre centre."
+  },
+  "measurements": {
+    "title": "Historique des mesures",
+    "empty": "Aucune mesure enregistrée.",
+    "date": "Date",
+    "age": "Âge (mois)",
+    "weight": "Poids (kg)",
+    "height": "Taille (cm)",
+    "muac": "PB (mm)",
+    "oedema": "Œdèmes",
+    "whz": "P/T (z)",
+    "haz": "T/A (z)",
+    "waz": "P/A (z)",
+    "alert": "Alerte",
+    "flagged": "Mesure à vérifier",
+    "position": {
+      "couche": "couché",
+      "debout": "debout"
+    },
+    "alerts": {
+      "vert": "Normal",
+      "orange": "À surveiller",
+      "rouge": "Danger"
+    },
+    "notAvailable": "non mesuré",
+    "zscoreSource": "Z-scores calculés sur le téléphone selon les standards OMS 2006."
+  },
+  "charts": {
+    "growth": "Courbes de croissance",
+    "weightForAge": "Poids selon l'âge",
+    "heightForAge": "Taille selon l'âge",
+    "whzOverTime": "Poids pour taille (z-score) dans le temps",
+    "muacOverTime": "Périmètre brachial dans le temps",
+    "ageAxis": "Âge (mois)",
+    "dateAxis": "Date",
+    "kg": "kg",
+    "cm": "cm",
+    "mm": "mm",
+    "z": "z",
+    "summary": "{title} : {count} mesures, de {first} à {last}.",
+    "summaryEmpty": "{title} : pas assez de mesures pour tracer une courbe.",
+    "point": "{x} : {y}",
+    "thresholdMas": "MAS (< −3)",
+    "thresholdMam": "MAM (< −2)",
+    "thresholdMuacMas": "MAS (< 115 mm)",
+    "thresholdMuacMam": "MAM (< 125 mm)",
+    "noReferenceCurves": "Les courbes de référence OMS ne sont pas encore fournies par le serveur : seules les mesures de l'enfant sont tracées."
+  },
+  "conflicts": {
+    "title": "Conflits de synchronisation",
+    "intro": "Deux appareils ont modifié le même dossier clinique. Rien n'est écrasé automatiquement : choisissez, champ par champ, la valeur à garder.",
+    "empty": "Aucun conflit à arbitrer.",
+    "count": "Aucun conflit | 1 conflit à arbitrer | {n} conflits à arbitrer",
+    "table": "Type de dossier",
+    "tables": {
+      "enfant": "Fiche enfant",
+      "mesure": "Mesure",
+      "referencement": "Référencement",
+      "consultation_nutritionnelle": "Consultation",
+      "other": "Autre ({name})"
+    },
+    "detectedAt": "Détecté le {date}",
+    "field": "Champ",
+    "serverVersion": "Version serveur (v{version})",
+    "deviceVersion": "Version appareil (v{version})",
+    "deviceLabel": "Appareil {device}, {date}",
+    "keepServer": "Garder la version serveur",
+    "keepDevice": "Garder la version appareil",
+    "chooseField": "Valeur à garder pour {field}",
+    "sameValue": "identique",
+    "differentFields": "Aucun champ différent | 1 champ différent | {n} champs différents",
+    "resolve": "Valider l'arbitrage",
+    "resolved": "Conflit arbitré.",
+    "confirm": "Valider ce choix ? Les autres valeurs seront conservées dans l'historique."
+  },
+  "stats": {
+    "title": "Statistiques agrégées",
+    "intro": "Données anonymes. Tout chiffre portant sur moins de 5 cas est masqué.",
+    "filters": "Filtres",
+    "period": "Période",
+    "periods": {
+      "30d": "30 derniers jours",
+      "90d": "3 derniers mois",
+      "365d": "12 derniers mois",
+      "custom": "Dates personnalisées"
+    },
+    "from": "Du",
+    "to": "Au",
+    "zone": "Zone",
+    "region": "Région",
+    "allRegions": "Toutes les régions",
+    "facility": "Centre",
+    "allFacilities": "Tous les centres",
+    "apply": "Afficher",
+    "invalidRange": "La date de début doit précéder la date de fin.",
+    "export": "Exporter en CSV",
+    "exported": "Fichier CSV téléchargé.",
+    "hidden": "< 5",
+    "hiddenLabel": "masqué : moins de 5 cas",
+    "hiddenNote": "« < 5 » : chiffre masqué pour protéger l'anonymat (moins de 5 cas, ou déductible des autres chiffres).",
+    "periodLabel": "Du {start} au {end}",
+    "metrics": {
+      "depistages": "Dépistages",
+      "mas": "Cas de MAS",
+      "mam": "Cas de MAM",
+      "referencements": "Référencements",
+      "referencements_arrives": "Référencements arrivés",
+      "arrivalRate": "Taux d'arrivée",
+      "meanDelay": "Délai moyen d'arrivée",
+      "rdv_manques": "Rendez-vous manqués"
+    },
+    "hoursValue": "{n} h",
+    "byZone": "Par zone",
+    "byPeriod": "Évolution par mois",
+    "outcomes": "Issues de sortie",
+    "zoneColumn": "Zone",
+    "monthColumn": "Mois",
+    "outcomeColumn": "Issue",
+    "casesColumn": "Cas",
+    "noData": "Aucune donnée pour cette période et cette zone.",
+    "csv": {
+      "filename": "taranaka-statistiques-{start}-{end}.csv",
+      "section": "Section",
+      "total": "Total",
+      "metric": "Indicateur",
+      "value": "Valeur"
+    }
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire.",
+    "maxLength": "{max} caractères au maximum."
+  }
+}
