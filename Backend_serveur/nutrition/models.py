@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from referentiel.models import Sexe
+from referentiel.models import Sexe, TypeCentre
 from synchro.models import SyncModel
 
 
@@ -15,6 +15,9 @@ class StatutPriseEnCharge(models.TextChoices):
     PRIS_EN_CHARGE = "pris_en_charge", "Pris en charge"
     GUERI = "gueri", "Guéri"
     ABANDON = "abandon", "Abandon"
+    TRANSFERE = "transfere", "Transféré"
+    NON_REPONDANT = "non_repondant", "Non-répondant"
+    DECEDE = "decede", "Décédé"
 
 
 class Enfant(SyncModel):
@@ -79,6 +82,27 @@ class Alerte(models.TextChoices):
     ROUGE = "rouge", "Rouge"
 
 
+class Appetit(models.TextChoices):
+    NON_TESTE = "non_teste", "Non testé"
+    BON = "bon", "Bon"
+    MAUVAIS = "mauvais", "Mauvais"
+
+
+class Classification(models.TextChoices):
+    """Result of the malnutrition rules of the clinical config (spec §7)."""
+
+    MAS = "mas", "Malnutrition aiguë sévère"
+    MAM = "mam", "Malnutrition aiguë modérée"
+    NORMAL = "normal", "Normal"
+    NOURRISSON_A_RISQUE = "nourrisson_a_risque", "Nourrisson à risque"
+
+
+class Urgence(models.TextChoices):
+    ROUGE = "rouge", "Rouge"
+    ORANGE = "orange", "Orange"
+    JAUNE = "jaune", "Jaune"
+
+
 class Mesure(SyncModel):
     enfant = models.ForeignKey(
         Enfant,
@@ -110,6 +134,29 @@ class Mesure(SyncModel):
     alerte = models.CharField(max_length=10, choices=Alerte.choices)
     motif_alerte = models.TextField(blank=True)
     ref_oms = models.CharField(max_length=20, default="WHO2006")
+    # Entered by the ASC (spec §7).
+    signes_danger = models.JSONField(default=list, blank=True)
+    complications_medicales = models.BooleanField(default=False)
+    appetit = models.CharField(
+        max_length=10,
+        choices=Appetit.choices,
+        default=Appetit.NON_TESTE,
+    )
+    difficultes_allaitement = models.BooleanField(default=False)
+    # Worked out by the server from the published clinical config.
+    classification = models.CharField(
+        max_length=20,
+        choices=Classification.choices,
+        blank=True,
+    )
+    orientation_centre = models.CharField(
+        max_length=10,
+        choices=TypeCentre.choices,
+        blank=True,
+    )
+    urgence = models.CharField(max_length=10, choices=Urgence.choices, blank=True)
+    date_prochain_controle = models.DateField(null=True, blank=True)
+    config_version = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         db_table = "mesure"

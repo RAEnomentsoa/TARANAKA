@@ -33,4 +33,5 @@ urlpatterns = [
     path('api/', include('nutrition.urls')),
     path('api/', include('referencement.urls')),
     path('api/', include('synchro.urls')),
+    path('api/', include('config_clinique.urls')),
 ]

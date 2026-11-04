@@ -14,7 +14,9 @@ from synchro.services import (
     verrouiller,
 )
 
+from .classification import classer_mesure
 from .models import Enfant, Mesure, Position
+from .zscores import calculer_zscores
 
 JOURS_PAR_MOIS = Decimal("30.4375")
 SEUIL_POSITION_JOURS = 731
@@ -62,13 +64,54 @@ def calculer_champs_mesure(enfant, date_mesure, taille_cm, position, pb_mm):
     if pb_mm is not None and not AGE_MIN_PB_MOIS <= age_mois <= AGE_MAX_PB_MOIS:
         raise ValidationError({"pb_mm": [MESSAGE_PB_AGE]})
 
-    # TODO (Z-score step): recalculate waz, haz, whz, alerte, motif_alerte and
-    # flag_aberrant here from reference_oms. Until then, the phone's values are kept.
     return {
         "age_jour": age_jour,
         "age_mois": age_mois,
         "taille_corrigee_cm": _corriger_taille(taille_cm, position, age_jour),
     }
+
+
+CHAMPS_CALCUL = (
+    "date_mesure",
+    "poids_kg",
+    "taille_cm",
+    "position",
+    "pb_mm",
+    "oedemes_bilateraux",
+    "signes_danger",
+    "complications_medicales",
+    "appetit",
+    "difficultes_allaitement",
+    "waz",
+    "haz",
+    "whz",
+    "flag_aberrant",
+)
+
+
+def calculer_mesure(enfant, valeurs):
+    """Every field the server works out: age, length, z-scores, classification.
+
+    A z-score is taken from the WHO tables when they are loaded, otherwise the
+    phone's value is kept. The classification follows the published config.
+    """
+    calculs = calculer_champs_mesure(
+        enfant,
+        valeurs["date_mesure"],
+        valeurs["taille_cm"],
+        valeurs["position"],
+        valeurs.get("pb_mm"),
+    )
+    calculs.update(
+        calculer_zscores(
+            enfant.sexe,
+            calculs["age_jour"],
+            valeurs["poids_kg"],
+            calculs["taille_corrigee_cm"],
+        )
+    )
+    calculs.update(classer_mesure({**valeurs, **calculs}))
+    return calculs
 
 
 def creer_mesure(donnees, contexte):
@@ -77,15 +120,7 @@ def creer_mesure(donnees, contexte):
         # Lock the child, so its birth date can't change during the calculation.
         enfant = verrouiller(donnees["enfant"])
         donnees.setdefault("asc", enfant.asc)
-        donnees.update(
-            calculer_champs_mesure(
-                enfant,
-                donnees["date_mesure"],
-                donnees["taille_cm"],
-                donnees["position"],
-                donnees.get("pb_mm"),
-            )
-        )
+        donnees.update(calculer_mesure(enfant, donnees))
         return creer_ligne(Mesure, donnees, contexte)
 
 
@@ -96,16 +131,11 @@ def modifier_mesure(mesure, donnees, contexte):
         courante = verrouiller(mesure)
         verifier_version(courante, donnees["version"])
 
-        def valeur(champ):
-            return donnees.get(champ, getattr(courante, champ))
-
-        calculs = calculer_champs_mesure(
-            enfant,
-            valeur("date_mesure"),
-            valeur("taille_cm"),
-            valeur("position"),
-            valeur("pb_mm"),
-        )
+        valeurs = {
+            champ: donnees.get(champ, getattr(courante, champ))
+            for champ in CHAMPS_CALCUL
+        }
+        calculs = calculer_mesure(enfant, valeurs)
         return enregistrer_modification(courante, {**donnees, **calculs}, contexte)
 
 
@@ -145,12 +175,9 @@ def _recalculer_mesures(enfant, contexte):
     mesures = Mesure.objects.select_for_update(of=("self",))
     for mesure in mesures.filter(enfant=enfant):
         try:
-            calculs = calculer_champs_mesure(
+            calculs = calculer_mesure(
                 enfant,
-                mesure.date_mesure,
-                mesure.taille_cm,
-                mesure.position,
-                mesure.pb_mm,
+                {champ: getattr(mesure, champ) for champ in CHAMPS_CALCUL},
             )
         except ValidationError as erreur:
             raise ValidationError(

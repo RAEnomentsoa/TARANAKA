@@ -71,9 +71,24 @@ class EnfantSerializer(SyncSerializer):
         return attrs
 
 
+CHAMPS_CLASSIFICATION = (
+    "classification",
+    "orientation_centre",
+    "urgence",
+    "date_prochain_controle",
+    "config_version",
+)
+MAX_SIGNES_DANGER = 20
+
+
 class MesureSerializer(SyncSerializer):
     enfant_id = LienVisible(enfants_visibles, source="enfant")
     asc_id = LienVisible(asc_visibles, source="asc", required=False)
+    signes_danger = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        required=False,
+        max_length=MAX_SIGNES_DANGER,
+    )
 
     champs_fixes = ("enfant",)
 
@@ -99,12 +114,22 @@ class MesureSerializer(SyncSerializer):
             "alerte",
             "motif_alerte",
             "ref_oms",
+            "signes_danger",
+            "complications_medicales",
+            "appetit",
+            "difficultes_allaitement",
+            "classification",
+            "orientation_centre",
+            "urgence",
+            "date_prochain_controle",
+            "config_version",
             *CHAMPS_SYNC,
         )
         read_only_fields = (
             "age_jour",
             "age_mois",
             "taille_corrigee_cm",
+            *CHAMPS_CLASSIFICATION,
             *CHAMPS_SYNC_LECTURE,
         )
 

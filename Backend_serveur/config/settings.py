@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'sante_femme',
     'nutrition',
     'referencement',
+    'config_clinique',
+    'statistiques',
 ]
 
 AUTH_USER_MODEL = 'comptes.User'
@@ -110,6 +112,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'config.urls'
+
+# A clinical config can only be published once validated in writing (spec §11).
+# Leave False for development and demos; set True in production.
+TARANAKA_CONFIG_VALIDEE_OBLIGATOIRE = (
+    os.getenv("CONFIG_VALIDEE_OBLIGATOIRE", "False") == "True"
+)
 
 TEMPLATES = [
     {

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Configuration clinique TARANAKA",
+  "description": "Only the sections the server executes are checked strictly. The other sections (calendars, advice, texts) are read by the phone.",
+  "type": "object",
+  "required": ["meta", "malnutrition"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["statut_validation", "sources"],
+      "properties": {
+        "statut_validation": {"type": "string"},
+        "sources": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "malnutrition": {
+      "type": "object",
+      "required": ["age_max_mois", "classification", "orientation", "plausibilite", "suivi"],
+      "properties": {
+        "age_min_mois": {"type": "integer", "minimum": 0},
+        "age_max_mois": {"type": "integer", "minimum": 0},
+        "classification": {
+          "type": "object",
+          "required": ["regles", "par_defaut"],
+          "properties": {
+            "par_defaut": {"$ref": "#/$defs/code_classification"},
+            "regles": {
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {"$ref": "#/$defs/regle"},
+                  {"required": ["code"], "properties": {"code": {"$ref": "#/$defs/code_classification"}}}
+                ]
+              }
+            }
+          }
+        },
+        "orientation": {
+          "type": "object",
+          "required": ["regles"],
+          "properties": {
+            "regles": {
+              "type": "array",
+              "items": {
+                "allOf": [
+                  {"$ref": "#/$defs/regle"},
+                  {
+                    "required": ["si_classification", "centre", "urgence"],
+                    "properties": {
+                      "centre": {"enum": ["csb", "crenam", "crenas", "creni", null]},
+                      "urgence": {"enum": ["rouge", "orange", "jaune", null]},
+                      "prochain_controle_jours": {"type": ["integer", "null"], "minimum": 0}
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "plausibilite": {
+          "type": "object",
+          "required": ["z_min", "z_max"],
+          "properties": {"z_min": {"type": "number"}, "z_max": {"type": "number"}}
+        },
+        "suivi": {
+          "type": "object",
+          "required": ["delai_alerte_non_arrivee_heures"],
+          "properties": {"delai_alerte_non_arrivee_heures": {"type": "integer", "minimum": 1}}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "code_classification": {"enum": ["mas", "mam", "normal", "nourrisson_a_risque"]},
+    "champ": {
+      "enum": [
+        "age_mois", "oedemes_bilateraux", "whz", "waz", "haz", "pb_mm", "signes_danger",
+        "complications_medicales", "appetit", "difficultes_allaitement", "classification"
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "required": ["champ"],
+      "properties": {"champ": {"$ref": "#/$defs/champ"}},
+      "minProperties": 2,
+      "maxProperties": 2,
+      "oneOf": [
+        {"required": ["inferieur_a"]},
+        {"required": ["inferieur_ou_egal_a"]},
+        {"required": ["superieur_a"]},
+        {"required": ["superieur_ou_egal_a"]},
+        {"required": ["egal"]},
+        {"required": ["dans"], "properties": {"dans": {"type": "array"}}},
+        {"required": ["non_vide"], "properties": {"non_vide": {"type": "boolean"}}}
+      ]
+    },
+    "regle": {
+      "type": "object",
+      "properties": {
+        "statut": {"type": "string"},
+        "age_mois_min": {"type": "integer", "minimum": 0},
+        "age_mois_max": {"type": "integer", "minimum": 0},
+        "si_classification": {"type": "array", "items": {"$ref": "#/$defs/code_classification"}},
+        "si_un_des": {"type": "array", "items": {"$ref": "#/$defs/condition"}, "minItems": 1},
+        "si_tous": {"type": "array", "items": {"$ref": "#/$defs/condition"}, "minItems": 1}
+      }
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import copy
+import json
 from datetime import date
 from decimal import Decimal
 
@@ -5,10 +7,14 @@ from django.test import override_settings
 from rest_framework.test import APITestCase
 
 from comptes.models import CodeProfile, Profile, User
+from config_clinique import services as config_services
 from nutrition.models import Enfant, Mesure
 from referencement.models import Referencement
 from referentiel.models import CSB, Province, Region, TypeDangerGrossesse
 from sante_femme.models import Grossesse
+
+
+CONFIG_EXEMPLE = json.loads(config_services.EXEMPLE.read_text(encoding="utf-8"))
 
 
 @override_settings(
@@ -108,6 +114,16 @@ class BaseApiTest(APITestCase):
             **extra,
         }
         return Referencement.objects.create(**valeurs)
+
+    def config_exemple(self):
+        """A deep copy of the sample clinical config, to change in a test."""
+        return copy.deepcopy(CONFIG_EXEMPLE)
+
+    def publier_config(self, contenu=None):
+        config = config_services.creer_version(
+            {"libelle": "Test", "contenu": contenu or self.config_exemple()}
+        )
+        return config_services.publier(config)
 
     def ids(self, reponse):
         """The ids of a paginated list, as text."""

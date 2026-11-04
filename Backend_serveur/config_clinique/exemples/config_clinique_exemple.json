@@ -1,0 +1,324 @@
+{
+  "meta": {
+    "statut_validation": "À VALIDER",
+    "avertissement": "CONFIGURATION D'EXEMPLE – À VALIDER. Aucune valeur de ce fichier n'a été validée par écrit par le Ministère de la Santé publique, l'ONN ou un comité médical. Ne pas utiliser en production (spec §11).",
+    "sources": [
+      "OMS 2023 – Guideline on the prevention and management of wasting and nutritional oedema (acute malnutrition) in infants and children under 5 years",
+      "Protocole national PCIMA de Madagascar – À CONFIRMER",
+      "OMS 2006 – Child Growth Standards",
+      "OMS 2016 – Recommendations on antenatal care for a positive pregnancy experience",
+      "OMS 2022 – Recommendations on maternal and newborn care for a positive postnatal experience",
+      "OMS/UNICEF 2021 – Indicators for assessing infant and young child feeding practices",
+      "PCIME (OMS/UNICEF) – signes généraux de danger",
+      "Calendrier PEV national de Madagascar – À FOURNIR"
+    ],
+    "langues": ["mg", "fr"],
+    "textes_malagasy": "À FOURNIR ET À FAIRE RELIRE par des locuteurs des principales régions. Les champs \"mg\": null sont à compléter."
+  },
+
+  "malnutrition": {
+    "statut": "À VALIDER",
+    "source": "OMS 2023, à confirmer avec le protocole PCIMA national",
+    "age_min_mois": 0,
+    "age_max_mois": 59,
+    "classification": {
+      "statut": "À VALIDER",
+      "par_defaut": "normal",
+      "regles": [
+        {
+          "code": "nourrisson_a_risque",
+          "statut": "À VALIDER",
+          "description": "Moins de 6 mois : pas de PB. Nourrisson à risque selon les critères OMS 2023.",
+          "age_mois_max": 5,
+          "si_un_des": [
+            {"champ": "oedemes_bilateraux", "dans": ["+", "++", "+++"]},
+            {"champ": "whz", "inferieur_a": -2},
+            {"champ": "waz", "inferieur_a": -2},
+            {"champ": "signes_danger", "non_vide": true},
+            {"champ": "difficultes_allaitement", "egal": true},
+            {"champ": "complications_medicales", "egal": true}
+          ]
+        },
+        {
+          "code": "mas",
+          "statut": "À VALIDER",
+          "description": "Œdèmes bilatéraux et/ou P/T < -3 z et/ou PB < 115 mm",
+          "age_mois_min": 6,
+          "si_un_des": [
+            {"champ": "oedemes_bilateraux", "dans": ["+", "++", "+++"]},
+            {"champ": "whz", "inferieur_a": -3},
+            {"champ": "pb_mm", "inferieur_a": 115}
+          ]
+        },
+        {
+          "code": "mam",
+          "statut": "À VALIDER",
+          "description": "P/T de -3 à < -2 z et/ou PB de 115 à < 125 mm, sans œdème (les œdèmes sont déjà classés MAS)",
+          "age_mois_min": 6,
+          "si_un_des": [
+            {"champ": "whz", "inferieur_a": -2},
+            {"champ": "pb_mm", "inferieur_a": 125}
+          ]
+        }
+      ]
+    },
+    "orientation": {
+      "statut": "À VALIDER",
+      "regles": [
+        {
+          "statut": "À VALIDER",
+          "description": "MAS avec complication, signe de danger ou perte d'appétit",
+          "si_classification": ["mas"],
+          "si_un_des": [
+            {"champ": "complications_medicales", "egal": true},
+            {"champ": "signes_danger", "non_vide": true},
+            {"champ": "appetit", "egal": "mauvais"}
+          ],
+          "centre": "creni",
+          "urgence": "rouge",
+          "prochain_controle_jours": null
+        },
+        {
+          "statut": "À VALIDER",
+          "description": "MAS sans complication",
+          "si_classification": ["mas"],
+          "centre": "crenas",
+          "urgence": "orange",
+          "prochain_controle_jours": 7
+        },
+        {
+          "statut": "À VALIDER",
+          "description": "MAM",
+          "si_classification": ["mam"],
+          "centre": "crenam",
+          "urgence": "jaune",
+          "prochain_controle_jours": 14
+        },
+        {
+          "statut": "À VALIDER",
+          "description": "Nourrisson à risque avec signe de danger ou complication",
+          "si_classification": ["nourrisson_a_risque"],
+          "si_un_des": [
+            {"champ": "signes_danger", "non_vide": true},
+            {"champ": "complications_medicales", "egal": true}
+          ],
+          "centre": "creni",
+          "urgence": "rouge",
+          "prochain_controle_jours": null
+        },
+        {
+          "statut": "À VALIDER",
+          "description": "Nourrisson à risque : orientation systématique vers un professionnel",
+          "si_classification": ["nourrisson_a_risque"],
+          "centre": "csb",
+          "urgence": "orange",
+          "prochain_controle_jours": 7
+        },
+        {
+          "statut": "À VALIDER",
+          "description": "Normal : conseils et prochain dépistage",
+          "si_classification": ["normal"],
+          "centre": null,
+          "urgence": null,
+          "prochain_controle_jours": 90,
+          "conseil": "depistage_normal"
+        }
+      ]
+    },
+    "plausibilite": {
+      "statut": "À VALIDER",
+      "description": "z-score hors de ces bornes : « Vérifiez la mesure »",
+      "z_min": -5,
+      "z_max": 5
+    },
+    "suivi": {
+      "statut": "À VALIDER",
+      "delai_alerte_non_arrivee_heures": 48,
+      "issues_sortie": ["gueri", "transfere", "non_repondant", "abandon", "decede"]
+    }
+  },
+
+  "croissance": {
+    "statut": "À VALIDER",
+    "reference": "OMS 2006",
+    "affichage_parent": [
+      {"code": "sur_la_bonne_voie", "fr": "Sur la bonne voie", "mg": null, "z_min": -2},
+      {"code": "a_surveiller", "fr": "À surveiller", "mg": null, "z_min": -3},
+      {"code": "consulter", "fr": "Consultez un agent de santé", "mg": null, "z_min": null}
+    ]
+  },
+
+  "signes_danger": {
+    "statut": "À VALIDER",
+    "message_orientation": {"fr": "Allez immédiatement au centre de santé le plus proche.", "mg": null},
+    "mention": {"fr": "Cette alerte ne remplace pas un diagnostic.", "mg": null},
+    "enfant": [
+      {"code": "ne_peut_pas_boire", "fr": "Ne peut pas boire ou téter", "mg": null},
+      {"code": "vomit_tout", "fr": "Vomit tout", "mg": null},
+      {"code": "convulsions", "fr": "Convulsions", "mg": null},
+      {"code": "lethargie", "fr": "Très endormi ou inconscient", "mg": null},
+      {"code": "oedemes_deux_pieds", "fr": "Gonflement des deux pieds", "mg": null}
+    ],
+    "grossesse": [
+      {"code": "saignement_vaginal", "fr": "Saignement vaginal", "mg": null},
+      {"code": "convulsions", "fr": "Convulsions", "mg": null},
+      {"code": "maux_de_tete_vision", "fr": "Maux de tête violents ou vision trouble", "mg": null},
+      {"code": "fievre_elevee", "fr": "Fièvre élevée", "mg": null},
+      {"code": "difficulte_respirer", "fr": "Difficulté à respirer", "mg": null},
+      {"code": "douleur_abdominale", "fr": "Douleur abdominale intense", "mg": null},
+      {"code": "perte_des_eaux", "fr": "Perte des eaux", "mg": null},
+      {"code": "bebe_bouge_moins", "fr": "Le bébé bouge moins ou plus du tout", "mg": null},
+      {"code": "gonflement_visage_mains", "fr": "Gonflement soudain du visage ou des mains", "mg": null}
+    ],
+    "post_partum": [
+      {"code": "saignement_abondant", "fr": "Saignement abondant", "mg": null},
+      {"code": "fievre", "fr": "Fièvre", "mg": null},
+      {"code": "convulsions", "fr": "Convulsions", "mg": null},
+      {"code": "difficulte_respirer", "fr": "Difficulté à respirer", "mg": null},
+      {"code": "douleur_intense", "fr": "Douleur intense", "mg": null},
+      {"code": "pertes_malodorantes", "fr": "Pertes malodorantes", "mg": null},
+      {"code": "tristesse_profonde", "fr": "Tristesse profonde ou pensées inquiétantes", "mg": null}
+    ]
+  },
+
+  "calendrier_pev": {
+    "statut": "À VALIDER",
+    "source": "Calendrier type OMS – à remplacer par le calendrier PEV national de Madagascar",
+    "doses": [
+      {"code": "bcg", "vaccin": "BCG", "age_jours": 0},
+      {"code": "vpo0", "vaccin": "VPO 0", "age_jours": 0},
+      {"code": "penta1", "vaccin": "Pentavalent 1", "age_jours": 42},
+      {"code": "vpo1", "vaccin": "VPO 1", "age_jours": 42},
+      {"code": "pcv1", "vaccin": "PCV 1", "age_jours": 42},
+      {"code": "rota1", "vaccin": "Rotavirus 1", "age_jours": 42},
+      {"code": "penta2", "vaccin": "Pentavalent 2", "age_jours": 70},
+      {"code": "vpo2", "vaccin": "VPO 2", "age_jours": 70},
+      {"code": "pcv2", "vaccin": "PCV 2", "age_jours": 70},
+      {"code": "rota2", "vaccin": "Rotavirus 2", "age_jours": 70},
+      {"code": "penta3", "vaccin": "Pentavalent 3", "age_jours": 98},
+      {"code": "vpo3", "vaccin": "VPO 3", "age_jours": 98},
+      {"code": "pcv3", "vaccin": "PCV 3", "age_jours": 98},
+      {"code": "vpi", "vaccin": "VPI", "age_jours": 98},
+      {"code": "rr1", "vaccin": "Rougeole-Rubéole 1", "age_jours": 270},
+      {"code": "rr2", "vaccin": "Rougeole-Rubéole 2", "age_jours": 450}
+    ]
+  },
+
+  "calendrier_cpn": {
+    "statut": "À VALIDER",
+    "source": "OMS 2016 – 8 contacts prénatals ; nombre et dates à confirmer par le calendrier national",
+    "contacts_semaines_amenorrhee": [12, 20, 26, 30, 34, 36, 38, 40]
+  },
+
+  "calendrier_postnatal": {
+    "statut": "À VALIDER",
+    "source": "OMS 2022 – au moins 4 contacts dans les 6 semaines",
+    "contacts_jours_apres_accouchement": [1, 3, 10, 42]
+  },
+
+  "grossesse": {
+    "statut": "À VALIDER",
+    "duree_naegele_jours": 280,
+    "terme_confirme_prioritaire": true,
+    "journal_mouvements_a_partir_sa": 28,
+    "premiers_mouvements_sa": [16, 22]
+  },
+
+  "cycle": {
+    "statut": "À VALIDER",
+    "cycles_pour_moyenne": 6,
+    "cycles_pour_prediction_fiable": 3,
+    "ovulation_avant_regles_jours": 14,
+    "fenetre_fertile_jours_avant_ovulation": 5,
+    "signaux": {
+      "cycle_court_jours": 21,
+      "cycle_long_jours": 35,
+      "regles_longues_jours": 7,
+      "amenorrhee_jours": 90
+    },
+    "avertissement": {
+      "fr": "Les prévisions sont indicatives. Elles ne sont pas une méthode de contraception fiable.",
+      "mg": null
+    }
+  },
+
+  "alimentation_enfant": {
+    "statut": "À VALIDER",
+    "source": "OMS/UNICEF 2021 – 8 groupes",
+    "allaitement_exclusif_age_max_mois": 5,
+    "journal_age_min_mois": 6,
+    "journal_age_max_mois": 23,
+    "groupes": [
+      {"numero": 1, "champ": "g1_lait_maternel", "fr": "Lait maternel", "mg": null},
+      {"numero": 2, "champ": "g2_cereales_tubercules", "fr": "Céréales, racines, tubercules", "mg": null},
+      {"numero": 3, "champ": "g3_legumineuses_noix", "fr": "Légumineuses, noix, graines", "mg": null},
+      {"numero": 4, "champ": "g4_produits_laitiers", "fr": "Produits laitiers", "mg": null},
+      {"numero": 5, "champ": "g5_viande_poisson", "fr": "Viandes, poissons, volailles, abats", "mg": null},
+      {"numero": 6, "champ": "g6_oeufs", "fr": "Œufs", "mg": null},
+      {"numero": 7, "champ": "g7_fruits_legumes_vit_a", "fr": "Fruits et légumes riches en vitamine A", "mg": null},
+      {"numero": 8, "champ": "g8_autres_fruits_legumes", "fr": "Autres fruits et légumes", "mg": null}
+    ],
+    "aliments": [
+      {"code": "lait_maternel", "mg": "ronono reny", "fr": "Lait maternel", "groupe": 1},
+      {"code": "vary", "mg": "vary", "fr": "Riz", "groupe": 2},
+      {"code": "mangahazo", "mg": "mangahazo", "fr": "Manioc", "groupe": 2},
+      {"code": "voanjo", "mg": "voanjo", "fr": "Arachide", "groupe": 3},
+      {"code": "tsaramaso", "mg": "tsaramaso", "fr": "Haricot", "groupe": 3},
+      {"code": "ronono", "mg": "ronono", "fr": "Lait", "groupe": 4},
+      {"code": "trondro", "mg": "trondro", "fr": "Poisson", "groupe": 5},
+      {"code": "hena", "mg": "hena", "fr": "Viande", "groupe": 5},
+      {"code": "atody", "mg": "atody", "fr": "Œuf", "groupe": 6},
+      {"code": "voatavo", "mg": "voatavo", "fr": "Courge", "groupe": 7},
+      {"code": "anana", "mg": "anana", "fr": "Brèdes (feuilles vertes)", "groupe": 7},
+      {"code": "ravitoto", "mg": "ravitoto", "fr": "Feuilles de manioc", "groupe": 7},
+      {"code": "manga", "mg": "manga", "fr": "Mangue", "groupe": 7},
+      {"code": "akondro", "mg": "akondro", "fr": "Banane", "groupe": 8}
+    ],
+    "diversite_minimale_groupes": 5,
+    "frequence_minimale_repas": [
+      {"age_mois_min": 6, "age_mois_max": 8, "allaite": true, "repas": 2},
+      {"age_mois_min": 9, "age_mois_max": 23, "allaite": true, "repas": 3},
+      {"age_mois_min": 6, "age_mois_max": 23, "allaite": false, "repas": 4, "dont_lait_min": 2}
+    ],
+    "conseils": [
+      {
+        "code": "ajouter_aliment_animal",
+        "statut": "À VALIDER",
+        "si_groupes_absents": [5, 6],
+        "fr": "Ajoutez un œuf ou du poisson séché écrasé au vary sosoa.",
+        "mg": null
+      },
+      {
+        "code": "ajouter_legumineuse",
+        "statut": "À VALIDER",
+        "si_groupes_absents": [3],
+        "fr": "Ajoutez du voanjo pilé ou des tsaramaso écrasés à la bouillie.",
+        "mg": null
+      },
+      {
+        "code": "depistage_normal",
+        "statut": "À VALIDER",
+        "fr": "L'enfant ne présente pas de malnutrition aiguë aujourd'hui. Continuez l'allaitement et une alimentation variée.",
+        "mg": null
+      }
+    ]
+  },
+
+  "alimentation_femme": {
+    "statut": "À VALIDER",
+    "source": "MDD-W (FAO 2021) – facultatif",
+    "diversite_minimale_groupes": 5,
+    "groupes": [
+      "Céréales, racines, tubercules et plantains",
+      "Légumineuses",
+      "Noix et graines",
+      "Lait et produits laitiers",
+      "Viandes, volailles et poissons",
+      "Œufs",
+      "Légumes à feuilles vert foncé",
+      "Autres fruits et légumes riches en vitamine A",
+      "Autres légumes",
+      "Autres fruits"
+    ]
+  }
+}
