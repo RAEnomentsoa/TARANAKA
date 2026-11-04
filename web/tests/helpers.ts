@@ -61,7 +61,10 @@ export function mountWithApp<T extends Component>(
       ],
     })
   const i18n = createAppI18n(options.locale ?? 'fr')
-  const { locale: _l, pinia: _p, router: _r, ...rest } = options
+  const rest = { ...options }
+  delete rest.locale
+  delete rest.pinia
+  delete rest.router
   return mount(component, {
     ...rest,
     global: { ...(rest.global ?? {}), plugins: [pinia, i18n, router, ...(rest.global?.plugins ?? [])] },

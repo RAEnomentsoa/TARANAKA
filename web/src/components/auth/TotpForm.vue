@@ -29,7 +29,12 @@ const secretGroups = computed(() => secret.value?.match(/.{1,4}/g)?.join(' ') ??
 watch(
   () => props.otpauthUri,
   async (uri) => {
-    qrDataUrl.value = uri ? await QRCode.toDataURL(uri, { margin: 1, width: 224, color: { dark: '#0f2a3dff', light: '#ffffffff' } }) : null
+    try {
+      qrDataUrl.value = uri ? await QRCode.toDataURL(uri, { margin: 1, width: 224, color: { dark: '#0f2a3dff', light: '#ffffffff' } }) : null
+    } catch {
+      // No QR code: the key below can still be typed by hand.
+      qrDataUrl.value = null
+    }
   },
   { immediate: true },
 )
@@ -51,8 +56,8 @@ defineExpose({ clear: () => (code.value = '') })
 
 <template>
   <div class="stack">
-    <div v-if="enrolment && qrDataUrl" class="enrol">
-      <img :src="qrDataUrl" :alt="t('login.enrollQrAlt')" width="224" height="224" class="enrol__qr" />
+    <div v-if="enrolment && (qrDataUrl || secret)" class="enrol">
+      <img v-if="qrDataUrl" :src="qrDataUrl" :alt="t('login.enrollQrAlt')" width="224" height="224" class="enrol__qr" />
       <div v-if="secret">
         <p class="muted">{{ t('login.enrollManual') }}</p>
         <p class="enrol__secret">{{ secretGroups }}</p>
