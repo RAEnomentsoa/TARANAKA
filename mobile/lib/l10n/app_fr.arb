@@ -393,5 +393,177 @@
       }
     }
   },
-  "alertDisclaimer": "Cette alerte ne remplace pas un diagnostic."
+  "alertDisclaimer": "Cette alerte ne remplace pas un diagnostic.",
+  "myChildren": "Mes enfants",
+  "addChild": "Ajouter un enfant",
+  "noMyChildren": "Ajoutez votre enfant pour suivre sa croissance, ses repas et ses vaccins.",
+  "birthWeight": "Poids de naissance (kg, facultatif)",
+  "childAge": "{months} mois",
+  "@childAge": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "childAgeDays": "{days} jours",
+  "@childAgeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "growth": "Croissance",
+  "feeding": "Repas",
+  "breastfeeding": "Allaitement",
+  "vaccines": "Vaccins",
+  "vaccinesLate": "{count} en retard",
+  "@vaccinesLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaccinesUpToDate": "À jour",
+  "dangerSignsChild": "Signes de danger",
+  "dangerSignsHint": "Touchez un signe pour savoir quoi faire tout de suite.",
+  "todayMeals": "Repas du jour",
+  "todayBreastfeeding": "Allaitement aujourd'hui",
+  "addMeasure": "Ajouter une mesure",
+  "noGrowth": "Aucune mesure. Ajoutez le poids et la taille.",
+  "growthStatusMissing": "Courbes OMS indisponibles : les tables officielles ne sont pas encore dans l'application. Les mesures sont enregistrées ; demandez à un agent de santé de les interpréter.",
+  "growthChartTitle": "Poids de l'enfant (kg) selon l'âge (mois)",
+  "growthChartWho": "Lignes : courbes OMS −3, −2, médiane, +2, +3",
+  "growthStatus": "État : {status}",
+  "@growthStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteMeasure": "Supprimer cette mesure ?",
+  "delete": "Supprimer",
+  "exclusiveQuestion": "Votre bébé a-t-il bu uniquement du lait maternel aujourd'hui ?",
+  "exclusiveYes": "Oui, seulement du lait maternel",
+  "exclusiveNo": "Non, autre chose aussi",
+  "breastFeedsCount": "Nombre de tétées (facultatif)",
+  "exclusiveLast7": "Allaitement exclusif : {count} jour(s) sur les 7 derniers enregistrés",
+  "@exclusiveLast7": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exclusiveAdvice": "Jusqu'à 6 mois, le lait maternel seul suffit : pas d'eau ni d'autre aliment.",
+  "tapFoods": "Touchez ce que l'enfant a mangé aujourd'hui",
+  "mealsCount": "Nombre de repas",
+  "milkFeedsCount": "Laits (autres que maternel)",
+  "decrease": "Moins",
+  "increase": "Plus",
+  "diversityScore": "Diversité : {count}/{total} groupes",
+  "@diversityScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "diversityOk": "Suffisante",
+  "diversityLow": "Insuffisante",
+  "mealsScore": "Repas : {count}/{needed}",
+  "@mealsScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "needed": {
+        "type": "int"
+      }
+    }
+  },
+  "acceptableDiet": "Alimentation minimale acceptable",
+  "feedingNotInRange": "Le journal des repas concerne les enfants de 6 à 23 mois.",
+  "previousDay": "Jour précédent",
+  "nextDay": "Jour suivant",
+  "today": "Aujourd'hui",
+  "saved": "Enregistré.",
+  "vaccineDone": "Fait le {date}",
+  "@vaccineDone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineLate": "En retard (prévu le {date})",
+  "@vaccineLate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineDueToday": "Prévu aujourd'hui",
+  "vaccineUpcoming": "Prévu le {date}",
+  "@vaccineUpcoming": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineMarkDone": "Marquer comme fait",
+  "vaccineUndo": "Annuler « fait » pour ce vaccin ?",
+  "vaccineAtAge": "À {age}",
+  "@vaccineAtAge": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "atBirth": "la naissance",
+  "weeksAge": "{count} semaines",
+  "@weeksAge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "carnetPhotoNote": "Photo du carnet : pas encore disponible dans cette version.",
+  "alertGo": "Allez immédiatement au centre de santé le plus proche.",
+  "alertSign": "Signe : {sign}",
+  "@alertSign": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      }
+    }
+  },
+  "alertCentre": "Votre centre de santé",
+  "alertNoCentre": "Ajoutez votre centre de santé et un numéro à appeler dans Paramètres.",
+  "alertCall": "Appeler {number}",
+  "@alertCall": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "alertUnderstood": "J'ai compris",
+  "alertTitle": "Alerte",
+  "contactTitle": "Mon centre de santé",
+  "contactCentreName": "Nom du centre de santé (CSB)",
+  "contactCentrePhone": "Téléphone du centre ou numéro d'urgence",
+  "contactAgentPhone": "Téléphone de l'agent communautaire",
+  "contactHelp": "Utilisés par l'écran d'alerte, même sans réseau.",
+  "personalDataLocal": "Les données de « Mon enfant » restent sur ce téléphone."
 }

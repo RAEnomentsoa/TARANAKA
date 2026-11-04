@@ -124,6 +124,30 @@ const List<List<String>> migrations = [
       updated_at TEXT
     )''',
   ],
+  // v3 – "Mon enfant" (personal mode): birth weight, feeding log, vaccines
+  [
+    'ALTER TABLE enfant ADD COLUMN poids_naissance_kg REAL',
+    '''CREATE TABLE journal_alimentaire (
+      id TEXT PRIMARY KEY,
+      enfant_id TEXT NOT NULL REFERENCES enfant(id) ON DELETE CASCADE,
+      date_jour TEXT NOT NULL,
+      type_allaitement TEXT NOT NULL DEFAULT 'aucun',
+      aliments TEXT NOT NULL DEFAULT '[]',
+      repas INTEGER NOT NULL DEFAULT 0,
+      laits INTEGER NOT NULL DEFAULT 0,
+      tetees INTEGER,
+      version INTEGER NOT NULL DEFAULT 1,
+      sync_status TEXT NOT NULL DEFAULT 'saved',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE (enfant_id, date_jour)
+    )''',
+    '''CREATE TABLE vaccin_fait (
+      enfant_id TEXT NOT NULL REFERENCES enfant(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      date_faite TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (enfant_id, code)
+    )''',
+  ],
 ];
-
-int get schemaVersion => migrations.length;

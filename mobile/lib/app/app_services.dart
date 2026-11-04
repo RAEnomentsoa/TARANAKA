@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 
 import '../core/config/config_repository.dart';
 import '../core/db/db_opener.dart';
+import '../core/growth/who_lms.dart';
+import '../core/growth/who_tables_loader.dart';
 import '../core/security/profile_registry.dart';
 import '../core/security/secret_store.dart';
 import '../core/sync/network_status.dart';
@@ -42,11 +44,12 @@ class AppServices {
     required this.clock,
     required this.network,
     this.httpClient,
+    WhoTables? whoTables,
     this.defaultApiBaseUrl = const String.fromEnvironment(
       'TARANAKA_API',
       defaultValue: 'https://api.taranaka.example',
     ),
-  });
+  }) : _whoTablesOverride = whoTables;
 
   final SecretStore secrets;
   final ProfileRegistry registry;
@@ -61,6 +64,13 @@ class AppServices {
 
   /// Null on the phone (default client); a fake one in tests.
   final http.Client? httpClient;
+  final WhoTables? _whoTablesOverride;
+
+  /// Official WHO tables bundled in assets/who/ (loaded once). Empty while the
+  /// files are not in the app: no z-score is computed then.
+  late final Future<WhoTables> whoTables = _whoTablesOverride != null
+      ? Future.value(_whoTablesOverride)
+      : WhoTablesLoader.load();
 
   /// Server used by agent mode; can be changed on the agent login screen.
   final String defaultApiBaseUrl;

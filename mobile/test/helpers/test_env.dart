@@ -8,6 +8,7 @@ import 'package:taranaka/app/app_services.dart';
 import 'package:taranaka/app/session_controller.dart';
 import 'package:taranaka/core/config/config_repository.dart';
 import 'package:taranaka/core/db/db_opener.dart';
+import 'package:taranaka/core/growth/who_lms.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
 import 'package:http/http.dart' as http;
 import 'package:taranaka/core/security/secret_store.dart';
@@ -73,6 +74,7 @@ class TestEnv {
       device: DeviceIdentity(store),
       clock: clock,
       network: network ?? FakeNetworkStatus(),
+      whoTables: WhoTables.empty,
       httpClient: httpClient,
       defaultApiBaseUrl: apiBaseUrl ?? 'http://localhost:8000',
     );
@@ -108,6 +110,7 @@ Future<void> settle(WidgetTester tester, {int rounds = 80}) async {
 Future<void> tapKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   await tester.ensureVisible(finder);
+  await tester.pump(); // lay out at the new scroll position before tapping
   await tester.tap(finder);
   await settle(tester);
 }

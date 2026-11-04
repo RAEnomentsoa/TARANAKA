@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import '../../../app/app_services.dart';
 import '../../../core/db/app_database.dart';
 import '../../../core/growth/who_lms.dart';
-import '../../../core/growth/who_tables_loader.dart';
 import '../../../core/sync/api_client.dart';
 import '../../../core/sync/network_status.dart';
 import '../../../core/sync/sync_engine.dart';
@@ -85,7 +84,7 @@ class AgentController extends ChangeNotifier {
     final json = await database.getMetaJson(_accountKey);
     account = json == null ? null : AgentAccount.fromJson(json);
     wifiOnly = await database.getFlag(_wifiOnlyKey);
-    _tables ??= await WhoTablesLoader.load();
+    _tables ??= await services.whoTables;
     await refreshCounts();
     ready = true;
     _notify();
