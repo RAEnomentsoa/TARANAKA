@@ -290,6 +290,91 @@ paths:
               schema:
                 $ref: '#/components/schemas/JournalAudit'
           description: ''
+  /api/auth/2fa/:
+    get:
+      operationId: auth_2fa_retrieve
+      description: '/auth/2fa/: state of two-factor login for the logged-in user.'
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpEtat'
+          description: ''
+  /api/auth/2fa/activate/:
+    post:
+      operationId: auth_2fa_activate_create
+      description: '/auth/2fa/activate/: check a first code. Returns new tokens.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangerPinReponse'
+          description: ''
+  /api/auth/2fa/disable/:
+    post:
+      operationId: auth_2fa_disable_create
+      description: '/auth/2fa/disable/: PIN and current code. Refused when it is mandatory.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpDesactivationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TotpDesactivationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TotpDesactivationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/auth/2fa/setup/:
+    post:
+      operationId: auth_2fa_setup_create
+      description: '/auth/2fa/setup/: a new secret, to scan as a QR code (otpauth
+        URI).'
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpPreparation'
+          description: ''
   /api/auth/changer-pin/:
     post:
       operationId: auth_changer_pin_create
@@ -383,6 +468,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Utilisateur'
+          description: ''
+  /api/auth/my-data/:
+    get:
+      operationId: auth_my_data_retrieve
+      description: '/auth/my-data/: loi 2014-038, right of access to one''s own data.'
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonneesPersonnelles'
+          description: ''
+  /api/auth/my-data/erase/:
+    post:
+      operationId: auth_my_data_erase_create
+      description: '/auth/my-data/erase/: loi 2014-038, right of erasure (beneficiaries).'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EffacementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EffacementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EffacementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffacementReponse'
           description: ''
   /api/auth/refresh/:
     post:
@@ -2571,6 +2698,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/Compte'
           description: ''
+  /api/profiles/{id}/data/:
+    get:
+      operationId: profiles_data_retrieve
+      description: Loi 2014-038, right of access, for a request made to the admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonneesPersonnelles'
+          description: ''
+  /api/profiles/{id}/erase/:
+    post:
+      operationId: profiles_erase_create
+      description: Loi 2014-038, right of erasure, for a request made to the admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EffacementAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EffacementAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EffacementAdminRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffacementReponse'
+          description: ''
+  /api/profiles/{id}/reset-2fa/:
+    post:
+      operationId: profiles_reset_2fa_create
+      description: 'Lost phone: an admin turns two-factor login off for this account.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
   /api/profiles/{id}/reset-pin/:
     post:
       operationId: profiles_reset_pin_create
@@ -4029,6 +4236,99 @@ components:
         * `conseil` - Conseil
         * `reference` - Référence
         * `prise_en_charge` - Prise en charge
+    DonneesPersonnelles:
+      type: object
+      properties:
+        genere_le:
+          type: string
+          format: date-time
+        compte:
+          type: object
+          additionalProperties: {}
+        cycles:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        grossesses:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        signes_danger:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        enfants:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mesures:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        journaux_alimentaires:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        referencements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        rendez_vous:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        consultations:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        journal:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - compte
+      - genere_le
+      - journal
+    EffacementAdminRequest:
+      type: object
+      properties:
+        inclure_enfants:
+          type: boolean
+          default: false
+    EffacementReponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        resume:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - detail
+      - resume
+    EffacementRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+          minLength: 1
+          maxLength: 128
+        inclure_enfants:
+          type: boolean
+          default: false
+      required:
+      - pin
     Enfant:
       type: object
       description: Rules shared by the synced tables, also meant for the future /sync.
@@ -4438,9 +4738,12 @@ components:
           type: string
         utilisateur:
           $ref: '#/components/schemas/Utilisateur'
+        totp_a_configurer:
+          type: boolean
       required:
       - access
       - refresh
+      - totp_a_configurer
       - utilisateur
     LoginRequest:
       type: object
@@ -4453,6 +4756,9 @@ components:
           type: string
           minLength: 1
           maxLength: 128
+        code_totp:
+          type: string
+          maxLength: 10
       required:
       - identifiant
       - pin
@@ -6178,6 +6484,55 @@ components:
           minLength: 1
       required:
       - refresh
+    TotpCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+    TotpDesactivationRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+          minLength: 1
+          maxLength: 128
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+      - pin
+    TotpEtat:
+      type: object
+      properties:
+        active:
+          type: boolean
+        requise_pour_ce_profil:
+          type: boolean
+        obligatoire:
+          type: boolean
+        a_configurer:
+          type: boolean
+      required:
+      - a_configurer
+      - active
+      - obligatoire
+      - requise_pour_ce_profil
+    TotpPreparation:
+      type: object
+      properties:
+        secret:
+          type: string
+        uri:
+          type: string
+      required:
+      - secret
+      - uri
     TypeAllaitementEnum:
       enum:
       - exclusif

@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.permissions import BasePermission
 
 from .models import CodeProfile
@@ -20,9 +21,28 @@ class ProfilRequis(BasePermission):
 
     def has_permission(self, request, view):
         user = request.user
-        return bool(
-            user and user.is_authenticated and user.profile.code in self.codes
-        )
+        if not (user and user.is_authenticated and user.profile.code in self.codes):
+            return False
+        if totp_a_configurer(request, view):
+            self.message = MESSAGE_TOTP_A_CONFIGURER
+            return False
+        return True
+
+
+MESSAGE_TOTP_A_CONFIGURER = (
+    "Activez la double authentification (/api/auth/2fa/) avant d'utiliser ce compte."
+)
+
+
+def totp_a_configurer(request, view):
+    """A token issued before two-factor login was set up opens only the views
+    marked `autorise_sans_totp` (2FA setup, /me/)."""
+    if getattr(view, "autorise_sans_totp", False):
+        return False
+    jeton = request.auth
+    if jeton is None or not hasattr(jeton, "get") or not jeton.get("totp_a_configurer"):
+        return False
+    return settings.TARANAKA_TOTP_OBLIGATOIRE and not request.user.totp_active
 
 
 class ProfilReconnu(ProfilRequis):

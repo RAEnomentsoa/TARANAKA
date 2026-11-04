@@ -140,6 +140,8 @@ class CompteSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     identifiant = serializers.CharField(max_length=50)
     pin = serializers.CharField(max_length=128, trim_whitespace=False)
+    # Only for accounts with two-factor login turned on.
+    code_totp = serializers.CharField(max_length=10, required=False, allow_blank=True)
 
 
 class LogoutSerializer(serializers.Serializer):
@@ -150,6 +152,7 @@ class LoginReponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
     utilisateur = UtilisateurSerializer()
+    totp_a_configurer = serializers.BooleanField()
 
 
 class MessageSerializer(serializers.Serializer):
@@ -174,3 +177,53 @@ class ChangerPinSerializer(serializers.Serializer):
         trim_whitespace=False,
         validators=[valider_pin],
     )
+
+
+class TotpEtatSerializer(serializers.Serializer):
+    active = serializers.BooleanField()
+    requise_pour_ce_profil = serializers.BooleanField()
+    obligatoire = serializers.BooleanField()
+    a_configurer = serializers.BooleanField()
+
+
+class TotpPreparationSerializer(serializers.Serializer):
+    secret = serializers.CharField()
+    uri = serializers.CharField()
+
+
+class TotpCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=10)
+
+
+class TotpDesactivationSerializer(serializers.Serializer):
+    pin = serializers.CharField(max_length=128, trim_whitespace=False)
+    code = serializers.CharField(max_length=10)
+
+
+class EffacementSerializer(serializers.Serializer):
+    pin = serializers.CharField(max_length=128, trim_whitespace=False)
+    inclure_enfants = serializers.BooleanField(default=False)
+
+
+class EffacementAdminSerializer(serializers.Serializer):
+    inclure_enfants = serializers.BooleanField(default=False)
+
+
+class EffacementReponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    resume = serializers.DictField(child=serializers.IntegerField())
+
+
+class DonneesPersonnellesSerializer(serializers.Serializer):
+    genere_le = serializers.DateTimeField()
+    compte = serializers.DictField()
+    cycles = serializers.ListField(child=serializers.DictField(), required=False)
+    grossesses = serializers.ListField(child=serializers.DictField(), required=False)
+    signes_danger = serializers.ListField(child=serializers.DictField(), required=False)
+    enfants = serializers.ListField(child=serializers.DictField(), required=False)
+    mesures = serializers.ListField(child=serializers.DictField(), required=False)
+    journaux_alimentaires = serializers.ListField(child=serializers.DictField(), required=False)
+    referencements = serializers.ListField(child=serializers.DictField(), required=False)
+    rendez_vous = serializers.ListField(child=serializers.DictField(), required=False)
+    consultations = serializers.ListField(child=serializers.DictField(), required=False)
+    journal = serializers.ListField(child=serializers.DictField())

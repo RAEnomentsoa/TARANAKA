@@ -22,6 +22,10 @@ class CodeProfile(models.TextChoices):
     ADMIN = "admin", "Administrateur"
 
 
+# Web accounts that must use two-factor login (spec §2: "double authentification").
+PROFILS_TOTP = (CodeProfile.AGENT_CSB, CodeProfile.SUPERVISEUR, CodeProfile.ADMIN)
+
+
 class Profile(models.Model):
     id = models.AutoField(primary_key=True)
     code = models.CharField(max_length=30, unique=True)
@@ -103,6 +107,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     tentatives_echouees = models.PositiveSmallIntegerField(default=0)
     bloque_jusqu_a = models.DateTimeField(null=True, blank=True)
+    # Two-factor login (TOTP, RFC 6238) for web accounts, spec §2.
+    totp_secret = models.CharField(max_length=64, blank=True)
+    totp_active = models.BooleanField(default=False)
+    totp_dernier_pas = models.BigIntegerField(null=True, blank=True)
+    # Loi 2014-038: set when the person's data was erased (account anonymised).
+    efface_le = models.DateTimeField(null=True, blank=True)
 
     objects = UserManager()
 

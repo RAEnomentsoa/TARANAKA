@@ -65,3 +65,57 @@ class PinNonModifiable(ErreurCompte):
             "Les comptes d'administration utilisent un mot de passe, pas un PIN.",
             "pin_non_modifiable",
         )
+
+
+class TotpRequis(ErreurCompte):
+    """PIN right, but this account also needs its authenticator code."""
+
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+    def __init__(self):
+        super().__init__(
+            "Saisissez le code à 6 chiffres de votre application d'authentification.",
+            "totp_requis",
+        )
+
+
+class TotpInvalide(ErreurCompte):
+    status_code = status.HTTP_401_UNAUTHORIZED
+
+    def __init__(self):
+        super().__init__("Code d'authentification incorrect.", "totp_invalide")
+
+
+class ErreurTotp(ErreurCompte):
+    status_code = status.HTTP_400_BAD_REQUEST
+
+    def __init__(self, message, code):
+        super().__init__(message, code)
+
+
+class TotpNonDisponible(ErreurCompte):
+    status_code = status.HTTP_403_FORBIDDEN
+
+    def __init__(self):
+        super().__init__(
+            "La double authentification concerne les comptes web "
+            "(agent de CSB, superviseur, administrateur).",
+            "totp_non_disponible",
+        )
+
+
+class TotpObligatoire(ErreurCompte):
+    status_code = status.HTTP_403_FORBIDDEN
+
+    def __init__(self):
+        super().__init__(
+            "La double authentification est obligatoire pour ce compte.",
+            "totp_obligatoire",
+        )
+
+
+class PinIncorrect(ErreurCompte):
+    status_code = status.HTTP_400_BAD_REQUEST
+
+    def __init__(self):
+        super().__init__("Le PIN est incorrect.", "pin_incorrect")

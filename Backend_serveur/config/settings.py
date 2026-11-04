@@ -125,6 +125,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
+# Spec §2: web accounts (agent_csb, superviseur, admin) must use two-factor
+# login. Leave False for development and demos; set True in production.
+TARANAKA_TOTP_OBLIGATOIRE = os.getenv("TOTP_OBLIGATOIRE", "False") == "True"
+
 # Spec §10: no figure under this number is shown to a supervisor.
 TARANAKA_SEUIL_PETITS_EFFECTIFS = 5
 
