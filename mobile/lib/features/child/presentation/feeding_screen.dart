@@ -107,21 +107,17 @@ class _FeedingScreenState extends State<FeedingScreen> {
                   borderRadius: BorderRadius.circular(Radii.m),
                   border: Border.all(color: AppColors.accentSoftBorder),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l10n.diversityScore(summary.groupCount, summary.groupTotal),
-                        key: const ValueKey('diversity-summary'),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    StatusPill(
-                      icon: summary.diversityMet ? Icons.check_circle_outline : Icons.error_outline,
-                      label: summary.diversityMet ? l10n.diversityOk : l10n.diversityLow,
-                      tone: summary.diversityMet ? Tone.success : Tone.warning,
-                    ),
-                  ],
+                child: LabelWithPill(
+                  label: Text(
+                    l10n.diversityScore(summary.groupCount, summary.groupTotal),
+                    key: const ValueKey('diversity-summary'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  pill: StatusPill(
+                    icon: summary.diversityMet ? Icons.check_circle_outline : Icons.error_outline,
+                    label: summary.diversityMet ? l10n.diversityOk : l10n.diversityLow,
+                    tone: summary.diversityMet ? Tone.success : Tone.warning,
+                  ),
                 ),
               ),
             ),
@@ -275,21 +271,17 @@ class _FeedingScreenState extends State<FeedingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.diversityScore(indicators.groupCount, indicators.groupTotal),
-                      key: const ValueKey('diversity-score'),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  StatusPill(
-                    icon: indicators.diversityMet ? Icons.check_circle_outline : Icons.error_outline,
-                    label: indicators.diversityMet ? l10n.diversityOk : l10n.diversityLow,
-                    tone: indicators.diversityMet ? Tone.success : Tone.warning,
-                  ),
-                ],
+              LabelWithPill(
+                label: Text(
+                  l10n.diversityScore(indicators.groupCount, indicators.groupTotal),
+                  key: const ValueKey('diversity-score'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                pill: StatusPill(
+                  icon: indicators.diversityMet ? Icons.check_circle_outline : Icons.error_outline,
+                  label: indicators.diversityMet ? l10n.diversityOk : l10n.diversityLow,
+                  tone: indicators.diversityMet ? Tone.success : Tone.warning,
+                ),
               ),
               const Gap(Space.s),
               Wrap(
@@ -321,15 +313,13 @@ class _FeedingScreenState extends State<FeedingScreen> {
                 ),
               ],
               const Gap(Space.s),
-              Row(
-                children: [
-                  Expanded(child: Text(l10n.acceptableDiet)),
-                  StatusPill(
-                    icon: indicators.acceptableMet ? Icons.check : Icons.close,
-                    label: indicators.acceptableMet ? l10n.yes : l10n.no,
-                    tone: indicators.acceptableMet ? Tone.success : Tone.warning,
-                  ),
-                ],
+              LabelWithPill(
+                label: Text(l10n.acceptableDiet),
+                pill: StatusPill(
+                  icon: indicators.acceptableMet ? Icons.check : Icons.close,
+                  label: indicators.acceptableMet ? l10n.yes : l10n.no,
+                  tone: indicators.acceptableMet ? Tone.success : Tone.warning,
+                ),
               ),
             ],
           ),

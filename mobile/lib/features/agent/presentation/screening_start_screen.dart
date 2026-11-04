@@ -102,10 +102,10 @@ class _ScreeningStartScreenState extends State<ScreeningStartScreen> {
                             size: 32,
                           ),
                           title: Text(c.name),
-                          subtitle: Text(
-                            '${c.sex == 'F' ? l10n.sexF : l10n.sexM} · ${l10n.ageMonths(months)}',
+                          subtitle: SubtitleWithPills(
+                            text: '${c.sex == 'F' ? l10n.sexF : l10n.sexM} · ${l10n.ageMonths(months)}',
+                            pills: [SyncStatusPill(c.syncStatus)],
                           ),
-                          trailing: SyncStatusPill(c.syncStatus),
                           onTap: () => pushAgent<void>(
                             context,
                             AgentChildScreen(childId: c.id),

@@ -474,17 +474,13 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
       bottomAction: Container(
         padding: const EdgeInsets.all(Space.m),
         decoration: BoxDecoration(color: AppColors.accentSoft, borderRadius: BorderRadius.circular(Radii.m)),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(l10n.womenDietScore(eaten.length), style: Theme.of(context).textTheme.titleMedium),
-            ),
-            StatusPill(
-              icon: ok ? Icons.check_circle_outline : Icons.error_outline,
-              label: ok ? l10n.diversityOk : l10n.diversityLow,
-              tone: ok ? Tone.success : Tone.warning,
-            ),
-          ],
+        child: LabelWithPill(
+          label: Text(l10n.womenDietScore(eaten.length), style: Theme.of(context).textTheme.titleMedium),
+          pill: StatusPill(
+            icon: ok ? Icons.check_circle_outline : Icons.error_outline,
+            label: ok ? l10n.diversityOk : l10n.diversityLow,
+            tone: ok ? Tone.success : Tone.warning,
+          ),
         ),
       ),
       children: [

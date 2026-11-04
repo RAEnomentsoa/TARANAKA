@@ -204,4 +204,21 @@ const List<List<String>> migrations = [
       groupes TEXT NOT NULL
     )''',
   ],
+  // v5 – "Mon cycle": never synced unless the user explicitly enables it.
+  [
+    '''CREATE TABLE cycle (
+      id TEXT PRIMARY KEY,
+      date_debut TEXT NOT NULL,
+      date_fin TEXT,
+      intensite TEXT NOT NULL DEFAULT 'moyenne',
+      douleur INTEGER NOT NULL DEFAULT 0,
+      humeur INTEGER,
+      notes TEXT NOT NULL DEFAULT '',
+      version INTEGER NOT NULL DEFAULT 1,
+      sync_status TEXT NOT NULL DEFAULT 'saved',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )''',
+    'CREATE INDEX cycle_debut ON cycle(date_debut)',
+  ],
 ];

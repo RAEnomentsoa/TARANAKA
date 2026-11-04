@@ -52,8 +52,10 @@ class FollowUpsScreen extends StatelessWidget {
                   child: ListTile(
                     leading: const Icon(Icons.directions_walk, color: AppColors.warning),
                     title: Text(child?.name ?? r.code),
-                    subtitle: Text('${r.code} · ${formatDateTime(r.referredAt)}'),
-                    trailing: UrgencyPill(r.urgence),
+                    subtitle: SubtitleWithPills(
+                      text: '${r.code} · ${formatDateTime(r.referredAt)}',
+                      pills: [UrgencyPill(r.urgence)],
+                    ),
                     onTap: () => pushAgent<void>(context, ReferralSheetScreen(referralId: r.id)),
                   ),
                 ),
@@ -65,8 +67,10 @@ class FollowUpsScreen extends StatelessWidget {
                   child: ListTile(
                     leading: const Icon(Icons.event_repeat, color: AppColors.accent),
                     title: Text(child.name),
-                    subtitle: Text(l10n.nextCheck(formatDate(m.nextCheck!))),
-                    trailing: ClassificationPill(m.classification),
+                    subtitle: SubtitleWithPills(
+                      text: l10n.nextCheck(formatDate(m.nextCheck!)),
+                      pills: [ClassificationPill(m.classification)],
+                    ),
                     onTap: () => pushAgent<void>(context, AgentChildScreen(childId: child.id)),
                   ),
                 ),
@@ -78,8 +82,12 @@ class FollowUpsScreen extends StatelessWidget {
                   child: ListTile(
                     leading: const Icon(Icons.event_busy, color: AppColors.danger),
                     title: Text(child?.name ?? ''),
-                    subtitle: Text('${formatDate(a.date)}${a.reason == null ? '' : ' · ${a.reason}'}'),
-                    trailing: StatusPill(icon: Icons.event_busy, label: l10n.followMissed, tone: Tone.danger),
+                    subtitle: SubtitleWithPills(
+                      text: '${formatDate(a.date)}${a.reason == null ? '' : ' · ${a.reason}'}',
+                      pills: [
+                        StatusPill(icon: Icons.event_busy, label: l10n.followMissed, tone: Tone.danger),
+                      ],
+                    ),
                     onTap: child == null
                         ? null
                         : () => pushAgent<void>(context, AgentChildScreen(childId: child.id)),

@@ -107,22 +107,32 @@ Future<void> settle(WidgetTester tester, {int rounds = 80}) async {
   }
 }
 
-Future<void> tapKey(WidgetTester tester, String key) async {
+/// Makes a keyed widget exist and be on screen (lazily built list items
+/// included): back to the top of the page, then scroll down until it exists.
+Future<Finder> revealKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
   if (finder.evaluate().isEmpty) {
-    // Lazily built list item: scroll the page until it exists.
-    await tester.scrollUntilVisible(
-      finder,
-      300,
-      scrollable: find
-          .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
-          .first,
-    );
+    final scrollable = find
+        .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    position.jumpTo(position.minScrollExtent);
+    await tester.pump();
+    if (finder.evaluate().isEmpty) await tester.scrollUntilVisible(finder, 300, scrollable: scrollable);
   }
   await tester.ensureVisible(finder);
-  await tester.pump(); // lay out at the new scroll position before tapping
-  await tester.tap(finder);
+  await tester.pump(); // lay out at the new scroll position
+  return finder;
+}
+
+Future<void> tapKey(WidgetTester tester, String key) async {
+  await tester.tap(await revealKey(tester, key));
   await settle(tester);
+}
+
+Future<void> typeKey(WidgetTester tester, String key, String text) async {
+  await tester.enterText(await revealKey(tester, key), text);
+  await tester.pump();
 }
 
 Future<void> enterPin(WidgetTester tester, String pin) async {

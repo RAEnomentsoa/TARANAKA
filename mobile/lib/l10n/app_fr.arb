@@ -153,7 +153,6 @@
       }
     }
   },
-  "comingNext": "Ce module arrive dans la prochaine étape.",
   "malagasyReviewNote": "Textes malagasy à faire relire par des locuteurs natifs.",
   "syncSaved": "Enregistré",
   "syncPending": "À synchroniser",
@@ -751,5 +750,183 @@
   },
   "remindersTitle": "À ne pas oublier",
   "pregnancyLocal": "Les données de grossesse restent sur ce téléphone, sauf si vous activez la synchronisation.",
-  "weekContentMissing": "Les conseils de la semaine viendront de la bibliothèque de contenus validée (pas encore fournie)."
+  "weekContentMissing": "Les conseils de la semaine viendront de la bibliothèque de contenus validée (pas encore fournie).",
+  "periodStartedToday": "Mes règles ont commencé aujourd'hui",
+  "periodEndedToday": "Mes règles sont terminées aujourd'hui",
+  "periodOtherDate": "Une autre date",
+  "periodStartDate": "Début des règles",
+  "periodEndDate": "Fin des règles",
+  "periodOngoing": "Règles en cours depuis le {date}",
+  "@periodOngoing": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nextPeriod": "Prochaines règles",
+  "nextPeriodOn": "Vers le {date}",
+  "@nextPeriodOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nextPeriodIn": "Dans {count} jour(s)",
+  "@nextPeriodIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fertileWindow": "Fenêtre fertile",
+  "fertileFromTo": "Du {from} au {to}",
+  "@fertileFromTo": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "ovulationOn": "Ovulation vers le {date}",
+  "@ovulationOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "confidenceEstimate": "Estimation",
+  "confidenceReliable": "Fiable",
+  "confidenceEstimateHint": "Estimation : il faut {count} cycles réguliers pour une prévision fiable.",
+  "@confidenceEstimateHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noPrediction": "Notez au moins deux débuts de règles pour voir une prévision.",
+  "cycleStats": "Mes cycles",
+  "averageCycle": "Cycle moyen : {days} jours",
+  "@averageCycle": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "averagePeriod": "Règles : {days} jours en moyenne",
+  "@averagePeriod": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "cyclesCount": "{count} cycle(s) enregistré(s)",
+  "@cyclesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cycleRegular": "Régulier",
+  "cycleIrregular": "Irrégulier",
+  "signalShort": "Plusieurs cycles de moins de {days} jours.",
+  "@signalShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLong": "Plusieurs cycles de plus de {days} jours.",
+  "@signalLong": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLongPeriod": "Des règles de plus de {days} jours.",
+  "@signalLongPeriod": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalHeavy": "Des saignements très abondants.",
+  "signalAmenorrhoea": "Pas de règles depuis plus de {days} jours.",
+  "@signalAmenorrhoea": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLate": "Vos règles ont {count} jour(s) de retard. Vous êtes peut-être enceinte : faites un test de grossesse.",
+  "@signalLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signalAdvice": "Conseil : parlez-en à un agent de santé. Ce n'est pas un diagnostic.",
+  "goToPregnancy": "Ouvrir « Ma grossesse »",
+  "intensity": "Flux",
+  "intensityLight": "Faible",
+  "intensityMedium": "Moyen",
+  "intensityHeavy": "Abondant",
+  "pain": "Douleur",
+  "painLevel": "{n} sur 3",
+  "@painLevel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mood": "Humeur",
+  "moodLabels": "Très triste|Triste|Neutre|Bien|Très bien",
+  "periodHistory": "Mes règles",
+  "periodDays": "{start} – {end} ({days} j)",
+  "@periodDays": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "periodNoEnd": "{start} – en cours",
+  "@periodNoEnd": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePeriod": "Supprimer ces règles ?",
+  "calendarLegendPeriod": "Règles",
+  "calendarLegendPredicted": "Règles prévues",
+  "calendarLegendFertile": "Fenêtre fertile",
+  "calendarLegendOvulation": "Ovulation",
+  "cycleLocal": "Les données du cycle restent sur ce téléphone et ne sont jamais envoyées, sauf si vous l'activez vous-même.",
+  "cycleContentMissing": "Les contenus sur l'hygiène menstruelle et la puberté viendront de la bibliothèque validée.",
+  "editPeriod": "Modifier",
+  "endBeforeStart": "La fin doit être après le début."
 }

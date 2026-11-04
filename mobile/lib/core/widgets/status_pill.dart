@@ -93,3 +93,40 @@ class NoticeBox extends StatelessWidget {
     );
   }
 }
+
+/// A label and a status pill on one line when they fit, the pill below
+/// otherwise (large text, narrow screens).
+class LabelWithPill extends StatelessWidget {
+  const LabelWithPill({super.key, required this.label, required this.pill});
+
+  final Widget label;
+  final Widget pill;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.spaceBetween,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: Space.s,
+    runSpacing: Space.xs,
+    children: [label, pill],
+  );
+}
+
+/// ListTile subtitle: a line of text with status pills under it (pills never
+/// go in `trailing`, which has no room at large text sizes).
+class SubtitleWithPills extends StatelessWidget {
+  const SubtitleWithPills({super.key, required this.text, required this.pills});
+
+  final String text;
+  final List<Widget> pills;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(text),
+      const SizedBox(height: Space.xs),
+      Wrap(spacing: Space.s, runSpacing: Space.xs, children: pills),
+    ],
+  );
+}
