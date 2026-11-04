@@ -109,6 +109,16 @@ Future<void> settle(WidgetTester tester, {int rounds = 80}) async {
 
 Future<void> tapKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
+  if (finder.evaluate().isEmpty) {
+    // Lazily built list item: scroll the page until it exists.
+    await tester.scrollUntilVisible(
+      finder,
+      300,
+      scrollable: find
+          .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
+          .first,
+    );
+  }
   await tester.ensureVisible(finder);
   await tester.pump(); // lay out at the new scroll position before tapping
   await tester.tap(finder);

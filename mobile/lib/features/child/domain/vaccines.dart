@@ -36,7 +36,7 @@ abstract final class VaccineSchedule {
         () {
           final code = d['code']! as String;
           final age = asInt(d['age_jours']) ?? 0;
-          final due = dateOnly(birthDate).add(Duration(days: age));
+          final due = addDays(birthDate, age);
           final doneOn = done[code];
           final status = doneOn != null
               ? DoseStatus.done

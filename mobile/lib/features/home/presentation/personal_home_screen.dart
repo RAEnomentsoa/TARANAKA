@@ -8,6 +8,7 @@ import '../../../core/widgets/config_banner.dart';
 import '../../../core/widgets/screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'module_routes.dart';
+import 'reminders.dart';
 
 /// Personal mode home (spec §3): three illustrated tiles, plus the agent tile
 /// that only opens with professional credentials.
@@ -32,6 +33,7 @@ class PersonalHomeScreen extends StatelessWidget {
         ),
         const Gap(Space.m),
         const ConfigBanner(),
+        const PersonalReminders(),
         const Gap(Space.l),
         BigTile(
           key: const ValueKey('tile-cycle'),

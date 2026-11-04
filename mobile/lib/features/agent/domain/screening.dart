@@ -205,7 +205,7 @@ abstract final class ScreeningCalculator {
       classification: classification,
       centre: rule?['centre'] as String?,
       urgence: rule?['urgence'] as String?,
-      nextCheck: daysToCheck == null ? null : dateOnly(input.measureDate).add(Duration(days: daysToCheck)),
+      nextCheck: daysToCheck == null ? null : addDays(input.measureDate, daysToCheck),
       adviceCode: rule?['conseil'] as String?,
       configVersion: config.version,
     );

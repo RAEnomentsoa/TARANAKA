@@ -150,4 +150,58 @@ const List<List<String>> migrations = [
       PRIMARY KEY (enfant_id, code)
     )''',
   ],
+  // v4 – "Ma grossesse": pregnancy, contacts attended, follow-up, movements,
+  // danger signals, women's dietary diversity
+  [
+    '''CREATE TABLE grossesse (
+      id TEXT PRIMARY KEY,
+      ddr TEXT,
+      terme_confirme_date TEXT,
+      terme_confirme_jours INTEGER,
+      dpa TEXT,
+      date_accouchement TEXT,
+      mode_allaitement TEXT,
+      terminee INTEGER NOT NULL DEFAULT 0,
+      version INTEGER NOT NULL DEFAULT 1,
+      sync_status TEXT NOT NULL DEFAULT 'saved',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )''',
+    '''CREATE TABLE contact_soin (
+      grossesse_id TEXT NOT NULL REFERENCES grossesse(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      numero INTEGER NOT NULL,
+      date_faite TEXT NOT NULL,
+      PRIMARY KEY (grossesse_id, type, numero)
+    )''',
+    '''CREATE TABLE suivi_grossesse (
+      id TEXT PRIMARY KEY,
+      grossesse_id TEXT NOT NULL REFERENCES grossesse(id) ON DELETE CASCADE,
+      date_jour TEXT NOT NULL,
+      poids_kg REAL,
+      notes TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    )''',
+    '''CREATE TABLE mouvement_bebe (
+      grossesse_id TEXT NOT NULL REFERENCES grossesse(id) ON DELETE CASCADE,
+      date_jour TEXT NOT NULL,
+      mouvements INTEGER NOT NULL,
+      PRIMARY KEY (grossesse_id, date_jour)
+    )''',
+    '''CREATE TABLE danger_grossesse (
+      id TEXT PRIMARY KEY,
+      grossesse_id TEXT NOT NULL REFERENCES grossesse(id) ON DELETE CASCADE,
+      code TEXT NOT NULL,
+      periode TEXT NOT NULL,
+      date_signalement TEXT NOT NULL,
+      version INTEGER NOT NULL DEFAULT 1,
+      sync_status TEXT NOT NULL DEFAULT 'saved',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )''',
+    '''CREATE TABLE alimentation_femme (
+      date_jour TEXT PRIMARY KEY,
+      groupes TEXT NOT NULL
+    )''',
+  ],
 ];

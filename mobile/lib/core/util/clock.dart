@@ -35,3 +35,6 @@ DateTime parseIsoDate(String s) {
   final p = s.split('-').map(int.parse).toList();
   return DateTime(p[0], p[1], p[2]);
 }
+
+/// Adds calendar days (safe across daylight-saving changes, unlike Duration).
+DateTime addDays(DateTime d, int days) => DateTime(d.year, d.month, d.day + days);

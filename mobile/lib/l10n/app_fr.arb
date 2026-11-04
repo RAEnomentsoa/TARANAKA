@@ -565,5 +565,191 @@
   "contactCentrePhone": "Téléphone du centre ou numéro d'urgence",
   "contactAgentPhone": "Téléphone de l'agent communautaire",
   "contactHelp": "Utilisés par l'écran d'alerte, même sans réseau.",
-  "personalDataLocal": "Les données de « Mon enfant » restent sur ce téléphone."
+  "personalDataLocal": "Les données de « Mon enfant » restent sur ce téléphone.",
+  "pregnancySetupTitle": "Commencer le suivi de grossesse",
+  "pregnancySetupHow": "Comment connaissez-vous votre terme ?",
+  "byLmp": "Date des dernières règles",
+  "byConfirmed": "Terme confirmé par un professionnel",
+  "confirmedExamDate": "Date de l'échographie ou de la consultation",
+  "confirmedWeeks": "Semaines (SA) ce jour-là",
+  "confirmedDays": "+ jours",
+  "confirmedWins": "Le terme confirmé par un professionnel passe avant la date des règles.",
+  "gaInvalid": "Vérifiez la date : la grossesse doit avoir entre 0 et 42 semaines.",
+  "startPregnancy": "Commencer le suivi",
+  "gaValue": "{weeks} SA + {days} j",
+  "@gaValue": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "gaLabel": "Âge de la grossesse",
+  "trimesterLabel": "{n}e trimestre",
+  "@trimesterLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dueDateLabel": "Date probable d'accouchement : {date}",
+  "@dueDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "postpartumLabel": "Bébé né le {date} · J+{days}",
+  "@postpartumLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "pregnancyDangerTitle": "Signes de danger : touchez si vous avez…",
+  "postpartumDangerTitle": "Après l'accouchement : touchez si vous avez…",
+  "nextContact": "Prochaine consultation",
+  "contactAnc": "CPN {n} · {weeks} SA",
+  "@contactAnc": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "contactPnc": "Consultation postnatale {n} · J{days}",
+  "@contactPnc": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "contactWent": "J'y suis allée",
+  "contactDone": "Faite le {date}",
+  "@contactDone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactMissed": "Pas encore faite (prévue le {date})",
+  "@contactMissed": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactNext": "Prochaine : {date}",
+  "@contactNext": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactPlanned": "Prévue le {date}",
+  "@contactPlanned": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactUndo": "Retirer « J'y suis allée » ?",
+  "consultations": "Consultations",
+  "antenatalTitle": "Consultations prénatales (CPN)",
+  "postnatalTitle": "Consultations postnatales",
+  "myFollowUp": "Mon suivi (poids, notes)",
+  "weightKgOptional": "Poids (kg, facultatif)",
+  "notesLabel": "Ce que je ressens (facultatif)",
+  "noFollowUp": "Rien encore. Ajoutez votre poids ou une note.",
+  "add": "Ajouter",
+  "babyMovements": "Mouvements du bébé",
+  "movementsExplain": "Les premiers mouvements se sentent en général vers {from} à {to} SA. Le journal des mouvements s'ouvre à {open} SA.",
+  "@movementsExplain": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "open": {
+        "type": "int"
+      }
+    }
+  },
+  "movementsToday": "Mouvements comptés aujourd'hui",
+  "movementsLess": "Le bébé bouge moins ou plus du tout ?",
+  "movementsDay": "{date} : {count}",
+  "@movementsDay": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delivery": "Accouchement",
+  "deliveryDate": "Date de l'accouchement",
+  "breastfeedingMode": "Mode d'allaitement",
+  "bfExclusive": "Lait maternel seul",
+  "bfMixed": "Mixte",
+  "bfNone": "Pas de lait maternel",
+  "deliverySaved": "Accouchement enregistré. Le suivi après l'accouchement commence.",
+  "endPregnancy": "Terminer ce suivi",
+  "endPregnancyConfirm": "Terminer ce suivi de grossesse ? Les données restent sur le téléphone.",
+  "womenDiet": "Mes repas (10 groupes)",
+  "womenDietHint": "Facultatif. Cochez ce que vous avez mangé aujourd'hui.",
+  "womenDietScore": "{count}/10 groupes",
+  "@womenDietScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeDates": "Corriger les dates",
+  "reminderNextAnc": "Prochaine consultation prénatale le {date}",
+  "@reminderNextAnc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderVaccines": "{name} : {count} vaccin(s) en retard",
+  "@reminderVaccines": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindersTitle": "À ne pas oublier",
+  "pregnancyLocal": "Les données de grossesse restent sur ce téléphone, sauf si vous activez la synchronisation.",
+  "weekContentMissing": "Les conseils de la semaine viendront de la bibliothèque de contenus validée (pas encore fournie)."
 }
