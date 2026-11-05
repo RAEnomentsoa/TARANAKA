@@ -1,0 +1,45 @@
+name: taranaka
+description: "TARANAKA by SmartSaha – application mobile hors ligne (santé de la femme et de l'enfant, dépistage de la malnutrition)."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  connectivity_plus: ^7.3.2
+  crypto: ^3.0.8
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_secure_storage: ^11.2.0
+  http: ^1.6.0
+  intl: ^0.20.3
+  path: ^1.9.1
+  path_provider: ^2.1.6
+  sqflite_common: ^2.5.15
+  sqflite_sqlcipher: ^3.4.1
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  sqflite_common_ffi: ^2.4.5
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/config/
+    - assets/who/
+
+# Host tests (flutter test) load the system SQLCipher library, so the tests
+# exercise real encryption. Install it with `apt install libsqlcipher-dev`.
+# The Android app does not use this: it ships SQLCipher through sqflite_sqlcipher.
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name: sqlcipher

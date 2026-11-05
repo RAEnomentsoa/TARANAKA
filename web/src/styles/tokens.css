@@ -1,0 +1,74 @@
+/*
+ * TARANAKA design tokens. White and light blue, with a deep "lagoon" blue
+ * for text and actions so every pairing passes WCAG AA (ratios noted).
+ */
+:root {
+  /* Surfaces */
+  --white: #ffffff;
+  --sky-50: #f2f9fe; /* page background */
+  --sky-100: #e3f2fc; /* active nav, table header, selected row */
+  --sky-200: #c6e4f8; /* hairlines and panel borders (decorative) */
+  --sky-300: #9fd1f2; /* brand band */
+  --sky-400: #6ec1ec; /* brand accent, never for text */
+
+  /* Ink */
+  --ink: #0f2a3d; /* 13.9:1 on sky-50 */
+  --ink-muted: #46637a; /* 5.5:1 on sky-100 */
+  --primary: #0b5c8e; /* 7.1:1 on white, 6.3:1 on sky-100 */
+  --primary-strong: #084569;
+  --focus: #1b76b5; /* 4.9:1 on white */
+  --field-border: #5d7f99; /* 4.2:1 on white, input outlines need 3:1 */
+
+  /* Urgency: text / background / bar. Always shown with an icon and a word. */
+  --rouge-ink: #a1150c; /* 6.8:1 on rouge-bg */
+  --rouge-bg: #fde8e6;
+  --rouge-bar: #d92d20;
+  --orange-ink: #9a3b00; /* 6.2:1 on orange-bg */
+  --orange-bg: #ffefd9;
+  --orange-bar: #f27a1a;
+  --jaune-ink: #6e5300; /* 6.7:1 on jaune-bg */
+  --jaune-bg: #fff6c9;
+  --jaune-bar: #e6b800;
+  --success-ink: #11663a; /* 6.2:1 on success-bg */
+  --success-bg: #e3f5ea;
+  --success-on-dark: #5fd08f;
+  /* WHO reference curves: recessive behind the child's data */
+  --who-curve: #7896ad;
+  --who-median: #46637a; /* accents on the dark notice */
+  --warning-on-dark: #ffd29a;
+
+  /* Elevation: floating elements only (dialogs, notices) */
+  --shadow-float: 0 0.75rem 2rem rgb(15 42 61 / 0.2);
+  --backdrop: rgb(15 42 61 / 0.45);
+
+  /* Motion (taste-design: 120–200 ms, standard curve) */
+  --duration: 160ms;
+  --easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Type */
+  --font-sans: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-code: 'Atkinson Hyperlegible Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --leading: 1.5;
+
+  /* Space and shape */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --target: 3rem; /* 48px touch targets (spec section 12) */
+  --target-min: 2.75rem; /* 44px: inline links in dense lists */
+  --nav-width: 16rem;
+  --content-max: 76rem;
+}

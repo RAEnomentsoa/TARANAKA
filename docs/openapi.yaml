@@ -1,0 +1,6777 @@
+openapi: 3.0.3
+info:
+  title: TARANAKA API
+  version: 1.0.0
+  description: API du serveur central TARANAKA.
+paths:
+  /api/appointments/:
+    get:
+      operationId: appointments_list
+      description: '/appointments/: follow-up visits; ?manque=true lists the missed
+        ones.'
+      parameters:
+      - in: query
+        name: csb
+        schema:
+          type: number
+      - in: query
+        name: date_max
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_min
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: manque
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: statut
+        schema:
+          type: string
+          enum:
+          - annule
+          - honore
+          - prevu
+        description: |-
+          * `prevu` - Prévu
+          * `honore` - Honoré
+          * `annule` - Annulé
+      - in: query
+        name: type_rendez_vous
+        schema:
+          type: string
+          enum:
+          - controle
+          - depistage
+        description: |-
+          * `controle` - Contrôle
+          * `depistage` - Dépistage
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRendezVousList'
+          description: ''
+    post:
+      operationId: appointments_create
+      description: '/appointments/: follow-up visits; ?manque=true lists the missed
+        ones.'
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RendezVousRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RendezVousRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RendezVousRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RendezVous'
+          description: ''
+  /api/appointments/{id}/:
+    get:
+      operationId: appointments_retrieve
+      description: '/appointments/: follow-up visits; ?manque=true lists the missed
+        ones.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Rendez-vous.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RendezVous'
+          description: ''
+    put:
+      operationId: appointments_update
+      description: '/appointments/: follow-up visits; ?manque=true lists the missed
+        ones.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Rendez-vous.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RendezVousRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RendezVousRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RendezVousRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RendezVous'
+          description: ''
+    patch:
+      operationId: appointments_partial_update
+      description: '/appointments/: follow-up visits; ?manque=true lists the missed
+        ones.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Rendez-vous.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRendezVousRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRendezVousRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRendezVousRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RendezVous'
+          description: ''
+    delete:
+      operationId: appointments_destroy
+      description: '/appointments/: follow-up visits; ?manque=true lists the missed
+        ones.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Rendez-vous.
+        required: true
+      tags:
+      - appointments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/audit/:
+    get:
+      operationId: audit_list
+      description: '/audit/: read-only audit log, for admins (spec §2: who, what,
+        when, device).'
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: depuis
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: jusqu_a
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: ligne_id
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: table
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedJournalAuditList'
+          description: ''
+  /api/audit/{id}/:
+    get:
+      operationId: audit_retrieve
+      description: '/audit/: read-only audit log, for admins (spec §2: who, what,
+        when, device).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Journal d'audit.
+        required: true
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalAudit'
+          description: ''
+  /api/auth/2fa/:
+    get:
+      operationId: auth_2fa_retrieve
+      description: '/auth/2fa/: state of two-factor login for the logged-in user.'
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpEtat'
+          description: ''
+  /api/auth/2fa/activate/:
+    post:
+      operationId: auth_2fa_activate_create
+      description: '/auth/2fa/activate/: check a first code. Returns new tokens.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TotpCodeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangerPinReponse'
+          description: ''
+  /api/auth/2fa/disable/:
+    post:
+      operationId: auth_2fa_disable_create
+      description: '/auth/2fa/disable/: PIN and current code. Refused when it is mandatory.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TotpDesactivationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TotpDesactivationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TotpDesactivationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/auth/2fa/setup/:
+    post:
+      operationId: auth_2fa_setup_create
+      description: '/auth/2fa/setup/: a new secret, to scan as a QR code (otpauth
+        URI).'
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TotpPreparation'
+          description: ''
+  /api/auth/changer-pin/:
+    post:
+      operationId: auth_changer_pin_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangerPinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangerPinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangerPinRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangerPinReponse'
+          description: ''
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginReponse'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: 'Only needs the refresh token: the access token may already have
+        expired.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Utilisateur'
+          description: ''
+  /api/auth/my-data/:
+    get:
+      operationId: auth_my_data_retrieve
+      description: '/auth/my-data/: loi 2014-038, right of access to one''s own data.'
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonneesPersonnelles'
+          description: ''
+  /api/auth/my-data/erase/:
+    post:
+      operationId: auth_my_data_erase_create
+      description: '/auth/my-data/erase/: loi 2014-038, right of erasure (beneficiaries).'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EffacementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EffacementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EffacementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffacementReponse'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/children/:
+    get:
+      operationId: children_list
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: query
+        name: asc
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: number
+      - in: query
+        name: search
+        schema:
+          type: string
+      - in: query
+        name: statut_prise_en_charge
+        schema:
+          type: string
+          enum:
+          - abandon
+          - aucun
+          - decede
+          - gueri
+          - non_repondant
+          - pris_en_charge
+          - refere
+          - suivi
+          - transfere
+        description: |-
+          * `aucun` - Aucun
+          * `suivi` - Suivi
+          * `refere` - Référé
+          * `pris_en_charge` - Pris en charge
+          * `gueri` - Guéri
+          * `abandon` - Abandon
+          * `transfere` - Transféré
+          * `non_repondant` - Non-répondant
+          * `decede` - Décédé
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - children
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnfantList'
+          description: ''
+    post:
+      operationId: children_create
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      tags:
+      - children
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnfantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnfantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnfantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enfant'
+          description: ''
+  /api/children/{enfant_pk}/measurements/:
+    get:
+      operationId: children_measurements_list
+      description: /children/{id}/measurements/. A child outside the user's scope
+        gives a 404.
+      parameters:
+      - in: query
+        name: alerte
+        schema:
+          type: string
+          enum:
+          - orange
+          - rouge
+          - vert
+        description: |-
+          * `vert` - Vert
+          * `orange` - Orange
+          * `rouge` - Rouge
+      - in: query
+        name: classification
+        schema:
+          type: string
+          enum:
+          - mam
+          - mas
+          - normal
+          - nourrisson_a_risque
+        description: |-
+          * `mas` - Malnutrition aiguë sévère
+          * `mam` - Malnutrition aiguë modérée
+          * `normal` - Normal
+          * `nourrisson_a_risque` - Nourrisson à risque
+      - in: query
+        name: date_max
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_min
+        schema:
+          type: string
+          format: date
+      - in: path
+        name: enfant_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - children
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMesureList'
+          description: ''
+    post:
+      operationId: children_measurements_create
+      description: /children/{id}/measurements/. A child outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: enfant_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - children
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+  /api/children/{enfant_pk}/measurements/{id}/:
+    get:
+      operationId: children_measurements_retrieve
+      description: /children/{id}/measurements/. A child outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: enfant_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - children
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+    put:
+      operationId: children_measurements_update
+      description: /children/{id}/measurements/. A child outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: enfant_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - children
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+    patch:
+      operationId: children_measurements_partial_update
+      description: /children/{id}/measurements/. A child outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: enfant_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - children
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMesureRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMesureRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMesureRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+    delete:
+      operationId: children_measurements_destroy
+      description: /children/{id}/measurements/. A child outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: enfant_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - children
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/children/{id}/:
+    get:
+      operationId: children_retrieve
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Enfant.
+        required: true
+      tags:
+      - children
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enfant'
+          description: ''
+    put:
+      operationId: children_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Enfant.
+        required: true
+      tags:
+      - children
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnfantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnfantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnfantRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enfant'
+          description: ''
+    patch:
+      operationId: children_partial_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Enfant.
+        required: true
+      tags:
+      - children
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEnfantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEnfantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEnfantRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enfant'
+          description: ''
+    delete:
+      operationId: children_destroy
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Enfant.
+        required: true
+      tags:
+      - children
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/clinical-config/:
+    get:
+      operationId: clinical_config_list
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      tags:
+      - clinical-config
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConfigResumeList'
+          description: ''
+    post:
+      operationId: clinical_config_create
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      tags:
+      - clinical-config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+  /api/clinical-config/{version}/:
+    get:
+      operationId: clinical_config_retrieve
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - clinical-config
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+    put:
+      operationId: clinical_config_update
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - clinical-config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConfigRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+    patch:
+      operationId: clinical_config_partial_update
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - clinical-config
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConfigRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConfigRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+  /api/clinical-config/{version}/publish/:
+    post:
+      operationId: clinical_config_publish_create
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - clinical-config
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+  /api/clinical-config/{version}/retire/:
+    post:
+      operationId: clinical_config_retire_create
+      description: |-
+        /clinical-config/: versioned clinical rules and content (spec §11).
+
+        Everyone reads the published versions. Only an admin creates a draft,
+        edits it and publishes it.
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - clinical-config
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+  /api/clinical-config/current/:
+    get:
+      operationId: clinical_config_current_retrieve
+      description: The version the apps must use. Send If-None-Match to get a 304.
+      tags:
+      - clinical-config
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
+  /api/conflicts/:
+    get:
+      operationId: conflicts_list
+      description: '/conflicts/: clinical conflicts waiting for a person (spec §9,
+        §10).'
+      parameters:
+      - in: query
+        name: ligne_id
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: statut
+        schema:
+          type: string
+          enum:
+          - a_verifier
+          - resolu
+        description: |-
+          * `a_verifier` - À vérifier
+          * `resolu` - Résolu
+      - in: query
+        name: table
+        schema:
+          type: string
+      tags:
+      - conflicts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConflitList'
+          description: ''
+  /api/conflicts/{id}/:
+    get:
+      operationId: conflicts_retrieve
+      description: '/conflicts/: clinical conflicts waiting for a person (spec §9,
+        §10).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Conflit de synchronisation.
+        required: true
+      tags:
+      - conflicts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflit'
+          description: ''
+  /api/conflicts/{id}/resolve/:
+    post:
+      operationId: conflicts_resolve_create
+      description: '/conflicts/: clinical conflicts waiting for a person (spec §9,
+        §10).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Conflit de synchronisation.
+        required: true
+      tags:
+      - conflicts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolutionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolutionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolutionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflit'
+          description: ''
+  /api/consultations/:
+    get:
+      operationId: consultations_list
+      description: '/consultations/: what the centre''s health worker records (spec
+        §10).'
+      parameters:
+      - in: query
+        name: decision
+        schema:
+          type: string
+          enum:
+          - conseil
+          - prise_en_charge
+          - reference
+        description: |-
+          * `conseil` - Conseil
+          * `reference` - Référence
+          * `prise_en_charge` - Prise en charge
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - consultations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsultationList'
+          description: ''
+    post:
+      operationId: consultations_create
+      description: '/consultations/: what the centre''s health worker records (spec
+        §10).'
+      tags:
+      - consultations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+          description: ''
+  /api/consultations/{id}/:
+    get:
+      operationId: consultations_retrieve
+      description: '/consultations/: what the centre''s health worker records (spec
+        §10).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Consultation nutritionnelle.
+        required: true
+      tags:
+      - consultations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+          description: ''
+    put:
+      operationId: consultations_update
+      description: '/consultations/: what the centre''s health worker records (spec
+        §10).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Consultation nutritionnelle.
+        required: true
+      tags:
+      - consultations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+          description: ''
+    patch:
+      operationId: consultations_partial_update
+      description: '/consultations/: what the centre''s health worker records (spec
+        §10).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Consultation nutritionnelle.
+        required: true
+      tags:
+      - consultations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsultationRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consultation'
+          description: ''
+    delete:
+      operationId: consultations_destroy
+      description: '/consultations/: what the centre''s health worker records (spec
+        §10).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Consultation nutritionnelle.
+        required: true
+      tags:
+      - consultations
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cycles/:
+    get:
+      operationId: cycles_list
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - cycles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCycleList'
+          description: ''
+    post:
+      operationId: cycles_create
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      tags:
+      - cycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CycleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CycleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CycleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cycle'
+          description: ''
+  /api/cycles/{id}/:
+    get:
+      operationId: cycles_retrieve
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Cycle.
+        required: true
+      tags:
+      - cycles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cycle'
+          description: ''
+    put:
+      operationId: cycles_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Cycle.
+        required: true
+      tags:
+      - cycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CycleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CycleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CycleRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cycle'
+          description: ''
+    patch:
+      operationId: cycles_partial_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Cycle.
+        required: true
+      tags:
+      - cycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCycleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCycleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCycleRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cycle'
+          description: ''
+    delete:
+      operationId: cycles_destroy
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Cycle.
+        required: true
+      tags:
+      - cycles
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/danger-types/:
+    get:
+      operationId: danger_types_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      tags:
+      - danger-types
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTypeDangerGrossesseList'
+          description: ''
+  /api/danger-types/{id}/:
+    get:
+      operationId: danger_types_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Type de danger
+          de grossesse.
+        required: true
+      tags:
+      - danger-types
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeDangerGrossesse'
+          description: ''
+  /api/facilities/:
+    get:
+      operationId: facilities_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: number
+      - in: query
+        name: type_centre
+        schema:
+          type: string
+          enum:
+          - crenam
+          - crenas
+          - creni
+          - csb
+        description: |-
+          * `csb` - CSB
+          * `crenam` - CRENAM
+          * `crenas` - CRENAS
+          * `creni` - CRENI
+      tags:
+      - facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCSBList'
+          description: ''
+  /api/facilities/{id}/:
+    get:
+      operationId: facilities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) CSB.
+        required: true
+      tags:
+      - facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CSB'
+          description: ''
+  /api/follow-ups/:
+    get:
+      operationId: follow_ups_retrieve
+      description: '/follow-ups/: referrals not arrived, missed visits, children to
+        see again.'
+      tags:
+      - follow-ups
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Relances'
+          description: ''
+  /api/food-logs/:
+    get:
+      operationId: food_logs_list
+      description: '/food-logs/: 8-group food diary of a child of 6 to 23 months (spec
+        §6).'
+      parameters:
+      - in: query
+        name: date_max
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_min
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - food-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedJournalAlimentaireList'
+          description: ''
+    post:
+      operationId: food_logs_create
+      description: '/food-logs/: 8-group food diary of a child of 6 to 23 months (spec
+        §6).'
+      tags:
+      - food-logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JournalAlimentaireRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JournalAlimentaireRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JournalAlimentaireRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalAlimentaire'
+          description: ''
+  /api/food-logs/{id}/:
+    get:
+      operationId: food_logs_retrieve
+      description: '/food-logs/: 8-group food diary of a child of 6 to 23 months (spec
+        §6).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Journal alimentaire.
+        required: true
+      tags:
+      - food-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalAlimentaire'
+          description: ''
+    put:
+      operationId: food_logs_update
+      description: '/food-logs/: 8-group food diary of a child of 6 to 23 months (spec
+        §6).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Journal alimentaire.
+        required: true
+      tags:
+      - food-logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JournalAlimentaireRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/JournalAlimentaireRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/JournalAlimentaireRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalAlimentaire'
+          description: ''
+    patch:
+      operationId: food_logs_partial_update
+      description: '/food-logs/: 8-group food diary of a child of 6 to 23 months (spec
+        §6).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Journal alimentaire.
+        required: true
+      tags:
+      - food-logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedJournalAlimentaireRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedJournalAlimentaireRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedJournalAlimentaireRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalAlimentaire'
+          description: ''
+    delete:
+      operationId: food_logs_destroy
+      description: '/food-logs/: 8-group food diary of a child of 6 to 23 months (spec
+        §6).'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Journal alimentaire.
+        required: true
+      tags:
+      - food-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/measurements/:
+    get:
+      operationId: measurements_list
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: query
+        name: alerte
+        schema:
+          type: string
+          enum:
+          - orange
+          - rouge
+          - vert
+        description: |-
+          * `vert` - Vert
+          * `orange` - Orange
+          * `rouge` - Rouge
+      - in: query
+        name: classification
+        schema:
+          type: string
+          enum:
+          - mam
+          - mas
+          - normal
+          - nourrisson_a_risque
+        description: |-
+          * `mas` - Malnutrition aiguë sévère
+          * `mam` - Malnutrition aiguë modérée
+          * `normal` - Normal
+          * `nourrisson_a_risque` - Nourrisson à risque
+      - in: query
+        name: date_max
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_min
+        schema:
+          type: string
+          format: date
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - measurements
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMesureList'
+          description: ''
+    post:
+      operationId: measurements_create
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      tags:
+      - measurements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+  /api/measurements/{id}/:
+    get:
+      operationId: measurements_retrieve
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - measurements
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+    put:
+      operationId: measurements_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - measurements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MesureRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+    patch:
+      operationId: measurements_partial_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - measurements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMesureRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMesureRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMesureRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesure'
+          description: ''
+    delete:
+      operationId: measurements_destroy
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mesure.
+        required: true
+      tags:
+      - measurements
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pregnancies/:
+    get:
+      operationId: pregnancies_list
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: query
+        name: danger_sans_referencement
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGrossesseList'
+          description: ''
+    post:
+      operationId: pregnancies_create
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      tags:
+      - pregnancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GrossesseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grossesse'
+          description: ''
+  /api/pregnancies/{grossesse_pk}/dangers/:
+    get:
+      operationId: pregnancies_dangers_list
+      description: /pregnancies/{id}/dangers/. A pregnancy outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: grossesse_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDangerGrossesseList'
+          description: ''
+    post:
+      operationId: pregnancies_dangers_create
+      description: /pregnancies/{id}/dangers/. A pregnancy outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: grossesse_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - pregnancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DangerCreeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DangerCreeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DangerCreeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerCree'
+          description: ''
+  /api/pregnancies/{grossesse_pk}/dangers/{id}/:
+    get:
+      operationId: pregnancies_dangers_retrieve
+      description: /pregnancies/{id}/dangers/. A pregnancy outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: grossesse_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Signe de danger de
+          grossesse.
+        required: true
+      tags:
+      - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerGrossesse'
+          description: ''
+    put:
+      operationId: pregnancies_dangers_update
+      description: /pregnancies/{id}/dangers/. A pregnancy outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: grossesse_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Signe de danger de
+          grossesse.
+        required: true
+      tags:
+      - pregnancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DangerGrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DangerGrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DangerGrossesseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerGrossesse'
+          description: ''
+    patch:
+      operationId: pregnancies_dangers_partial_update
+      description: /pregnancies/{id}/dangers/. A pregnancy outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: grossesse_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Signe de danger de
+          grossesse.
+        required: true
+      tags:
+      - pregnancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDangerGrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDangerGrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDangerGrossesseRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DangerGrossesse'
+          description: ''
+    delete:
+      operationId: pregnancies_dangers_destroy
+      description: /pregnancies/{id}/dangers/. A pregnancy outside the user's scope
+        gives a 404.
+      parameters:
+      - in: path
+        name: grossesse_pk
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Signe de danger de
+          grossesse.
+        required: true
+      tags:
+      - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pregnancies/{id}/:
+    get:
+      operationId: pregnancies_retrieve
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Grossesse.
+        required: true
+      tags:
+      - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grossesse'
+          description: ''
+    put:
+      operationId: pregnancies_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Grossesse.
+        required: true
+      tags:
+      - pregnancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GrossesseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grossesse'
+          description: ''
+    patch:
+      operationId: pregnancies_partial_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Grossesse.
+        required: true
+      tags:
+      - pregnancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGrossesseRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grossesse'
+          description: ''
+    delete:
+      operationId: pregnancies_destroy
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Grossesse.
+        required: true
+      tags:
+      - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/profile-types/:
+    get:
+      operationId: profile_types_list
+      description: '/profile-types/: the profile table.'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      tags:
+      - profile-types
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProfileList'
+          description: ''
+  /api/profile-types/{id}/:
+    get:
+      operationId: profile_types_retrieve
+      description: '/profile-types/: the profile table.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Profil.
+        required: true
+      tags:
+      - profile-types
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/profiles/:
+    get:
+      operationId: profiles_list
+      description: '/profiles/: the user accounts, which the specifications call profiles.'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCompteList'
+          description: ''
+    post:
+      operationId: profiles_create
+      description: '/profiles/: the user accounts, which the specifications call profiles.'
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compte'
+          description: ''
+  /api/profiles/{id}/:
+    get:
+      operationId: profiles_retrieve
+      description: '/profiles/: the user accounts, which the specifications call profiles.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compte'
+          description: ''
+    put:
+      operationId: profiles_update
+      description: '/profiles/: the user accounts, which the specifications call profiles.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CompteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CompteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compte'
+          description: ''
+    patch:
+      operationId: profiles_partial_update
+      description: '/profiles/: the user accounts, which the specifications call profiles.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCompteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCompteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCompteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Compte'
+          description: ''
+  /api/profiles/{id}/data/:
+    get:
+      operationId: profiles_data_retrieve
+      description: Loi 2014-038, right of access, for a request made to the admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DonneesPersonnelles'
+          description: ''
+  /api/profiles/{id}/erase/:
+    post:
+      operationId: profiles_erase_create
+      description: Loi 2014-038, right of erasure, for a request made to the admin.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EffacementAdminRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EffacementAdminRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EffacementAdminRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffacementReponse'
+          description: ''
+  /api/profiles/{id}/reset-2fa/:
+    post:
+      operationId: profiles_reset_2fa_create
+      description: 'Lost phone: an admin turns two-factor login off for this account.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/profiles/{id}/reset-pin/:
+    post:
+      operationId: profiles_reset_pin_create
+      description: 'PIN forgotten: a supervisor (their ASCs) or an admin sets a new
+        one.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      tags:
+      - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReinitialiserPinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReinitialiserPinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReinitialiserPinRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/provinces/:
+    get:
+      operationId: provinces_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      tags:
+      - provinces
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProvinceList'
+          description: ''
+  /api/provinces/{id}/:
+    get:
+      operationId: provinces_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Province.
+        required: true
+      tags:
+      - provinces
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Province'
+          description: ''
+  /api/referrals/:
+    get:
+      operationId: referrals_list
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+      - in: query
+        name: csb
+        schema:
+          type: number
+      - in: query
+        name: en_retard
+        schema:
+          type: boolean
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: origine
+        schema:
+          type: string
+          enum:
+          - enfant
+          - grossesse
+        description: |-
+          * `enfant` - Enfant
+          * `grossesse` - Grossesse
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: priorite
+        schema:
+          type: string
+          enum:
+          - haute
+          - normale
+          - urgente
+        description: |-
+          * `urgente` - Urgente
+          * `haute` - Haute
+          * `normale` - Normale
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - en_suivi
+          - envoye
+          - pris_en_charge
+          - recu
+          - sortie
+        description: |-
+          * `envoye` - Référé
+          * `recu` - Reçu
+          * `pris_en_charge` - Pris en charge
+          * `en_suivi` - En suivi
+          * `sortie` - Sortie
+      - in: query
+        name: type_centre
+        schema:
+          type: string
+          enum:
+          - crenam
+          - crenas
+          - creni
+          - csb
+        description: |-
+          * `csb` - CSB
+          * `crenam` - CRENAM
+          * `crenas` - CRENAS
+          * `creni` - CRENI
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - referrals
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReferencementList'
+          description: ''
+    post:
+      operationId: referrals_create
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      tags:
+      - referrals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferencementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReferencementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReferencementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referencement'
+          description: ''
+  /api/referrals/{id}/:
+    get:
+      operationId: referrals_retrieve
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Référencement.
+        required: true
+      tags:
+      - referrals
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referencement'
+          description: ''
+    put:
+      operationId: referrals_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Référencement.
+        required: true
+      tags:
+      - referrals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferencementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReferencementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReferencementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referencement'
+          description: ''
+    patch:
+      operationId: referrals_partial_update
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Référencement.
+        required: true
+      tags:
+      - referrals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReferencementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReferencementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReferencementRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referencement'
+          description: ''
+    delete:
+      operationId: referrals_destroy
+      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Référencement.
+        required: true
+      tags:
+      - referrals
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/referrals/{id}/status/:
+    post:
+      operationId: referrals_status_create
+      description: Patient arrivé (recu), prise en charge, suivi, sortie (spec §7,
+        §10).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Référencement.
+        required: true
+      tags:
+      - referrals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referencement'
+          description: ''
+  /api/referrals/incoming/:
+    get:
+      operationId: referrals_incoming_list
+      description: 'Queue of the centre: not yet taken in charge, red first, then
+        oldest.'
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+      - in: query
+        name: csb
+        schema:
+          type: number
+      - in: query
+        name: en_retard
+        schema:
+          type: boolean
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: origine
+        schema:
+          type: string
+          enum:
+          - enfant
+          - grossesse
+        description: |-
+          * `enfant` - Enfant
+          * `grossesse` - Grossesse
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: priorite
+        schema:
+          type: string
+          enum:
+          - haute
+          - normale
+          - urgente
+        description: |-
+          * `urgente` - Urgente
+          * `haute` - Haute
+          * `normale` - Normale
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - en_suivi
+          - envoye
+          - pris_en_charge
+          - recu
+          - sortie
+        description: |-
+          * `envoye` - Référé
+          * `recu` - Reçu
+          * `pris_en_charge` - Pris en charge
+          * `en_suivi` - En suivi
+          * `sortie` - Sortie
+      - in: query
+        name: type_centre
+        schema:
+          type: string
+          enum:
+          - crenam
+          - crenas
+          - creni
+          - csb
+        description: |-
+          * `csb` - CSB
+          * `crenam` - CRENAM
+          * `crenas` - CRENAS
+          * `creni` - CRENI
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - referrals
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReferencementList'
+          description: ''
+  /api/regions/:
+    get:
+      operationId: regions_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      tags:
+      - regions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRegionList'
+          description: ''
+  /api/regions/{id}/:
+    get:
+      operationId: regions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Région.
+        required: true
+      tags:
+      - regions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          description: ''
+  /api/stats/:
+    get:
+      operationId: stats_retrieve
+      description: '/stats/: aggregated and anonymous indicators (spec §10).'
+      parameters:
+      - in: query
+        name: date_debut
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_fin
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: grouper_par
+        schema:
+          enum:
+          - region
+          - mois
+          type: string
+          minLength: 1
+        description: |-
+          * `region` - region
+          * `mois` - mois
+      - in: query
+        name: province
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: integer
+      tags:
+      - stats
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistiques'
+          description: ''
+  /api/stats/export/:
+    get:
+      operationId: stats_export_retrieve
+      description: '/stats/export/: the same indicators as CSV. Each export is audited.'
+      parameters:
+      - in: query
+        name: date_debut
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_fin
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: grouper_par
+        schema:
+          enum:
+          - region
+          - mois
+          type: string
+          minLength: 1
+        description: |-
+          * `region` - region
+          * `mois` - mois
+      - in: query
+        name: province
+        schema:
+          type: integer
+      - in: query
+        name: region
+        schema:
+          type: integer
+      tags:
+      - stats
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: 'Fichier CSV : groupe,indicateur,valeur'
+  /api/sync/pull/:
+    get:
+      operationId: sync_pull_retrieve
+      description: 'GET /sync/pull/: rows changed since `depuis`, deletions included.'
+      parameters:
+      - in: query
+        name: apres_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: config_version
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: depuis
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: limite
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 500
+      - in: query
+        name: tables
+        schema:
+          type: string
+          minLength: 1
+      tags:
+      - sync
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullReponse'
+          description: ''
+  /api/sync/push/:
+    post:
+      operationId: sync_push_create
+      description: 'POST /sync/push/: apply the phone''s outbox (spec §9).'
+      tags:
+      - sync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PushRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PushRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushReponse'
+          description: ''
+  /api/who-reference/:
+    get:
+      operationId: who_reference_retrieve
+      description: |-
+        /who-reference/: WHO 2006 growth standards, from the loaded tables only.
+
+        Each point gives the official LMS values and the -3, -2, 0, +2, +3 SD
+        curves computed from them (WHO formula). Nothing is served for a table
+        that was not imported with `importer_tables_oms`.
+      parameters:
+      - in: query
+        name: cle_max
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+      - in: query
+        name: cle_min
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+      - in: query
+        name: indicateur
+        schema:
+          enum:
+          - wfa
+          - lhfa
+          - wfl
+          - wfh
+          type: string
+          minLength: 1
+        description: |-
+          * `wfa` - Poids pour âge
+          * `lhfa` - Taille pour âge
+          * `wfl` - Poids pour longueur
+          * `wfh` - Poids pour hauteur
+        required: true
+      - in: query
+        name: pas
+        schema:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+        description: Garder une clé sur `pas` (par exemple 30 jours, ou 1 cm).
+      - in: query
+        name: sexe
+        schema:
+          enum:
+          - M
+          - F
+          type: string
+          minLength: 1
+        description: |-
+          * `M` - Masculin
+          * `F` - Féminin
+        required: true
+      tags:
+      - who-reference
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceOms'
+          description: ''
+components:
+  schemas:
+    AlerteEnum:
+      enum:
+      - vert
+      - orange
+      - rouge
+      type: string
+      description: |-
+        * `vert` - Vert
+        * `orange` - Orange
+        * `rouge` - Rouge
+    AppetitEnum:
+      enum:
+      - non_teste
+      - bon
+      - mauvais
+      type: string
+      description: |-
+        * `non_teste` - Non testé
+        * `bon` - Bon
+        * `mauvais` - Mauvais
+    BlankEnum:
+      enum:
+      - ''
+    Bloc:
+      type: object
+      properties:
+        indicateurs:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+            nullable: true
+        masques:
+          type: array
+          items:
+            type: string
+      required:
+      - indicateurs
+      - masques
+    CSB:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        type_centre:
+          $ref: '#/components/schemas/TypeCentreEnum'
+        region_id:
+          type: integer
+          readOnly: true
+        tel:
+          type: string
+          maxLength: 20
+      required:
+      - id
+      - name
+      - region_id
+      - tel
+    ChangerPinReponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - detail
+      - refresh
+    ChangerPinRequest:
+      type: object
+      properties:
+        ancien_pin:
+          type: string
+          minLength: 1
+          maxLength: 128
+        nouveau_pin:
+          type: string
+          minLength: 1
+      required:
+      - ancien_pin
+      - nouveau_pin
+    ClassificationEnum:
+      enum:
+      - mas
+      - mam
+      - normal
+      - nourrisson_a_risque
+      type: string
+      description: |-
+        * `mas` - Malnutrition aiguë sévère
+        * `mam` - Malnutrition aiguë modérée
+        * `normal` - Normal
+        * `nourrisson_a_risque` - Nourrisson à risque
+    Compte:
+      type: object
+      description: A user account. The PIN can be sent on create and is never returned.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        identifiant:
+          type: string
+          maxLength: 50
+        nom:
+          type: string
+          maxLength: 100
+        prenom:
+          type: string
+          maxLength: 100
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 20
+        consentement:
+          type: boolean
+        profile:
+          allOf:
+          - $ref: '#/components/schemas/Profile'
+          readOnly: true
+        region_id:
+          type: integer
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+        date_creation:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_creation
+      - id
+      - identifiant
+      - nom
+      - prenom
+      - profile
+      - updated_at
+    CompteRequest:
+      type: object
+      description: A user account. The PIN can be sent on create and is never returned.
+      properties:
+        identifiant:
+          type: string
+          minLength: 1
+          maxLength: 50
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        prenom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 20
+        consentement:
+          type: boolean
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 1
+        profile_code:
+          type: string
+          minLength: 1
+          writeOnly: true
+        region_id:
+          type: integer
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - identifiant
+      - nom
+      - prenom
+    Config:
+      type: object
+      description: Create and edit a draft; publication goes through /publish/.
+      properties:
+        version:
+          type: integer
+          readOnly: true
+        libelle:
+          type: string
+          maxLength: 200
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/StatutPublicationEnum'
+          readOnly: true
+        statut_validation:
+          $ref: '#/components/schemas/StatutValidationEnum'
+        valide_par:
+          type: string
+          title: Validé par (autorité et signataire)
+          maxLength: 200
+        reference_validation:
+          type: string
+          title: Référence du document de validation
+          maxLength: 200
+        date_validation:
+          type: string
+          format: date
+          nullable: true
+        publiee_le:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        notes:
+          type: string
+        contenu: {}
+      required:
+      - contenu
+      - created_at
+      - libelle
+      - publiee_le
+      - statut
+      - updated_at
+      - version
+    ConfigRequest:
+      type: object
+      description: Create and edit a draft; publication goes through /publish/.
+      properties:
+        libelle:
+          type: string
+          minLength: 1
+          maxLength: 200
+        statut_validation:
+          $ref: '#/components/schemas/StatutValidationEnum'
+        valide_par:
+          type: string
+          title: Validé par (autorité et signataire)
+          maxLength: 200
+        reference_validation:
+          type: string
+          title: Référence du document de validation
+          maxLength: 200
+        date_validation:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+        contenu: {}
+      required:
+      - contenu
+      - libelle
+    ConfigResume:
+      type: object
+      properties:
+        version:
+          type: integer
+          readOnly: true
+        libelle:
+          type: string
+          readOnly: true
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/StatutPublicationEnum'
+          readOnly: true
+        statut_validation:
+          allOf:
+          - $ref: '#/components/schemas/StatutValidationEnum'
+          readOnly: true
+        valide_par:
+          type: string
+          readOnly: true
+          title: Validé par (autorité et signataire)
+        reference_validation:
+          type: string
+          readOnly: true
+          title: Référence du document de validation
+        date_validation:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        publiee_le:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - date_validation
+      - libelle
+      - publiee_le
+      - reference_validation
+      - statut
+      - statut_validation
+      - updated_at
+      - valide_par
+      - version
+    Conflit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        table_nom:
+          type: string
+          readOnly: true
+        ligne_id:
+          type: string
+          format: uuid
+          readOnly: true
+        operation:
+          allOf:
+          - $ref: '#/components/schemas/OperationEnum'
+          readOnly: true
+        version_base:
+          type: integer
+          readOnly: true
+          nullable: true
+        version_serveur:
+          type: integer
+          readOnly: true
+        donnees_telephone:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        donnees_serveur:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        expediteur:
+          allOf:
+          - $ref: '#/components/schemas/ContactAgent'
+          nullable: true
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/StatutConflitEnum'
+          readOnly: true
+        resolution:
+          allOf:
+          - $ref: '#/components/schemas/ResolutionEnum'
+          readOnly: true
+        resolu_par_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        resolu_le:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        version_finale:
+          type: integer
+          readOnly: true
+          nullable: true
+        commentaire:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - commentaire
+      - created_at
+      - device_id
+      - donnees_serveur
+      - donnees_telephone
+      - expediteur
+      - id
+      - ligne_id
+      - operation
+      - resolu_le
+      - resolu_par_id
+      - resolution
+      - statut
+      - table_nom
+      - updated_at
+      - user_id
+      - version_base
+      - version_finale
+      - version_serveur
+    ConflitResume:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        table_nom:
+          type: string
+        ligne_id:
+          type: string
+          format: uuid
+        statut:
+          type: string
+        resolution:
+          type: string
+        version_finale:
+          type: integer
+          nullable: true
+        resolu_le:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - ligne_id
+      - resolu_le
+      - resolution
+      - statut
+      - table_nom
+      - version_finale
+    Consultation:
+      type: object
+      description: A visit at the centre, written by its health worker (spec §10).
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        mesure_id:
+          type: string
+          format: uuid
+          nullable: true
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+        csb_id:
+          type: integer
+        agent_medical_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        diagnostic:
+          type: string
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        observations:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date
+      - decision
+      - deleted_at
+      - device_id
+      - diagnostic
+      - enfant_id
+      - updated_at
+    ConsultationRequest:
+      type: object
+      description: A visit at the centre, written by its health worker (spec §10).
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        mesure_id:
+          type: string
+          format: uuid
+          nullable: true
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+        csb_id:
+          type: integer
+        agent_medical_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        diagnostic:
+          type: string
+          minLength: 1
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        observations:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date
+      - decision
+      - diagnostic
+      - enfant_id
+    ContactAgent:
+      type: object
+      description: Name and phone of a health worker, for authorised staff only.
+      properties:
+        nom:
+          type: string
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+      required:
+      - nom
+      - phone
+      - prenom
+    Cycle:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_debut:
+          type: string
+          format: date
+        date_fin:
+          type: string
+          format: date
+          nullable: true
+        intensite:
+          $ref: '#/components/schemas/IntensiteEnum'
+        symptome:
+          type: string
+        duree_cycle:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        duree_regle:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        estimation_prochain:
+          type: string
+          format: date
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_debut
+      - deleted_at
+      - device_id
+      - intensite
+      - updated_at
+    CycleRequest:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_debut:
+          type: string
+          format: date
+        date_fin:
+          type: string
+          format: date
+          nullable: true
+        intensite:
+          $ref: '#/components/schemas/IntensiteEnum'
+        symptome:
+          type: string
+        duree_cycle:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        duree_regle:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        estimation_prochain:
+          type: string
+          format: date
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_debut
+      - intensite
+    DangerCree:
+      type: object
+      description: Answer to a new danger sign, with what happened to its referral.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+          readOnly: true
+        type_danger_grossesse_id:
+          type: integer
+        date_signalement:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        code_unique:
+          type: string
+          nullable: true
+          readOnly: true
+        avertissement:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - avertissement
+      - code_unique
+      - created_at
+      - deleted_at
+      - device_id
+      - grossesse_id
+      - referencement_id
+      - type_danger_grossesse_id
+      - updated_at
+    DangerCreeRequest:
+      type: object
+      description: Answer to a new danger sign, with what happened to its referral.
+      properties:
+        id:
+          type: string
+          format: uuid
+        type_danger_grossesse_id:
+          type: integer
+        date_signalement:
+          type: string
+          format: date-time
+        csb_id:
+          type: integer
+          nullable: true
+          writeOnly: true
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - type_danger_grossesse_id
+    DangerGrossesse:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+          readOnly: true
+        type_danger_grossesse_id:
+          type: integer
+        date_signalement:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - deleted_at
+      - device_id
+      - grossesse_id
+      - type_danger_grossesse_id
+      - updated_at
+    DangerGrossesseRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        type_danger_grossesse_id:
+          type: integer
+        date_signalement:
+          type: string
+          format: date-time
+        csb_id:
+          type: integer
+          nullable: true
+          writeOnly: true
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - type_danger_grossesse_id
+    DecisionEnum:
+      enum:
+      - conseil
+      - reference
+      - prise_en_charge
+      type: string
+      description: |-
+        * `conseil` - Conseil
+        * `reference` - Référence
+        * `prise_en_charge` - Prise en charge
+    DonneesPersonnelles:
+      type: object
+      properties:
+        genere_le:
+          type: string
+          format: date-time
+        compte:
+          type: object
+          additionalProperties: {}
+        cycles:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        grossesses:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        signes_danger:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        enfants:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mesures:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        journaux_alimentaires:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        referencements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        rendez_vous:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        consultations:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        journal:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - compte
+      - genere_le
+      - journal
+    EffacementAdminRequest:
+      type: object
+      properties:
+        inclure_enfants:
+          type: boolean
+          default: false
+    EffacementReponse:
+      type: object
+      properties:
+        detail:
+          type: string
+        resume:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - detail
+      - resume
+    EffacementRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+          minLength: 1
+          maxLength: 128
+        inclure_enfants:
+          type: boolean
+          default: false
+      required:
+      - pin
+    Enfant:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        nom:
+          type: string
+          maxLength: 150
+        mere_id:
+          type: string
+          format: uuid
+          nullable: true
+        asc_id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+          nullable: true
+        region_id:
+          type: integer
+        date_naissance:
+          type: string
+          format: date
+        sexe:
+          $ref: '#/components/schemas/SexeEnum'
+        statut_prise_en_charge:
+          $ref: '#/components/schemas/StatutPriseEnChargeEnum'
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_naissance
+      - deleted_at
+      - device_id
+      - nom
+      - region_id
+      - sexe
+      - updated_at
+    EnfantARevoir:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nom:
+          type: string
+        date_naissance:
+          type: string
+          format: date
+        sexe:
+          type: string
+        statut_prise_en_charge:
+          type: string
+        prochain_controle:
+          type: string
+          format: date
+        derniere_classification:
+          type: string
+      required:
+      - date_naissance
+      - derniere_classification
+      - id
+      - nom
+      - prochain_controle
+      - sexe
+      - statut_prise_en_charge
+    EnfantRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 150
+        mere_id:
+          type: string
+          format: uuid
+          nullable: true
+        asc_id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+          nullable: true
+        region_id:
+          type: integer
+        date_naissance:
+          type: string
+          format: date
+        sexe:
+          $ref: '#/components/schemas/SexeEnum'
+        statut_prise_en_charge:
+          $ref: '#/components/schemas/StatutPriseEnChargeEnum'
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_naissance
+      - nom
+      - region_id
+      - sexe
+    Femme:
+      type: object
+      description: 'Only the name: this is what an agent of CSB may see of the woman.'
+      properties:
+        nom:
+          type: string
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+      required:
+      - nom
+      - prenom
+    Grossesse:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        femme:
+          allOf:
+          - $ref: '#/components/schemas/Femme'
+          readOnly: true
+        ddr:
+          type: string
+          format: date
+        dpa:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - ddr
+      - deleted_at
+      - device_id
+      - dpa
+      - femme
+      - updated_at
+    GrossesseRequest:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        ddr:
+          type: string
+          format: date
+        dpa:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - ddr
+      - dpa
+    Groupe:
+      type: object
+      properties:
+        indicateurs:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+            nullable: true
+        masques:
+          type: array
+          items:
+            type: string
+        cle:
+          type: string
+        libelle:
+          type: string
+      required:
+      - cle
+      - indicateurs
+      - libelle
+      - masques
+    IntensiteEnum:
+      enum:
+      - faible
+      - moyenne
+      - forte
+      type: string
+      description: |-
+        * `faible` - Faible
+        * `moyenne` - Moyenne
+        * `forte` - Forte
+    IssueSortieEnum:
+      enum:
+      - gueri
+      - transfere
+      - non_repondant
+      - abandon
+      - decede
+      type: string
+      description: |-
+        * `gueri` - Guéri
+        * `transfere` - Transféré
+        * `non_repondant` - Non-répondant
+        * `abandon` - Abandon / perdu de vue
+        * `decede` - Décédé
+    JournalAlimentaire:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        type_allaitement:
+          $ref: '#/components/schemas/TypeAllaitementEnum'
+        g1_lait_maternel:
+          type: boolean
+        g2_cereales_tubercules:
+          type: boolean
+        g3_legumineuses_noix:
+          type: boolean
+        g4_produits_laitiers:
+          type: boolean
+        g5_viande_poisson:
+          type: boolean
+        g6_oeufs:
+          type: boolean
+        g7_fruits_legumes_vit_a:
+          type: boolean
+        g8_autres_fruits_legumes:
+          type: boolean
+        score_diversite:
+          type: integer
+          readOnly: true
+        diversite_minimale_atteinte:
+          type: boolean
+          nullable: true
+          readOnly: true
+        notes:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_jour
+      - deleted_at
+      - device_id
+      - diversite_minimale_atteinte
+      - enfant_id
+      - score_diversite
+      - type_allaitement
+      - updated_at
+    JournalAlimentaireRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        type_allaitement:
+          $ref: '#/components/schemas/TypeAllaitementEnum'
+        g1_lait_maternel:
+          type: boolean
+        g2_cereales_tubercules:
+          type: boolean
+        g3_legumineuses_noix:
+          type: boolean
+        g4_produits_laitiers:
+          type: boolean
+        g5_viande_poisson:
+          type: boolean
+        g6_oeufs:
+          type: boolean
+        g7_fruits_legumes_vit_a:
+          type: boolean
+        g8_autres_fruits_legumes:
+          type: boolean
+        notes:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_jour
+      - enfant_id
+      - type_allaitement
+    JournalAudit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        action:
+          type: string
+          readOnly: true
+        table_nom:
+          type: string
+          readOnly: true
+        ligne_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        details:
+          readOnly: true
+        date_creation:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - date_creation
+      - details
+      - id
+      - ligne_id
+      - table_nom
+      - user_id
+    LoginReponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        utilisateur:
+          $ref: '#/components/schemas/Utilisateur'
+        totp_a_configurer:
+          type: boolean
+      required:
+      - access
+      - refresh
+      - totp_a_configurer
+      - utilisateur
+    LoginRequest:
+      type: object
+      properties:
+        identifiant:
+          type: string
+          minLength: 1
+          maxLength: 50
+        pin:
+          type: string
+          minLength: 1
+          maxLength: 128
+        code_totp:
+          type: string
+          maxLength: 10
+      required:
+      - identifiant
+      - pin
+    LogoutRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    Message:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    Mesure:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        asc_id:
+          type: string
+          format: uuid
+        date_mesure:
+          type: string
+          format: date
+        poids_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        taille_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+        position:
+          $ref: '#/components/schemas/PositionEnum'
+        pb_mm:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        oedemes_bilateraux:
+          $ref: '#/components/schemas/OedemesBilaterauxEnum'
+        age_jour:
+          type: integer
+          readOnly: true
+        age_mois:
+          type: integer
+          readOnly: true
+        taille_corrigee_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+          readOnly: true
+        waz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        haz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        whz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        flag_aberrant:
+          type: boolean
+        alerte:
+          $ref: '#/components/schemas/AlerteEnum'
+        motif_alerte:
+          type: string
+        ref_oms:
+          type: string
+          maxLength: 20
+        signes_danger:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
+        complications_medicales:
+          type: boolean
+        appetit:
+          $ref: '#/components/schemas/AppetitEnum'
+        difficultes_allaitement:
+          type: boolean
+        classification:
+          allOf:
+          - $ref: '#/components/schemas/ClassificationEnum'
+          readOnly: true
+        orientation_centre:
+          allOf:
+          - $ref: '#/components/schemas/TypeCentreEnum'
+          readOnly: true
+        urgence:
+          allOf:
+          - $ref: '#/components/schemas/MesureUrgenceEnum'
+          readOnly: true
+        date_prochain_controle:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        config_version:
+          type: integer
+          readOnly: true
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - age_jour
+      - age_mois
+      - alerte
+      - classification
+      - config_version
+      - created_at
+      - date_mesure
+      - date_prochain_controle
+      - deleted_at
+      - device_id
+      - enfant_id
+      - orientation_centre
+      - poids_kg
+      - position
+      - taille_cm
+      - taille_corrigee_cm
+      - updated_at
+      - urgence
+    MesureRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        asc_id:
+          type: string
+          format: uuid
+        date_mesure:
+          type: string
+          format: date
+        poids_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        taille_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+        position:
+          $ref: '#/components/schemas/PositionEnum'
+        pb_mm:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        oedemes_bilateraux:
+          $ref: '#/components/schemas/OedemesBilaterauxEnum'
+        waz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        haz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        whz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        flag_aberrant:
+          type: boolean
+        alerte:
+          $ref: '#/components/schemas/AlerteEnum'
+        motif_alerte:
+          type: string
+        ref_oms:
+          type: string
+          minLength: 1
+          maxLength: 20
+        signes_danger:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
+        complications_medicales:
+          type: boolean
+        appetit:
+          $ref: '#/components/schemas/AppetitEnum'
+        difficultes_allaitement:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - alerte
+      - date_mesure
+      - enfant_id
+      - poids_kg
+      - position
+      - taille_cm
+    MesureUrgenceEnum:
+      enum:
+      - rouge
+      - orange
+      - jaune
+      type: string
+      description: |-
+        * `rouge` - Rouge
+        * `orange` - Orange
+        * `jaune` - Jaune
+    OedemesBilaterauxEnum:
+      enum:
+      - aucun
+      - +
+      - ++
+      - +++
+      type: string
+      description: |-
+        * `aucun` - Aucun
+        * `+` - +
+        * `++` - ++
+        * `+++` - +++
+    OperationEnum:
+      enum:
+      - create
+      - update
+      - delete
+      type: string
+      description: |-
+        * `create` - Création
+        * `update` - Modification
+        * `delete` - Suppression
+    OrigineEnum:
+      enum:
+      - enfant
+      - grossesse
+      type: string
+      description: |-
+        * `enfant` - Enfant
+        * `grossesse` - Grossesse
+    PaginatedCSBList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CSB'
+    PaginatedCompteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Compte'
+    PaginatedConfigResumeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConfigResume'
+    PaginatedConflitList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conflit'
+    PaginatedConsultationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Consultation'
+    PaginatedCycleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cycle'
+    PaginatedDangerGrossesseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DangerGrossesse'
+    PaginatedEnfantList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Enfant'
+    PaginatedGrossesseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Grossesse'
+    PaginatedJournalAlimentaireList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalAlimentaire'
+    PaginatedJournalAuditList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalAudit'
+    PaginatedMesureList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mesure'
+    PaginatedProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+    PaginatedProvinceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Province'
+    PaginatedReferencementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Referencement'
+    PaginatedRegionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Region'
+    PaginatedRendezVousList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RendezVous'
+    PaginatedTypeDangerGrossesseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeDangerGrossesse'
+    PatchedCompteRequest:
+      type: object
+      description: A user account. The PIN can be sent on create and is never returned.
+      properties:
+        identifiant:
+          type: string
+          minLength: 1
+          maxLength: 50
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        prenom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 20
+        consentement:
+          type: boolean
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 1
+        profile_code:
+          type: string
+          minLength: 1
+          writeOnly: true
+        region_id:
+          type: integer
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+    PatchedConfigRequest:
+      type: object
+      description: Create and edit a draft; publication goes through /publish/.
+      properties:
+        libelle:
+          type: string
+          minLength: 1
+          maxLength: 200
+        statut_validation:
+          $ref: '#/components/schemas/StatutValidationEnum'
+        valide_par:
+          type: string
+          title: Validé par (autorité et signataire)
+          maxLength: 200
+        reference_validation:
+          type: string
+          title: Référence du document de validation
+          maxLength: 200
+        date_validation:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+        contenu: {}
+    PatchedConsultationRequest:
+      type: object
+      description: A visit at the centre, written by its health worker (spec §10).
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        mesure_id:
+          type: string
+          format: uuid
+          nullable: true
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+        csb_id:
+          type: integer
+        agent_medical_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        diagnostic:
+          type: string
+          minLength: 1
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        observations:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+    PatchedCycleRequest:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_debut:
+          type: string
+          format: date
+        date_fin:
+          type: string
+          format: date
+          nullable: true
+        intensite:
+          $ref: '#/components/schemas/IntensiteEnum'
+        symptome:
+          type: string
+        duree_cycle:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        duree_regle:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        estimation_prochain:
+          type: string
+          format: date
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+    PatchedDangerGrossesseRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        type_danger_grossesse_id:
+          type: integer
+        date_signalement:
+          type: string
+          format: date-time
+        csb_id:
+          type: integer
+          nullable: true
+          writeOnly: true
+        version:
+          type: integer
+          minimum: 1
+    PatchedEnfantRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 150
+        mere_id:
+          type: string
+          format: uuid
+          nullable: true
+        asc_id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+          nullable: true
+        region_id:
+          type: integer
+        date_naissance:
+          type: string
+          format: date
+        sexe:
+          $ref: '#/components/schemas/SexeEnum'
+        statut_prise_en_charge:
+          $ref: '#/components/schemas/StatutPriseEnChargeEnum'
+        version:
+          type: integer
+          minimum: 1
+    PatchedGrossesseRequest:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        ddr:
+          type: string
+          format: date
+        dpa:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+    PatchedJournalAlimentaireRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        type_allaitement:
+          $ref: '#/components/schemas/TypeAllaitementEnum'
+        g1_lait_maternel:
+          type: boolean
+        g2_cereales_tubercules:
+          type: boolean
+        g3_legumineuses_noix:
+          type: boolean
+        g4_produits_laitiers:
+          type: boolean
+        g5_viande_poisson:
+          type: boolean
+        g6_oeufs:
+          type: boolean
+        g7_fruits_legumes_vit_a:
+          type: boolean
+        g8_autres_fruits_legumes:
+          type: boolean
+        notes:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+    PatchedMesureRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        asc_id:
+          type: string
+          format: uuid
+        date_mesure:
+          type: string
+          format: date
+        poids_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        taille_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,1})?$
+        position:
+          $ref: '#/components/schemas/PositionEnum'
+        pb_mm:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        oedemes_bilateraux:
+          $ref: '#/components/schemas/OedemesBilaterauxEnum'
+        waz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        haz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        whz:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        flag_aberrant:
+          type: boolean
+        alerte:
+          $ref: '#/components/schemas/AlerteEnum'
+        motif_alerte:
+          type: string
+        ref_oms:
+          type: string
+          minLength: 1
+          maxLength: 20
+        signes_danger:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
+        complications_medicales:
+          type: boolean
+        appetit:
+          $ref: '#/components/schemas/AppetitEnum'
+        difficultes_allaitement:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+    PatchedReferencementRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        code_unique:
+          type: string
+          maxLength: 30
+        origine:
+          $ref: '#/components/schemas/OrigineEnum'
+        enfant_id:
+          type: string
+          format: uuid
+          nullable: true
+        grossesse_id:
+          type: string
+          format: uuid
+          nullable: true
+        mesure_id:
+          type: string
+          format: uuid
+          nullable: true
+        asc_id:
+          type: string
+          format: uuid
+        csb_id:
+          type: integer
+        priorite:
+          $ref: '#/components/schemas/PrioriteEnum'
+        motif:
+          type: string
+          minLength: 1
+        date_referencement:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+    PatchedRendezVousRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        date_prevue:
+          type: string
+          format: date
+        type_rendez_vous:
+          $ref: '#/components/schemas/TypeRendezVousEnum'
+        statut:
+          $ref: '#/components/schemas/StatutRendezVousEnum'
+        motif:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+    PointOms:
+      type: object
+      properties:
+        cle:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,1})?$
+        l:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,4})?$
+        m:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,4})?$
+        s:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,5})?$
+        mesure_type:
+          type: string
+        courbes:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+      required:
+      - cle
+      - courbes
+      - l
+      - m
+      - mesure_type
+      - s
+    PositionEnum:
+      enum:
+      - couche
+      - debout
+      type: string
+      description: |-
+        * `couche` - Couché
+        * `debout` - Debout
+    PrioriteEnum:
+      enum:
+      - urgente
+      - haute
+      - normale
+      type: string
+      description: |-
+        * `urgente` - Urgente
+        * `haute` - Haute
+        * `normale` - Normale
+    Profile:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 30
+        libelle:
+          type: string
+          maxLength: 100
+      required:
+      - code
+      - libelle
+    ProfileRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 30
+        libelle:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - code
+      - libelle
+    Province:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nom:
+          type: string
+          maxLength: 100
+      required:
+      - id
+      - nom
+    PullReponse:
+      type: object
+      properties:
+        horodatage_serveur:
+          type: string
+          format: date-time
+        tables:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TablePull'
+        conflits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflitResume'
+        config_clinique:
+          type: object
+          additionalProperties: {}
+      required:
+      - config_clinique
+      - conflits
+      - horodatage_serveur
+      - tables
+    PushReponse:
+      type: object
+      properties:
+        horodatage_serveur:
+          type: string
+          format: date-time
+        resultats:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultatOperation'
+      required:
+      - horodatage_serveur
+      - resultats
+    PushRequest:
+      type: object
+      properties:
+        operations:
+          type: array
+          items: {}
+          maxItems: 100
+          minItems: 1
+      required:
+      - operations
+    ReferenceOms:
+      type: object
+      properties:
+        source:
+          type: string
+        indicateur:
+          type: string
+        sexe:
+          type: string
+        unite_cle:
+          type: string
+        unite_valeur:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointOms'
+      required:
+      - indicateur
+      - points
+      - sexe
+      - source
+      - unite_cle
+      - unite_valeur
+    Referencement:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        code_unique:
+          type: string
+          maxLength: 30
+        origine:
+          $ref: '#/components/schemas/OrigineEnum'
+        enfant_id:
+          type: string
+          format: uuid
+          nullable: true
+        grossesse_id:
+          type: string
+          format: uuid
+          nullable: true
+        mesure_id:
+          type: string
+          format: uuid
+          nullable: true
+        asc_id:
+          type: string
+          format: uuid
+        asc:
+          allOf:
+          - $ref: '#/components/schemas/ContactAgent'
+          nullable: true
+          readOnly: true
+        csb_id:
+          type: integer
+        priorite:
+          $ref: '#/components/schemas/PrioriteEnum'
+        motif:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        urgence:
+          allOf:
+          - $ref: '#/components/schemas/ReferencementUrgenceEnum'
+          readOnly: true
+        date_referencement:
+          type: string
+          format: date-time
+        date_reception:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        date_prise_en_charge:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        date_suivi:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        date_sortie:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        issue_sortie:
+          allOf:
+          - $ref: '#/components/schemas/IssueSortieEnum'
+          readOnly: true
+        en_retard:
+          type: boolean
+          readOnly: true
+        femme:
+          allOf:
+          - $ref: '#/components/schemas/Femme'
+          readOnly: true
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - asc
+      - created_at
+      - csb_id
+      - date_prise_en_charge
+      - date_reception
+      - date_sortie
+      - date_suivi
+      - deleted_at
+      - device_id
+      - en_retard
+      - femme
+      - issue_sortie
+      - motif
+      - origine
+      - priorite
+      - status
+      - updated_at
+      - urgence
+    ReferencementRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        code_unique:
+          type: string
+          maxLength: 30
+        origine:
+          $ref: '#/components/schemas/OrigineEnum'
+        enfant_id:
+          type: string
+          format: uuid
+          nullable: true
+        grossesse_id:
+          type: string
+          format: uuid
+          nullable: true
+        mesure_id:
+          type: string
+          format: uuid
+          nullable: true
+        asc_id:
+          type: string
+          format: uuid
+        csb_id:
+          type: integer
+        priorite:
+          $ref: '#/components/schemas/PrioriteEnum'
+        motif:
+          type: string
+          minLength: 1
+        date_referencement:
+          type: string
+          format: date-time
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - csb_id
+      - motif
+      - origine
+      - priorite
+    ReferencementUrgenceEnum:
+      enum:
+      - rouge
+      - orange
+      - jaune
+      type: string
+      description: |-
+        * `rouge` - rouge
+        * `orange` - orange
+        * `jaune` - jaune
+    Region:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nom:
+          type: string
+          maxLength: 100
+        province_id:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - nom
+      - province_id
+    ReinitialiserPinRequest:
+      type: object
+      properties:
+        nouveau_pin:
+          type: string
+          minLength: 1
+      required:
+      - nouveau_pin
+    Relances:
+      type: object
+      properties:
+        delai_non_arrivee_heures:
+          type: integer
+          nullable: true
+        referencements_non_arrives:
+          type: array
+          items:
+            $ref: '#/components/schemas/Referencement'
+        rendez_vous_manques:
+          type: array
+          items:
+            $ref: '#/components/schemas/RendezVous'
+        enfants_a_revoir:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnfantARevoir'
+      required:
+      - delai_non_arrivee_heures
+      - enfants_a_revoir
+      - referencements_non_arrives
+      - rendez_vous_manques
+    RendezVous:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        date_prevue:
+          type: string
+          format: date
+        type_rendez_vous:
+          $ref: '#/components/schemas/TypeRendezVousEnum'
+        statut:
+          $ref: '#/components/schemas/StatutRendezVousEnum'
+        motif:
+          type: string
+        manque:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_prevue
+      - deleted_at
+      - device_id
+      - enfant_id
+      - manque
+      - updated_at
+    RendezVousRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        referencement_id:
+          type: string
+          format: uuid
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        date_prevue:
+          type: string
+          format: date
+        type_rendez_vous:
+          $ref: '#/components/schemas/TypeRendezVousEnum'
+        statut:
+          $ref: '#/components/schemas/StatutRendezVousEnum'
+        motif:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_prevue
+      - enfant_id
+    ResolutionEnum:
+      enum:
+      - serveur
+      - telephone
+      - fusion
+      type: string
+      description: |-
+        * `serveur` - Garder la version du serveur
+        * `telephone` - Garder la version du téléphone
+        * `fusion` - Version fusionnée
+    ResolutionRequest:
+      type: object
+      properties:
+        choix:
+          $ref: '#/components/schemas/ResolutionEnum'
+        donnees:
+          type: object
+          additionalProperties: {}
+        commentaire:
+          type: string
+          default: ''
+      required:
+      - choix
+    ResultatOperation:
+      type: object
+      properties:
+        cle_idempotence:
+          type: string
+          format: uuid
+          nullable: true
+        table:
+          type: string
+          nullable: true
+        operation:
+          type: string
+          nullable: true
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        statut:
+          $ref: '#/components/schemas/StatutOperationEnum'
+        ligne:
+          type: object
+          additionalProperties: {}
+          nullable: true
+        conflit_id:
+          type: string
+          format: uuid
+          nullable: true
+        erreurs:
+          nullable: true
+        rejoue:
+          type: boolean
+      required:
+      - cle_idempotence
+      - conflit_id
+      - erreurs
+      - id
+      - ligne
+      - operation
+      - rejoue
+      - statut
+      - table
+    SexeEnum:
+      enum:
+      - M
+      - F
+      type: string
+      description: |-
+        * `M` - Masculin
+        * `F` - Féminin
+    Statistiques:
+      type: object
+      properties:
+        periode:
+          type: object
+          additionalProperties: {}
+        seuil_petits_effectifs:
+          type: integer
+        grouper_par:
+          type: string
+          nullable: true
+        total:
+          $ref: '#/components/schemas/Bloc'
+        groupes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Groupe'
+      required:
+      - grouper_par
+      - groupes
+      - periode
+      - seuil_petits_effectifs
+      - total
+    StatusEnum:
+      enum:
+      - envoye
+      - recu
+      - pris_en_charge
+      - en_suivi
+      - sortie
+      type: string
+      description: |-
+        * `envoye` - Référé
+        * `recu` - Reçu
+        * `pris_en_charge` - Pris en charge
+        * `en_suivi` - En suivi
+        * `sortie` - Sortie
+    StatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        version:
+          type: integer
+          minimum: 1
+        issue_sortie:
+          oneOf:
+          - $ref: '#/components/schemas/IssueSortieEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - status
+      - version
+    StatutConflitEnum:
+      enum:
+      - a_verifier
+      - resolu
+      type: string
+      description: |-
+        * `a_verifier` - À vérifier
+        * `resolu` - Résolu
+    StatutOperationEnum:
+      enum:
+      - applique
+      - deja_applique
+      - conflit
+      - erreur
+      - refuse
+      - introuvable
+      type: string
+      description: |-
+        * `applique` - Appliquée
+        * `deja_applique` - Déjà appliquée
+        * `conflit` - Conflit
+        * `erreur` - Erreur
+        * `refuse` - Refusée
+        * `introuvable` - Introuvable
+    StatutPriseEnChargeEnum:
+      enum:
+      - aucun
+      - suivi
+      - refere
+      - pris_en_charge
+      - gueri
+      - abandon
+      - transfere
+      - non_repondant
+      - decede
+      type: string
+      description: |-
+        * `aucun` - Aucun
+        * `suivi` - Suivi
+        * `refere` - Référé
+        * `pris_en_charge` - Pris en charge
+        * `gueri` - Guéri
+        * `abandon` - Abandon
+        * `transfere` - Transféré
+        * `non_repondant` - Non-répondant
+        * `decede` - Décédé
+    StatutPublicationEnum:
+      enum:
+      - brouillon
+      - publiee
+      - retiree
+      type: string
+      description: |-
+        * `brouillon` - Brouillon
+        * `publiee` - Publiée
+        * `retiree` - Retirée
+    StatutRendezVousEnum:
+      enum:
+      - prevu
+      - honore
+      - annule
+      type: string
+      description: |-
+        * `prevu` - Prévu
+        * `honore` - Honoré
+        * `annule` - Annulé
+    StatutValidationEnum:
+      enum:
+      - a_valider
+      - validee
+      type: string
+      description: |-
+        * `a_valider` - À VALIDER
+        * `validee` - Validée
+    TablePull:
+      type: object
+      properties:
+        lignes:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        suite:
+          type: boolean
+        prochain_depuis:
+          type: string
+          format: date-time
+        apres_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - apres_id
+      - lignes
+      - prochain_depuis
+      - suite
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    TotpCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+    TotpDesactivationRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+          minLength: 1
+          maxLength: 128
+        code:
+          type: string
+          minLength: 1
+          maxLength: 10
+      required:
+      - code
+      - pin
+    TotpEtat:
+      type: object
+      properties:
+        active:
+          type: boolean
+        requise_pour_ce_profil:
+          type: boolean
+        obligatoire:
+          type: boolean
+        a_configurer:
+          type: boolean
+      required:
+      - a_configurer
+      - active
+      - obligatoire
+      - requise_pour_ce_profil
+    TotpPreparation:
+      type: object
+      properties:
+        secret:
+          type: string
+        uri:
+          type: string
+      required:
+      - secret
+      - uri
+    TypeAllaitementEnum:
+      enum:
+      - exclusif
+      - mixte
+      - aucun
+      type: string
+      description: |-
+        * `exclusif` - Exclusif
+        * `mixte` - Mixte
+        * `aucun` - Aucun
+    TypeCentreEnum:
+      enum:
+      - csb
+      - crenam
+      - crenas
+      - creni
+      type: string
+      description: |-
+        * `csb` - CSB
+        * `crenam` - CRENAM
+        * `crenas` - CRENAS
+        * `creni` - CRENI
+    TypeDangerGrossesse:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        description:
+          type: string
+      required:
+      - description
+      - id
+    TypeRendezVousEnum:
+      enum:
+      - controle
+      - depistage
+      type: string
+      description: |-
+        * `controle` - Contrôle
+        * `depistage` - Dépistage
+    Utilisateur:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+        profile:
+          allOf:
+          - $ref: '#/components/schemas/Profile'
+          readOnly: true
+        region_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        csb_id:
+          type: integer
+          nullable: true
+          readOnly: true
+      required:
+      - csb_id
+      - id
+      - nom
+      - prenom
+      - profile
+      - region_id
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
