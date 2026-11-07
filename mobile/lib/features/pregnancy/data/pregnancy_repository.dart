@@ -253,12 +253,6 @@ class PregnancyRepository {
     };
   }
 
-  Future<void> setMovements(String id, DateTime day, int count) => _db.insert('mouvement_bebe', {
-    'grossesse_id': id,
-    'date_jour': isoDate(day),
-    'mouvements': count,
-  }, conflictAlgorithm: ConflictAlgorithm.replace);
-
   /// Movements noted one by one (type, date and time), most recent first.
   Future<List<MovementEvent>> movementEvents(String id, {int days = 7}) async {
     final from = dateOnly(addDays(_clock.now(), -days + 1)).toIso8601String();

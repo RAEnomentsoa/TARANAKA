@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/app/session_controller.dart';
 import 'package:taranaka/core/security/profile.dart';
@@ -154,5 +155,79 @@ void main() {
     expect(find.textContaining('règles'), findsNothing);
     expect(find.textContaining('prévisions'), findsNothing);
     await finish(tester, env, session);
+  });
+
+  group('calendar', () {
+    final cycles = [
+      (DateTime(2026, 7, 21), DateTime(2026, 7, 25)),
+      (DateTime(2026, 8, 18), DateTime(2026, 8, 22)),
+      (DateTime(2026, 9, 16), DateTime(2026, 9, 20)),
+      (DateTime(2026, 10, 14), DateTime(2026, 10, 18)),
+    ];
+
+    testWidgets('a month grid: past cycles one month back, a logged period opens for correction', (
+      tester,
+    ) async {
+      final (env, session) = await start(tester, cycles);
+      await tapKey(tester, 'tile-cycle');
+      await revealKey(tester, 'cycle-calendar');
+      expect(find.text('Novembre 2026'), findsOneWidget);
+      expect(find.text('lun'), findsOneWidget);
+      await tapKey(tester, 'cal-prev');
+      expect(find.text('Octobre 2026'), findsOneWidget);
+      await tapKey(tester, 'cal-day-2026-10-16');
+      expect(find.text('Modifier'), findsWidgets);
+      expect(find.text('14/10/2026'), findsOneWidget);
+      expect(find.text('18/10/2026'), findsOneWidget);
+      await finish(tester, env, session);
+    });
+
+    testWidgets('tapping an empty past day adds a period starting that day', (tester) async {
+      final (env, session) = await start(tester, cycles);
+      await tapKey(tester, 'tile-cycle');
+      await revealKey(tester, 'cycle-calendar');
+      await tapKey(tester, 'cal-day-2026-11-02');
+      expect(find.text('02/11/2026'), findsOneWidget);
+      await tapKey(tester, 'period-save');
+      final periods = await tester.runAsync(() => CycleRepository(session.active!.db).periods());
+      expect(periods!.map((p) => p.start), contains(DateTime(2026, 11, 2)));
+      await finish(tester, env, session);
+    });
+
+    testWidgets('future days only show predictions and cannot be tapped; 3 months ahead at most', (
+      tester,
+    ) async {
+      final (env, session) = await start(tester, cycles);
+      await tapKey(tester, 'tile-cycle');
+      await revealKey(tester, 'cycle-calendar');
+      await tapKey(tester, 'cal-day-2026-11-11');
+      expect(find.byKey(const ValueKey('period-save')), findsNothing);
+      for (var i = 0; i < 3; i++) {
+        await tapKey(tester, 'cal-next');
+      }
+      expect(find.text('Février 2027'), findsOneWidget);
+      final next = tester.widget<IconButton>(find.byKey(const ValueKey('cal-next')));
+      expect(next.onPressed, isNull);
+      await tapKey(tester, 'cal-today');
+      expect(find.text('Novembre 2026'), findsOneWidget);
+      await finish(tester, env, session);
+    });
+
+    for (final (lang, month, weekday, legend) in [
+      ('en', 'November 2026', 'Mon', 'Expected period'),
+      ('mg', 'Novambra 2026', 'Alt', 'Fadim-bolana andrasana'),
+    ]) {
+      testWidgets('month, weekdays and legend in $lang', (tester) async {
+        final (env, session) = await start(tester, cycles);
+        await tester.runAsync(() => session.setLanguage(lang));
+        await settle(tester);
+        await tapKey(tester, 'tile-cycle');
+        await revealKey(tester, 'cycle-calendar');
+        expect(find.text(month), findsOneWidget);
+        expect(find.text(weekday), findsOneWidget);
+        expect(find.text(legend), findsOneWidget);
+        await finish(tester, env, session);
+      });
+    }
   });
 }

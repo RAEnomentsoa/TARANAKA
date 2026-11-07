@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
 import '../../l10n/gen/app_localizations.dart';
-import '../util/clock.dart';
 import 'language.dart';
 
 export '../../l10n/gen/app_localizations.dart';
@@ -29,5 +28,3 @@ String formatDecimal(num value, {int digits = 1}) {
 
 /// Parses "8,6" or "8.6".
 double? parseDecimal(String text) => double.tryParse(text.trim().replaceAll(',', '.'));
-
-String isoDay(DateTime d) => isoDate(d);

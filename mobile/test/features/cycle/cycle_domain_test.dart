@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/features/cycle/domain/cycle.dart';
+import 'package:taranaka/features/cycle/presentation/cycle_calendar.dart';
 
 import '../../helpers/config_fixture.dart';
 
@@ -119,5 +120,42 @@ void main() {
     expect((calc.cyclesForAverage, calc.cyclesForReliable), (6, 3));
     expect((calc.ovulationBeforePeriod, calc.fertileDaysBeforeOvulation), (14, 5));
     expect((calc.shortCycle, calc.longCycle, calc.longPeriod, calc.amenorrhoeaDays), (21, 35, 7, 90));
+  });
+
+  test('calendar marks: logged, ongoing, expected days, next cycles at the average length', () {
+    final periods = [
+      p(DateTime(2026, 7, 8)),
+      p(DateTime(2026, 8, 5)),
+      p(DateTime(2026, 9, 3)),
+      Period(id: 'now', start: DateTime(2026, 10, 1)),
+    ];
+    final today = DateTime(2026, 10, 2);
+    final marks = calendarMarks(periods: periods, summary: calc.summarise(periods, today), today: today);
+    expect(marks[DateTime(2026, 9, 3)], DayMark.period);
+    expect(marks[DateTime(2026, 9, 7)], DayMark.period);
+    expect(marks[DateTime(2026, 9, 8)], isNull);
+    expect(marks[DateTime(2026, 10, 1)], DayMark.ongoing);
+    expect(marks[DateTime(2026, 10, 2)], DayMark.ongoing);
+    // The ongoing period is expected to last the usual 5 days.
+    expect(marks[DateTime(2026, 10, 3)], DayMark.predicted);
+    expect(marks[DateTime(2026, 10, 5)], DayMark.predicted);
+    expect(marks[DateTime(2026, 10, 6)], isNull);
+    // Next period 29 Oct (28-day average), ovulation 14 days before.
+    expect(marks[DateTime(2026, 10, 29)], DayMark.predicted);
+    expect(marks[DateTime(2026, 10, 15)], DayMark.ovulation);
+    expect(marks[DateTime(2026, 10, 10)], DayMark.fertile);
+    // Following cycles too, up to 3 months ahead.
+    expect(marks[DateTime(2026, 11, 26)], DayMark.predicted);
+    expect(marks[DateTime(2027, 1, 21)], DayMark.predicted);
+    // Nothing after January (October + 3 months).
+    expect(marks.keys.where((d) => d.isAfter(DateTime(2027, 1, 31))), isEmpty);
+  });
+
+  test('calendar marks without any prediction: only logged days', () {
+    final periods = [p(DateTime(2026, 9, 3))];
+    final today = DateTime(2026, 10, 2);
+    final marks = calendarMarks(periods: periods, summary: calc.summarise(periods, today), today: today);
+    expect(marks.values.toSet(), {DayMark.period});
+    expect(marks, hasLength(5));
   });
 }

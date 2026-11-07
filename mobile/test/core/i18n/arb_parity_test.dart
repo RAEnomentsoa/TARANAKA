@@ -41,9 +41,10 @@ void main() {
     }
   });
 
-  test('the month wheel has 12 names in every language', () {
+  test('12 month names and 7 weekday names in every language', () {
     for (final lang in ['mg', 'fr', 'en']) {
       expect((read(lang)['monthNames']! as String).split('|'), hasLength(12), reason: lang);
+      expect((read(lang)['weekdayShort']! as String).split('|'), hasLength(7), reason: lang);
     }
   });
 

@@ -190,13 +190,6 @@ class SessionController extends ChangeNotifier {
     _refreshStage();
   }
 
-  Future<void> renameActive(String name) async {
-    await services.registry.rename(_active!.info.id, name);
-    _profiles = await services.registry.list();
-    _active!.info = (await services.registry.find(_active!.info.id))!;
-    notifyListeners();
-  }
-
   /// Notifies listeners after a change in the active profile's data.
   void touch() => notifyListeners();
 }

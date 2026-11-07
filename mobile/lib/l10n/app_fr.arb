@@ -1,9 +1,6 @@
 {
   "@@locale": "fr",
   "appName": "TARANAKA",
-  "languageTitle": "Choisissez votre langue",
-  "languageFrench": "Français",
-  "languageMalagasy": "Malagasy",
   "language": "Langue",
   "continueLabel": "Continuer",
   "back": "Retour",
@@ -32,7 +29,6 @@
   "pinChoose": "Choisissez un code à 4 chiffres",
   "pinConfirm": "Tapez le même code encore une fois",
   "pinMismatch": "Les deux codes sont différents. Recommencez.",
-  "pinDigits": "Le code doit avoir 4 chiffres.",
   "pinDeleteDigit": "Effacer le dernier chiffre",
   "pinDigitsEntered": "{count} chiffres sur 4",
   "@pinDigitsEntered": {
@@ -119,14 +115,6 @@
       }
     }
   },
-  "configSource": "Source : {source}",
-  "@configSource": {
-    "placeholders": {
-      "source": {
-        "type": "String"
-      }
-    }
-  },
   "aboutTitle": "À propos",
   "aboutConfig": "Configuration clinique : version {version}",
   "@aboutConfig": {
@@ -196,7 +184,6 @@
       }
     }
   },
-  "measureTitle": "Mesures",
   "measureDate": "Date de la mesure",
   "weightKg": "Poids (kg)",
   "lengthCm": "Taille (cm)",
@@ -227,7 +214,6 @@
     }
   },
   "checkMeasureKeep": "La mesure est juste",
-  "checkMeasureFix": "Corriger",
   "problemBeforeBirth": "La date de mesure est avant la naissance.",
   "problemFuture": "La date de mesure est dans le futur.",
   "problemMuacAge": "Le PB ne se saisit qu'entre 6 et 59 mois.",
@@ -278,7 +264,6 @@
   "referralTitle": "Fiche de référencement",
   "notTransmitted": "Non transmise — à montrer au centre",
   "transmitted": "Transmise au serveur",
-  "refStatusEnvoye": "Référé",
   "refStatusRecu": "Reçu par le centre",
   "refStatusPris": "Pris en charge",
   "refStatusSuivi": "En suivi",
@@ -393,7 +378,6 @@
     }
   },
   "alertDisclaimer": "Cette alerte ne remplace pas un diagnostic.",
-  "myChildren": "Mes enfants",
   "addChild": "Ajouter un enfant",
   "noMyChildren": "Ajoutez votre enfant pour suivre sa croissance, ses repas et ses vaccins.",
   "birthWeight": "Poids de naissance (kg, facultatif)",
@@ -677,7 +661,6 @@
   "antenatalTitle": "Consultations prénatales (CPN)",
   "postnatalTitle": "Consultations postnatales",
   "myFollowUp": "Mon suivi (poids, tension…)",
-  "weightKgOptional": "Poids (kg, facultatif)",
   "notesLabel": "Ce que je ressens (facultatif)",
   "noFollowUp": "Rien encore. Ajoutez une mesure ou une note.",
   "add": "Ajouter",
@@ -750,10 +733,8 @@
   },
   "remindersTitle": "À ne pas oublier",
   "pregnancyLocal": "Les données de grossesse restent sur ce téléphone, sauf si vous activez la synchronisation.",
-  "weekContentMissing": "Les conseils de la semaine viendront de la bibliothèque de contenus validée (pas encore fournie).",
   "periodStartedToday": "Mes règles ont commencé aujourd'hui",
   "periodEndedToday": "Mes règles sont terminées aujourd'hui",
-  "periodOtherDate": "Une autre date",
   "periodStartDate": "Début des règles",
   "periodEndDate": "Fin des règles",
   "periodOngoing": "Règles en cours depuis le {date}",
@@ -921,12 +902,7 @@
     }
   },
   "deletePeriod": "Supprimer ces règles ?",
-  "calendarLegendPeriod": "Règles",
-  "calendarLegendPredicted": "Règles prévues",
-  "calendarLegendFertile": "Fenêtre fertile",
-  "calendarLegendOvulation": "Ovulation",
   "cycleLocal": "Les données du cycle restent sur ce téléphone et ne sont jamais envoyées, sauf si vous l'activez vous-même.",
-  "cycleContentMissing": "Les contenus sur l'hygiène menstruelle et la puberté viendront de la bibliothèque validée.",
   "editPeriod": "Modifier",
   "endBeforeStart": "La fin doit être après le début.",
   "clearDate": "Effacer la date",
@@ -994,5 +970,15 @@
   "movementAdd": "Noter ce mouvement",
   "movementsRecent": "Derniers mouvements",
   "deleteMovement": "Supprimer ce mouvement ?",
-  "followUpTitle": "Mon suivi"
+  "followUpTitle": "Mon suivi",
+  "calendarTitle": "Calendrier",
+  "calendarLegendPeriod": "Règles notées",
+  "calendarLegendOngoing": "Règles en cours",
+  "calendarLegendPredicted": "Règles prévues",
+  "calendarLegendFertile": "Fenêtre fertile",
+  "calendarLegendOvulation": "Ovulation",
+  "weekdayShort": "lun|mar|mer|jeu|ven|sam|dim",
+  "calendarPrevMonth": "Mois précédent",
+  "calendarNextMonth": "Mois suivant",
+  "calendarHint": "Touchez un jour passé pour noter des règles, ou des règles notées pour les corriger."
 }

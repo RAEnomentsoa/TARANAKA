@@ -1,9 +1,6 @@
 {
   "@@locale": "en",
   "appName": "TARANAKA",
-  "languageTitle": "Choose your language",
-  "languageFrench": "Français",
-  "languageMalagasy": "Malagasy",
   "language": "Language",
   "continueLabel": "Continue",
   "back": "Back",
@@ -32,7 +29,6 @@
   "pinChoose": "Choose a 4-digit code",
   "pinConfirm": "Type the same code once more",
   "pinMismatch": "The two codes are different. Start again.",
-  "pinDigits": "The code must have 4 digits.",
   "pinDeleteDigit": "Delete the last digit",
   "pinDigitsEntered": "{count} of 4 digits",
   "@pinDigitsEntered": {
@@ -119,14 +115,6 @@
       }
     }
   },
-  "configSource": "Source: {source}",
-  "@configSource": {
-    "placeholders": {
-      "source": {
-        "type": "String"
-      }
-    }
-  },
   "aboutTitle": "About",
   "aboutConfig": "Clinical configuration: version {version}",
   "@aboutConfig": {
@@ -196,7 +184,6 @@
       }
     }
   },
-  "measureTitle": "Measurements",
   "measureDate": "Date of the measurement",
   "weightKg": "Weight (kg)",
   "lengthCm": "Height (cm)",
@@ -227,7 +214,6 @@
     }
   },
   "checkMeasureKeep": "The measurement is right",
-  "checkMeasureFix": "Correct",
   "problemBeforeBirth": "The measurement date is before the birth.",
   "problemFuture": "The measurement date is in the future.",
   "problemMuacAge": "MUAC is only entered between 6 and 59 months.",
@@ -278,7 +264,6 @@
   "referralTitle": "Referral sheet",
   "notTransmitted": "Not sent — show it at the centre",
   "transmitted": "Sent to the server",
-  "refStatusEnvoye": "Referred",
   "refStatusRecu": "Received by the centre",
   "refStatusPris": "In care",
   "refStatusSuivi": "Being followed up",
@@ -393,7 +378,6 @@
     }
   },
   "alertDisclaimer": "This alert does not replace a diagnosis.",
-  "myChildren": "My children",
   "addChild": "Add a child",
   "noMyChildren": "Add your child to follow their growth, meals and vaccines.",
   "birthWeight": "Birth weight (kg, optional)",
@@ -677,7 +661,6 @@
   "antenatalTitle": "Antenatal consultations (ANC)",
   "postnatalTitle": "Postnatal consultations",
   "myFollowUp": "My check-ups (weight, blood pressure…)",
-  "weightKgOptional": "Weight (kg, optional)",
   "notesLabel": "How I feel (optional)",
   "noFollowUp": "Nothing yet. Add a measurement or a note.",
   "add": "Add",
@@ -750,10 +733,8 @@
   },
   "remindersTitle": "Don't forget",
   "pregnancyLocal": "Pregnancy data stays on this phone unless you turn on sync.",
-  "weekContentMissing": "Weekly advice will come from the validated content library (not provided yet).",
   "periodStartedToday": "My period started today",
   "periodEndedToday": "My period ended today",
-  "periodOtherDate": "Another date",
   "periodStartDate": "Start of period",
   "periodEndDate": "End of period",
   "periodOngoing": "Period since {date}",
@@ -921,12 +902,7 @@
     }
   },
   "deletePeriod": "Delete this period?",
-  "calendarLegendPeriod": "Period",
-  "calendarLegendPredicted": "Expected period",
-  "calendarLegendFertile": "Fertile window",
-  "calendarLegendOvulation": "Ovulation",
   "cycleLocal": "Cycle data stays on this phone and is never sent, unless you turn it on yourself.",
-  "cycleContentMissing": "Content on menstrual hygiene and puberty will come from the validated library.",
   "editPeriod": "Edit",
   "endBeforeStart": "The end must be after the start.",
   "clearDate": "Clear the date",
@@ -994,5 +970,15 @@
   "movementAdd": "Record this movement",
   "movementsRecent": "Recent movements",
   "deleteMovement": "Delete this movement?",
-  "followUpTitle": "My check-ups"
+  "followUpTitle": "My check-ups",
+  "calendarTitle": "Calendar",
+  "calendarLegendPeriod": "Logged period",
+  "calendarLegendOngoing": "Current period",
+  "calendarLegendPredicted": "Expected period",
+  "calendarLegendFertile": "Fertile window",
+  "calendarLegendOvulation": "Ovulation",
+  "weekdayShort": "Mon|Tue|Wed|Thu|Fri|Sat|Sun",
+  "calendarPrevMonth": "Previous month",
+  "calendarNextMonth": "Next month",
+  "calendarHint": "Tap a past day to log a period, or a logged period to correct it."
 }

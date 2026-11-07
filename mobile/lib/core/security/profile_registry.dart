@@ -179,16 +179,6 @@ class ProfileRegistry {
     return Unlocked((await find(profileId))!, master);
   }
 
-  Future<void> rename(String profileId, String displayName) async {
-    final profile = (await find(profileId))!;
-    await _replace(profile.copyWith(displayName: displayName.trim()));
-  }
-
-  Future<void> setMode(String profileId, ProfileMode mode) async {
-    final profile = (await find(profileId))!;
-    await _replace(profile.copyWith(mode: mode));
-  }
-
   Future<void> remove(String profileId) async {
     await _save([...await list()]..removeWhere((p) => p.id == profileId));
   }

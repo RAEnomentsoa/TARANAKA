@@ -12,6 +12,7 @@ import '../../../core/widgets/status_pill.dart';
 import '../../pregnancy/presentation/pregnancy_home_screen.dart';
 import '../data/cycle_repository.dart';
 import '../domain/cycle.dart';
+import 'cycle_calendar.dart';
 
 CycleRepository cycleRepository(BuildContext context) {
   final scope = AppScope.read(context);
@@ -49,12 +50,12 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
   }
 
   /// Adds a past period ([period] null) or edits one.
-  Future<void> _openSheet(Period? period, List<Period> periods, DateTime today) async {
+  Future<void> _openSheet(Period? period, List<Period> periods, DateTime today, {DateTime? start}) async {
     final changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _PeriodSheet(period: period, periods: periods, today: today),
+      builder: (_) => _PeriodSheet(period: period, periods: periods, today: today, start: start),
     );
     if (changed == true) _reload();
   }
@@ -153,6 +154,16 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
               const Gap(Space.m),
               _SignalBox(signal: signal, summary: s, calc: calc),
             ],
+            SectionTitle(l10n.calendarTitle),
+            CycleCalendar(
+              key: const ValueKey('cycle-calendar'),
+              periods: periods,
+              summary: s,
+              today: today,
+              first: _PeriodSheet.firstDay(today),
+              onPeriodTap: (p) => _openSheet(p, periods, today),
+              onDayTap: (d) => _openSheet(null, periods, today, start: d),
+            ),
             SectionTitle(l10n.cycleStats),
             Wrap(
               spacing: Space.s,
@@ -335,11 +346,10 @@ class _TodayDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final repo = cycleRepository(context);
     final moods = l10n.moodLabels.split('|');
     const emojis = ['😢', '🙁', '😐', '🙂', '😄'];
     Future<void> set({String? intensity, int? pain, int? mood}) async {
-      await repo.setDetails(period.id, intensity: intensity, pain: pain, mood: mood);
+      await cycleRepository(context).setDetails(period.id, intensity: intensity, pain: pain, mood: mood);
       onChanged();
     }
 
@@ -421,8 +431,14 @@ class _TodayDetails extends StatelessWidget {
 /// Start and end of a period: a past one to add (e.g. three months ago), or
 /// one to correct. Dates are picked with the wheels, never typed.
 class _PeriodSheet extends StatefulWidget {
-  const _PeriodSheet({required this.period, required this.periods, required this.today});
+  const _PeriodSheet({required this.period, required this.periods, required this.today, this.start});
   final Period? period;
+
+  /// Start already chosen (a day tapped in the calendar).
+  final DateTime? start;
+
+  /// Two years back: enough for several past cycles.
+  static DateTime firstDay(DateTime today) => addDays(today, -730);
   final List<Period> periods;
   final DateTime today;
 
@@ -431,12 +447,11 @@ class _PeriodSheet extends StatefulWidget {
 }
 
 class _PeriodSheetState extends State<_PeriodSheet> {
-  late DateTime? _start = widget.period?.start;
+  late DateTime? _start = widget.period?.start ?? widget.start;
   late DateTime? _end = widget.period?.end;
   String? _error;
 
-  /// Two years back: enough for several past cycles.
-  DateTime get _first => addDays(widget.today, -730);
+  DateTime get _first => _PeriodSheet.firstDay(widget.today);
 
   Future<void> _save() async {
     final l10n = context.l10n;
