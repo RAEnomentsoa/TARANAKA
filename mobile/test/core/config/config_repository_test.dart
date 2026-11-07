@@ -79,10 +79,55 @@ void main() {
     expect((await repo.load()).version, 1);
   });
 
-  test('localized texts fall back to French while Malagasy is missing', () {
+  test('localized texts fall back to French when no translation exists', () {
+    loadConfigTranslations(const {});
     expect(localizedText({'fr': 'Fièvre', 'mg': null}, 'mg'), 'Fièvre');
     expect(localizedText({'fr': 'Fièvre', 'mg': 'Tazo'}, 'mg'), 'Tazo');
     expect(localizedText('vary', 'fr'), 'vary');
     expect(localizedText(null, 'fr'), '');
+  });
+
+  test('missing Malagasy and English texts come from translations.json', () async {
+    await repo.load();
+    expect(localizedText({'fr': 'Fièvre', 'mg': null}, 'mg'), 'Tazo');
+    expect(localizedText({'fr': 'Fièvre', 'mg': null}, 'en'), 'Fever');
+    expect(localizedText({'fr': 'Fièvre', 'mg': null}, 'fr'), 'Fièvre');
+    // The configuration's own text wins over the overlay.
+    expect(localizedText({'fr': 'Riz', 'mg': 'vary'}, 'mg'), 'vary');
+    // Plain strings (women's food groups) are translated too.
+    expect(localizedText('Légumineuses', 'en'), startsWith('Pulses'));
+  });
+
+  test('every text of the bundled configuration exists in Malagasy and English', () async {
+    await repo.load();
+    final missing = <String>[];
+    void walk(Object? o) {
+      if (o is Map) {
+        final fr = o['fr'];
+        if (fr is String) {
+          for (final lang in ['mg', 'en']) {
+            if (localizedText(o, lang) == fr && configTranslations[fr]?[lang] != fr) {
+              missing.add('$lang: $fr');
+            }
+          }
+        }
+        o.values.forEach(walk);
+      } else if (o is List) {
+        o.forEach(walk);
+      }
+    }
+
+    final contenu = (await bundled())['contenu']! as Map;
+    walk(contenu);
+    for (final g in ((contenu['alimentation_femme'] as Map)['groupes'] as List).cast<String>()) {
+      for (final lang in ['mg', 'en']) {
+        if (configTranslations[g]?[lang] == null) missing.add('$lang: $g');
+      }
+    }
+    for (final section in contenu.values.whereType<Map<Object?, Object?>>()) {
+      final source = section['source'];
+      if (source is String && configTranslations[source]?['en'] == null) missing.add('en: $source');
+    }
+    expect(missing, isEmpty);
   });
 }

@@ -130,6 +130,15 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
                       ),
               ),
             ),
+            if (!p.delivered && due != null && today.isAfter(due)) ...[
+              const Gap(Space.m),
+              NoticeBox(
+                key: const ValueKey('due-passed'),
+                icon: Icons.event_busy_outlined,
+                tone: Tone.warning,
+                text: l10n.duePassed,
+              ),
+            ],
             if (next != null) ...[
               const Gap(Space.m),
               Card(
@@ -192,8 +201,6 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
               onTap: () => _open(DeliveryScreen(pregnancy: p)),
             ),
             const Gap(Space.l),
-            Text(l10n.weekContentMissing, style: text.bodySmall),
-            const Gap(Space.s),
             Wrap(
               spacing: Space.s,
               children: [

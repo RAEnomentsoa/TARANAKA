@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/i18n/fallback_localizations.dart';
 import '../core/i18n/l10n.dart';
+import '../core/i18n/language.dart';
 import '../core/security/profile.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/states.dart';
@@ -82,11 +83,14 @@ class _TaranakaAppState extends State<TaranakaApp> with WidgetsBindingObserver {
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: const [AppLocalizations.delegate, ...frameworkDelegates],
             // Any touch counts as activity for the 2-minute lock.
-            builder: (context, child) => Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: (_) => session.markActivity(),
-              child: child,
-            ),
+            builder: (context, child) {
+              appLanguage = Localizations.localeOf(context).languageCode;
+              return Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) => session.markActivity(),
+                child: child,
+              );
+            },
             home: const AppGate(),
           );
         },

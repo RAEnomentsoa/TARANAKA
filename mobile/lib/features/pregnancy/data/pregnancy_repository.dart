@@ -26,12 +26,72 @@ class Pregnancy {
   bool get delivered => dates.deliveredOn != null;
 }
 
+/// One dated entry of "Mon suivi": any of the health parameters, and a note.
 class FollowUpEntry {
-  const FollowUpEntry({required this.id, required this.date, this.weightKg, this.notes = ''});
+  const FollowUpEntry({
+    this.id = '',
+    required this.date,
+    this.weightKg,
+    this.systolic,
+    this.diastolic,
+    this.fundalHeightCm,
+    this.hemoglobinGdl,
+    this.glucoseGl,
+    this.temperatureC,
+    this.notes = '',
+  });
+
   final String id;
+
+  /// Day of the measurement (chosen by the user, today by default).
   final DateTime date;
   final double? weightKg;
+
+  /// Blood pressure, mmHg.
+  final int? systolic;
+  final int? diastolic;
+
+  /// Fundal height, cm.
+  final double? fundalHeightCm;
+
+  /// Haemoglobin, g/dL.
+  final double? hemoglobinGdl;
+
+  /// Blood sugar, g/L.
+  final double? glucoseGl;
+  final double? temperatureC;
   final String notes;
+
+  bool get isEmpty =>
+      weightKg == null &&
+      systolic == null &&
+      fundalHeightCm == null &&
+      hemoglobinGdl == null &&
+      glucoseGl == null &&
+      temperatureC == null &&
+      notes.trim().isEmpty;
+}
+
+/// Kinds of baby movements, as the mother feels them.
+enum MovementType {
+  kick('coup_pied'),
+  flutter('fremissement'),
+  roll('roulade'),
+  hiccup('hoquet'),
+  stretch('etirement');
+
+  const MovementType(this.code);
+  final String code;
+
+  static MovementType parse(Object? code) =>
+      values.firstWhere((t) => t.code == code, orElse: () => MovementType.kick);
+}
+
+class MovementEvent {
+  const MovementEvent({required this.id, required this.at, required this.type});
+  final String id;
+  final DateTime at;
+  final MovementType type;
 }
 
 /// Local store of "Ma grossesse" (encrypted profile database).
@@ -52,6 +112,7 @@ class PregnancyRepository {
       confirmedOn: _date(r['terme_confirme_date']),
       confirmedAgeDays: r['terme_confirme_jours'] as int?,
       deliveredOn: _date(r['date_accouchement']),
+      dueOn: _date(r['dpa_saisie']),
     ),
     dueDate: _date(r['dpa']),
     breastfeeding: r['mode_allaitement'] as String?,
@@ -73,6 +134,7 @@ class PregnancyRepository {
       'terme_confirme_date': dates.confirmedOn == null ? null : isoDate(dates.confirmedOn!),
       'terme_confirme_jours': dates.confirmedAgeDays,
       'dpa': due == null ? null : isoDate(due),
+      'dpa_saisie': dates.dueOn == null ? null : isoDate(dates.dueOn!),
       'sync_status': SyncStatus.saved.name,
       'created_at': _now(),
       'updated_at': _now(),
@@ -89,6 +151,7 @@ class PregnancyRepository {
         'terme_confirme_date': dates.confirmedOn == null ? null : isoDate(dates.confirmedOn!),
         'terme_confirme_jours': dates.confirmedAgeDays,
         'dpa': due == null ? null : isoDate(due),
+        'dpa_saisie': dates.dueOn == null ? null : isoDate(dates.dueOn!),
         'updated_at': _now(),
       },
       where: 'id = ?',
@@ -146,20 +209,31 @@ class PregnancyRepository {
               id: r['id']! as String,
               date: parseIsoDate(r['date_jour']! as String),
               weightKg: (r['poids_kg'] as num?)?.toDouble(),
+              systolic: r['tension_sys'] as int?,
+              diastolic: r['tension_dia'] as int?,
+              fundalHeightCm: (r['hauteur_uterine_cm'] as num?)?.toDouble(),
+              hemoglobinGdl: (r['hemoglobine_g_dl'] as num?)?.toDouble(),
+              glucoseGl: (r['glycemie_g_l'] as num?)?.toDouble(),
+              temperatureC: (r['temperature_c'] as num?)?.toDouble(),
               notes: r['notes']! as String,
             ),
           )
           .toList();
 
-  Future<void> addFollowUp(String id, DateTime on, double? weightKg, String notes) =>
-      _db.insert('suivi_grossesse', {
-        'id': newUuid(),
-        'grossesse_id': id,
-        'date_jour': isoDate(on),
-        'poids_kg': weightKg,
-        'notes': notes.trim(),
-        'created_at': _now(),
-      });
+  Future<void> addFollowUp(String id, FollowUpEntry e) => _db.insert('suivi_grossesse', {
+    'id': newUuid(),
+    'grossesse_id': id,
+    'date_jour': isoDate(e.date),
+    'poids_kg': e.weightKg,
+    'tension_sys': e.systolic,
+    'tension_dia': e.diastolic,
+    'hauteur_uterine_cm': e.fundalHeightCm,
+    'hemoglobine_g_dl': e.hemoglobinGdl,
+    'glycemie_g_l': e.glucoseGl,
+    'temperature_c': e.temperatureC,
+    'notes': e.notes.trim(),
+    'created_at': _now(),
+  });
 
   Future<void> deleteFollowUp(String entryId) =>
       _db.delete('suivi_grossesse', where: 'id = ?', whereArgs: [entryId]);
@@ -184,6 +258,36 @@ class PregnancyRepository {
     'date_jour': isoDate(day),
     'mouvements': count,
   }, conflictAlgorithm: ConflictAlgorithm.replace);
+
+  /// Movements noted one by one (type, date and time), most recent first.
+  Future<List<MovementEvent>> movementEvents(String id, {int days = 7}) async {
+    final from = dateOnly(addDays(_clock.now(), -days + 1)).toIso8601String();
+    return [
+      for (final r in await _db.query(
+        'mouvement_evenement',
+        where: 'grossesse_id = ? AND horodatage >= ?',
+        whereArgs: [id, from],
+        orderBy: 'horodatage DESC',
+      ))
+        MovementEvent(
+          id: r['id']! as String,
+          at: DateTime.parse(r['horodatage']! as String),
+          type: MovementType.parse(r['type']),
+        ),
+    ];
+  }
+
+  Future<void> addMovement(String id, DateTime at, MovementType type) => _db.insert('mouvement_evenement', {
+    'id': newUuid(),
+    'grossesse_id': id,
+    // Local time, without zone: the hour the mother felt it.
+    'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
+    'type': type.code,
+    'created_at': _now(),
+  });
+
+  Future<void> deleteMovement(String eventId) =>
+      _db.delete('mouvement_evenement', where: 'id = ?', whereArgs: [eventId]);
 
   // -------------------------------------------------------- danger signals
 

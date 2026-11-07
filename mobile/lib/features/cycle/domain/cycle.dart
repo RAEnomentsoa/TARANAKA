@@ -33,6 +33,20 @@ class Period {
   int? get length => end == null ? null : daysBetween(start, end!) + 1;
 }
 
+/// True when [start]–[end] shares a day with another logged period. A period
+/// without end counts as its first day only.
+bool periodOverlaps(List<Period> periods, DateTime start, DateTime? end, {String? exceptId}) {
+  final s = dateOnly(start);
+  final e = dateOnly(end ?? start);
+  for (final p in periods) {
+    if (p.id == exceptId) continue;
+    final ps = dateOnly(p.start);
+    final pe = dateOnly(p.end ?? p.start);
+    if (!s.isAfter(pe) && !ps.isAfter(e)) return true;
+  }
+  return false;
+}
+
 enum Confidence { estimate, reliable }
 
 enum CycleSignal {

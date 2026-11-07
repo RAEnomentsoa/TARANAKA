@@ -676,10 +676,10 @@
   "consultations": "Consultations",
   "antenatalTitle": "Consultations prénatales (CPN)",
   "postnatalTitle": "Consultations postnatales",
-  "myFollowUp": "Mon suivi (poids, notes)",
+  "myFollowUp": "Mon suivi (poids, tension…)",
   "weightKgOptional": "Poids (kg, facultatif)",
   "notesLabel": "Ce que je ressens (facultatif)",
-  "noFollowUp": "Rien encore. Ajoutez votre poids ou une note.",
+  "noFollowUp": "Rien encore. Ajoutez une mesure ou une note.",
   "add": "Ajouter",
   "babyMovements": "Mouvements du bébé",
   "movementsExplain": "Les premiers mouvements se sentent en général vers {from} à {to} SA. Le journal des mouvements s'ouvre à {open} SA.",
@@ -928,5 +928,71 @@
   "cycleLocal": "Les données du cycle restent sur ce téléphone et ne sont jamais envoyées, sauf si vous l'activez vous-même.",
   "cycleContentMissing": "Les contenus sur l'hygiène menstruelle et la puberté viendront de la bibliothèque validée.",
   "editPeriod": "Modifier",
-  "endBeforeStart": "La fin doit être après le début."
+  "endBeforeStart": "La fin doit être après le début.",
+  "clearDate": "Effacer la date",
+  "monthNames": "janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre",
+  "wheelDay": "Jour",
+  "wheelMonth": "Mois",
+  "wheelYear": "Année",
+  "wheelHour": "Heure",
+  "wheelMinute": "Minute",
+  "now": "Maintenant",
+  "periodAddPast": "Ajouter des règles passées",
+  "periodEndOtherDay": "Terminées un autre jour",
+  "periodEndOptional": "Fin des règles (facultatif)",
+  "periodOverlap": "Ces dates chevauchent des règles déjà notées.",
+  "byDueDate": "Date prévue d'accouchement (DPA)",
+  "dueDateHint": "Donnée par un professionnel de santé. Elle peut être passée ou à venir.",
+  "duePassed": "La date prévue d'accouchement est passée. Si le bébé est né, enregistrez l'accouchement.",
+  "followUpWhat": "Que voulez-vous noter ?",
+  "paramWeight": "Poids",
+  "paramBloodPressure": "Tension artérielle",
+  "paramFundalHeight": "Hauteur utérine",
+  "paramHemoglobin": "Hémoglobine",
+  "paramGlucose": "Glycémie",
+  "paramTemperature": "Température",
+  "bpSystolic": "Haute – systolique (mmHg)",
+  "bpDiastolic": "Basse – diastolique (mmHg)",
+  "fundalHeightCm": "Hauteur utérine (cm)",
+  "hemoglobinGdl": "Hémoglobine (g/dL)",
+  "glucoseGl": "Glycémie (g/L)",
+  "temperatureC": "Température (°C)",
+  "valueInvalid": "Vérifiez la valeur : {field}",
+  "@valueInvalid": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "bpOrder": "La tension basse doit être plus petite que la tension haute.",
+  "followUpEmpty": "Écrivez au moins une valeur ou une note.",
+  "bpHigh": "Tension élevée ({value} mmHg). Consultez vite un agent de santé ou le centre de santé.",
+  "@bpHigh": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "feverAlert": "Fièvre ({value} °C). Consultez vite un agent de santé.",
+  "@feverAlert": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFollowUp": "Supprimer cette saisie ?",
+  "movementType": "Ce que vous avez senti",
+  "movementWhen": "Date et heure",
+  "moveKick": "Coups de pied",
+  "moveFlutter": "Frémissements",
+  "moveRoll": "Roulades, retournements",
+  "moveHiccup": "Hoquet (petits sursauts réguliers)",
+  "moveStretch": "Étirements, poussées",
+  "movementAdd": "Noter ce mouvement",
+  "movementsRecent": "Derniers mouvements",
+  "deleteMovement": "Supprimer ce mouvement ?",
+  "followUpTitle": "Mon suivi"
 }

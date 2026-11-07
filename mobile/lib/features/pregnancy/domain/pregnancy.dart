@@ -10,16 +10,21 @@ class GestationalAge {
   int get days => totalDays % 7;
 }
 
-/// A pregnancy as entered by the woman (spec §5): last menstrual period (DDR)
-/// and/or a term confirmed by a professional (ultrasound or consultation),
-/// expressed as a gestational age on the day of the exam.
+/// A pregnancy as entered by the woman (spec §5): last menstrual period (DDR),
+/// a term confirmed by a professional (ultrasound or consultation, expressed
+/// as a gestational age on the day of the exam), or directly the expected due
+/// date (DPA) given by a professional – in the future, or in the past for a
+/// follow-up entered afterwards or a correction.
 class PregnancyDates {
-  const PregnancyDates({this.lmp, this.confirmedOn, this.confirmedAgeDays, this.deliveredOn});
+  const PregnancyDates({this.lmp, this.confirmedOn, this.confirmedAgeDays, this.deliveredOn, this.dueOn});
 
   final DateTime? lmp;
   final DateTime? confirmedOn;
   final int? confirmedAgeDays;
   final DateTime? deliveredOn;
+
+  /// DPA entered as such (null when it is computed from the DDR or the term).
+  final DateTime? dueOn;
 
   bool get hasConfirmedTerm => confirmedOn != null && confirmedAgeDays != null;
 }
@@ -62,11 +67,14 @@ class PregnancyCalculator {
       (_g['premiers_mouvements_sa'] as List?)?.map((e) => asInt(e)!).toList() ?? const [16, 22];
 
   /// Day 0 of the pregnancy dating: the DDR, or the date implied by the
-  /// confirmed term (which wins when the configuration says so).
+  /// confirmed term (which wins when the configuration says so), or, when only
+  /// the DPA is known, the DPA minus the Naegele duration.
   DateTime? referenceDate(PregnancyDates p) {
     final confirmed = p.hasConfirmedTerm ? addDays(p.confirmedOn!, -p.confirmedAgeDays!) : null;
     if (confirmed != null && (confirmedTermWins || p.lmp == null)) return confirmed;
-    return p.lmp == null ? confirmed : dateOnly(p.lmp!);
+    if (p.lmp != null) return dateOnly(p.lmp!);
+    if (p.dueOn != null) return addDays(p.dueOn!, -naegeleDays);
+    return null;
   }
 
   GestationalAge? age(PregnancyDates p, DateTime today) {
@@ -76,10 +84,17 @@ class PregnancyCalculator {
   }
 
   /// Date probable d'accouchement.
-  DateTime? dueDate(PregnancyDates p) => () {
+  DateTime? dueDate(PregnancyDates p) {
+    if (p.dueOn != null && p.lmp == null && !p.hasConfirmedTerm) return dateOnly(p.dueOn!);
     final ref = referenceDate(p);
     return ref == null ? null : addDays(ref, naegeleDays);
-  }();
+  }
+
+  /// Upper limits of a blood pressure that needs a consultation (mmHg), and
+  /// of a fever (°C). From `grossesse` in the configuration when it has them.
+  int get highSystolic => asInt(_g['tension_alerte_systolique']) ?? 140;
+  int get highDiastolic => asInt(_g['tension_alerte_diastolique']) ?? 90;
+  double get feverFrom => asNum(_g['fievre_a_partir_c'])?.toDouble() ?? 38;
 
   /// Trimester from completed weeks: 1st until 13 SA + 6 d, 2nd until 27 SA + 6 d,
   /// then 3rd. These are the usual obstetric definitions, read from the
@@ -148,7 +163,16 @@ class WomenDiet {
   WomenDiet(this.config);
   final ClinicalConfig config;
 
-  List<String> get groups => (config.alimentationFemme['groupes'] as List?)?.cast<String>() ?? const [];
+  /// The groups as written in the configuration (plain text or `{fr, mg, en}`),
+  /// each one once.
+  List<Object> get groups {
+    final seen = <String>{};
+    return [
+      for (final g in (config.alimentationFemme['groupes'] as List?) ?? const <Object?>[])
+        if (g != null && seen.add(localizedText(g, 'fr').trim().toLowerCase())) g,
+    ];
+  }
+
   int get minimum => asInt(config.alimentationFemme['diversite_minimale_groupes']) ?? 5;
 
   bool met(Set<int> eaten) => eaten.length >= minimum;

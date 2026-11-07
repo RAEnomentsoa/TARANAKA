@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/app/session_controller.dart';
 import 'package:taranaka/core/security/profile.dart';
@@ -87,6 +87,72 @@ void main() {
     expect(find.textContaining('faites un test de grossesse'), findsOneWidget);
     await tapKey(tester, 'go-pregnancy');
     expect(find.byType(PregnancyHomeScreen), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  Future<void> scrollWheel(WidgetTester tester, int wheel, int items) async {
+    await tester.drag(find.byType(CupertinoPicker).at(wheel), Offset(0, -48.0 * items), warnIfMissed: false);
+    await settle(tester);
+  }
+
+  testWidgets('a period of 3 months ago is added with its start and end date', (tester) async {
+    // Today (test clock) is 4 Nov 2026.
+    final (env, session) = await start(tester, const []);
+    await tapKey(tester, 'tile-cycle');
+    await tapKey(tester, 'period-add-past');
+    await tapKey(tester, 'period-start-field');
+    await scrollWheel(tester, 1, -3); // November → August
+    await tapKey(tester, 'date-wheel-ok');
+    expect(find.text('04/08/2026'), findsOneWidget);
+    await tapKey(tester, 'period-end-field');
+    // The end wheel opens 4 days after the start.
+    expect(find.text('08/08/2026'), findsWidgets);
+    await tapKey(tester, 'date-wheel-ok');
+    await tapKey(tester, 'period-save');
+    final periods = await tester.runAsync(() => CycleRepository(session.active!.db).periods());
+    expect(periods!.single.start, DateTime(2026, 8, 4));
+    expect(periods.single.end, DateTime(2026, 8, 8));
+    await revealKey(tester, 'period-2026-08-04');
+    expect(find.text('04/08/2026 – 08/08/2026 (5 j)'), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('overlapping dates are refused with a clear message', (tester) async {
+    final (env, session) = await start(tester, [(DateTime(2026, 11, 1), DateTime(2026, 11, 3))]);
+    await tapKey(tester, 'tile-cycle');
+    await tapKey(tester, 'period-add-past');
+    await tapKey(tester, 'period-start-field');
+    await scrollWheel(tester, 0, -2); // 4 → 2 November
+    await tapKey(tester, 'date-wheel-ok');
+    await tapKey(tester, 'period-save');
+    expect(find.text('Ces dates chevauchent des règles déjà notées.'), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('an ongoing period can end on another day than today', (tester) async {
+    final (env, session) = await start(tester, [(DateTime(2026, 11, 1), null)]);
+    await tapKey(tester, 'tile-cycle');
+    await tapKey(tester, 'period-end-other-day');
+    await scrollWheel(tester, 0, -1); // 4 → 3 November
+    await tapKey(tester, 'date-wheel-ok');
+    final periods = await tester.runAsync(() => CycleRepository(session.active!.db).periods());
+    expect(periods!.single.end, DateTime(2026, 11, 3));
+    expect(find.byKey(const ValueKey('period-start-today')), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('English: the whole cycle screen is in English, configuration texts included', (tester) async {
+    final (env, session) = await start(tester, const []);
+    await tester.runAsync(() => session.setLanguage('en'));
+    await settle(tester);
+    await tapKey(tester, 'tile-cycle');
+    expect(find.text('My period started today'), findsOneWidget);
+    expect(
+      find.text('Predictions are only indicative. They are not a reliable method of contraception.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('règles'), findsNothing);
+    expect(find.textContaining('prévisions'), findsNothing);
     await finish(tester, env, session);
   });
 }

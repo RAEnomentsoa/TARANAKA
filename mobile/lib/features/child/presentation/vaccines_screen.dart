@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/widgets/date_field.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/widgets/screen.dart';
@@ -48,12 +49,12 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
       await repo.unmarkVaccine(child.id, dose.code);
     } else {
       final today = dateOnly(AppScope.read(context).services.clock.now());
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: dose.dueDate.isAfter(today) ? today : dose.dueDate,
-        firstDate: child.birthDate,
-        lastDate: today,
-        helpText: '${dose.name} – ${l10n.vaccineMarkDone}',
+      final picked = await showDateWheel(
+        context,
+        title: '${dose.name} – ${l10n.vaccineMarkDone}',
+        initial: dose.dueDate.isAfter(today) ? today : dose.dueDate,
+        first: child.birthDate,
+        last: today,
       );
       if (picked == null) return;
       await repo.markVaccine(child.id, dose.code, picked);

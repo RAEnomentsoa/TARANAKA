@@ -37,16 +37,29 @@ class SettingsScreen extends StatelessWidget {
       title: l10n.settings,
       children: [
         SectionTitle(l10n.language),
-        SegmentedButton<String>(
-          segments: [
-            ButtonSegment(value: 'mg', label: Text(l10n.languageMalagasy)),
-            ButtonSegment(value: 'fr', label: Text(l10n.languageFrench)),
-          ],
-          selected: {session.languageCode ?? 'fr'},
-          onSelectionChanged: (s) => session.setLanguage(s.first),
+        // Each language is written in itself, so it can be found from any other.
+        Card(
+          child: RadioGroup<String>(
+            groupValue: session.languageCode ?? 'fr',
+            onChanged: (v) {
+              if (v != null) session.setLanguage(v);
+            },
+            child: Column(
+              children: [
+                for (final (code, label) in [('mg', 'Malagasy'), ('fr', 'Français'), ('en', 'English')])
+                  RadioListTile<String>(
+                    key: ValueKey('settings-lang-$code'),
+                    value: code,
+                    title: Text(label),
+                  ),
+              ],
+            ),
+          ),
         ),
-        const Gap(Space.s),
-        Text(l10n.malagasyReviewNote, style: Theme.of(context).textTheme.bodySmall),
+        if (session.languageCode == 'mg') ...[
+          const Gap(Space.s),
+          Text(l10n.malagasyReviewNote, style: Theme.of(context).textTheme.bodySmall),
+        ],
         ...moduleSettingsSections(context),
         SectionTitle(l10n.privacyTitle),
         Card(

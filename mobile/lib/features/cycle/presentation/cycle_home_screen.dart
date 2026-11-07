@@ -12,7 +12,6 @@ import '../../../core/widgets/status_pill.dart';
 import '../../pregnancy/presentation/pregnancy_home_screen.dart';
 import '../data/cycle_repository.dart';
 import '../domain/cycle.dart';
-import 'cycle_calendar.dart';
 
 CycleRepository cycleRepository(BuildContext context) {
   final scope = AppScope.read(context);
@@ -47,6 +46,17 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
   Future<void> _startOn(DateTime day) async {
     await cycleRepository(context).start(day);
     _reload();
+  }
+
+  /// Adds a past period ([period] null) or edits one.
+  Future<void> _openSheet(Period? period, List<Period> periods, DateTime today) async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _PeriodSheet(period: period, periods: periods, today: today),
+    );
+    if (changed == true) _reload();
   }
 
   @override
@@ -114,6 +124,27 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
                 tone: Tone.danger,
               ),
               const Gap(Space.m),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('period-end-other-day'),
+                  onPressed: () async {
+                    final picked = await showDateWheel(
+                      context,
+                      title: l10n.periodEndDate,
+                      initial: today,
+                      first: ongoing.start,
+                      last: today,
+                    );
+                    if (picked == null || !context.mounted) return;
+                    await cycleRepository(context).end(ongoing.id, picked);
+                    _reload();
+                  },
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: Text(l10n.periodEndOtherDay),
+                ),
+              ),
+              const Gap(Space.s),
               _TodayDetails(period: ongoing, onChanged: _reload),
               const Gap(Space.l),
             ],
@@ -123,8 +154,6 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
               _SignalBox(signal: signal, summary: s, calc: calc),
             ],
             SectionTitle(l10n.cycleStats),
-            CycleCalendar(periods: periods, summary: s, today: today),
-            const Gap(Space.m),
             Wrap(
               spacing: Space.s,
               runSpacing: Space.s,
@@ -151,49 +180,29 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
               ],
             ),
             SectionTitle(l10n.periodHistory),
-            TextButton.icon(
-              key: const ValueKey('period-other-date'),
-              onPressed: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: today,
-                  firstDate: addDays(today, -400),
-                  lastDate: today,
-                  helpText: l10n.periodStartDate,
-                );
-                if (picked != null) await _startOn(picked);
-              },
-              icon: const Icon(Icons.edit_calendar_outlined),
-              label: Text(l10n.periodOtherDate),
+            OutlinedButton.icon(
+              key: const ValueKey('period-add-past'),
+              onPressed: () => _openSheet(null, periods, today),
+              icon: const Icon(Icons.history),
+              label: Text(l10n.periodAddPast),
             ),
+            const Gap(Space.s),
             for (final p in periods)
               Card(
                 child: ListTile(
+                  key: ValueKey('period-${isoDate(p.start)}'),
                   leading: const Icon(Icons.water_drop, color: AppColors.danger),
                   title: Text(
                     p.end == null
                         ? l10n.periodNoEnd(formatDate(p.start))
                         : l10n.periodDays(formatDate(p.start), formatDate(p.end!), p.length!),
                   ),
-                  trailing: IconButton(
-                    tooltip: l10n.editPeriod,
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () async {
-                      final changed = await showModalBottomSheet<bool>(
-                        context: context,
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        builder: (_) => _EditPeriod(period: p, today: today),
-                      );
-                      if (changed == true) _reload();
-                    },
-                  ),
+                  trailing: Icon(Icons.edit_outlined, semanticLabel: l10n.editPeriod),
+                  onTap: () => _openSheet(p, periods, today),
                 ),
               ),
             const Gap(Space.l),
             Text(l10n.cycleLocal, style: text.bodySmall),
-            const Gap(Space.xs),
-            Text(l10n.cycleContentMissing, style: text.bodySmall),
             Text(config.sourceLabel('cycle'), style: text.bodySmall),
           ],
         );
@@ -409,80 +418,119 @@ class _TodayDetails extends StatelessWidget {
   }
 }
 
-class _EditPeriod extends StatefulWidget {
-  const _EditPeriod({required this.period, required this.today});
-  final Period period;
+/// Start and end of a period: a past one to add (e.g. three months ago), or
+/// one to correct. Dates are picked with the wheels, never typed.
+class _PeriodSheet extends StatefulWidget {
+  const _PeriodSheet({required this.period, required this.periods, required this.today});
+  final Period? period;
+  final List<Period> periods;
   final DateTime today;
 
   @override
-  State<_EditPeriod> createState() => _EditPeriodState();
+  State<_PeriodSheet> createState() => _PeriodSheetState();
 }
 
-class _EditPeriodState extends State<_EditPeriod> {
-  late DateTime _start = widget.period.start;
-  late DateTime? _end = widget.period.end;
+class _PeriodSheetState extends State<_PeriodSheet> {
+  late DateTime? _start = widget.period?.start;
+  late DateTime? _end = widget.period?.end;
   String? _error;
+
+  /// Two years back: enough for several past cycles.
+  DateTime get _first => addDays(widget.today, -730);
+
+  Future<void> _save() async {
+    final l10n = context.l10n;
+    final start = _start;
+    if (start == null) {
+      setState(() => _error = l10n.fieldRequired);
+      return;
+    }
+    if (_end != null && _end!.isBefore(start)) {
+      setState(() => _error = l10n.endBeforeStart);
+      return;
+    }
+    if (periodOverlaps(widget.periods, start, _end, exceptId: widget.period?.id)) {
+      setState(() => _error = l10n.periodOverlap);
+      return;
+    }
+    final navigator = Navigator.of(context);
+    final repo = cycleRepository(context);
+    final p = widget.period;
+    p == null ? await repo.add(start, _end) : await repo.setDates(p.id, start, _end);
+    navigator.pop(true);
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Padding(
+    final editing = widget.period != null;
+    final start = _start;
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(Space.l, 0, Space.l, MediaQuery.viewInsetsOf(context).bottom + Space.l),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            editing ? l10n.editPeriod : l10n.periodAddPast,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const Gap(Space.m),
           if (_error != null) ...[
             NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
             const Gap(Space.m),
           ],
           DateField(
+            key: const ValueKey('period-start-field'),
             label: l10n.periodStartDate,
-            value: _start,
-            first: addDays(widget.today, -400),
+            value: start,
+            first: _first,
             last: widget.today,
-            onChanged: (d) => setState(() => _start = d),
+            onChanged: (d) => setState(() {
+              _start = d;
+              if (_end != null && _end!.isBefore(d)) _end = null;
+              _error = null;
+            }),
           ),
           const Gap(Space.m),
           DateField(
-            label: l10n.periodEndDate,
+            key: const ValueKey('period-end-field'),
+            label: l10n.periodEndOptional,
             value: _end,
-            first: addDays(widget.today, -400),
+            first: start ?? _first,
             last: widget.today,
-            onChanged: (d) => setState(() => _end = d),
+            initial: start == null ? null : _min(addDays(start, 4), widget.today),
+            onChanged: (d) => setState(() {
+              _end = d;
+              _error = null;
+            }),
+            onCleared: () => setState(() => _end = null),
           ),
           const Gap(Space.l),
-          FilledButton(
-            onPressed: () async {
-              if (_end != null && _end!.isBefore(_start)) {
-                setState(() => _error = l10n.endBeforeStart);
-                return;
-              }
-              final navigator = Navigator.of(context);
-              await cycleRepository(context).setDates(widget.period.id, _start, _end);
-              navigator.pop(true);
-            },
-            child: Text(l10n.save),
-          ),
-          const Gap(Space.s),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final ok = await confirmAction(
-                context,
-                message: l10n.deletePeriod,
-                confirmLabel: l10n.delete,
-                destructive: true,
-              );
-              if (!ok || !context.mounted) return;
-              await cycleRepository(context).delete(widget.period.id);
-              navigator.pop(true);
-            },
-            child: Text(l10n.delete),
-          ),
+          FilledButton(key: const ValueKey('period-save'), onPressed: _save, child: Text(l10n.save)),
+          if (editing) ...[
+            const Gap(Space.s),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                final ok = await confirmAction(
+                  context,
+                  message: l10n.deletePeriod,
+                  confirmLabel: l10n.delete,
+                  destructive: true,
+                );
+                if (!ok || !context.mounted) return;
+                await cycleRepository(context).delete(widget.period!.id);
+                navigator.pop(true);
+              },
+              child: Text(l10n.delete),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  static DateTime _min(DateTime a, DateTime b) => a.isBefore(b) ? a : b;
 }

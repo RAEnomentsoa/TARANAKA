@@ -227,29 +227,43 @@ class _FeedingScreenState extends State<FeedingScreen> {
       );
     }
 
-    final groupsByNumber = {for (final g in rules.groups) g.number: g};
+    final text = Theme.of(context).textTheme;
     return [
-      Text(l10n.tapFoods, style: Theme.of(context).textTheme.titleMedium),
-      const Gap(Space.m),
-      Wrap(
-        spacing: Space.s,
-        runSpacing: Space.s,
-        children: [
-          for (final f in rules.foods)
-            FilterChip(
-              key: ValueKey('food-${f.code}'),
-              avatar: Icon(_groupIcon(f.group), size: 20, color: AppColors.accent),
-              label: Text(_foodLabel(f, lang)),
-              tooltip: localizedText(groupsByNumber[f.group]?.labels, lang),
-              selected: log.foods.contains(f.code),
-              onSelected: (v) {
-                final foods = {...log.foods};
-                v ? foods.add(f.code) : foods.remove(f.code);
-                _save(next(foods: foods));
-              },
-            ),
-        ],
-      ),
+      Text(l10n.tapFoods, style: text.titleMedium),
+      // One block per food group: each food appears once, under its group.
+      for (final (group, foods) in rules.foodsByGroup()) ...[
+        const Gap(Space.m),
+        Semantics(
+          header: true,
+          child: Row(
+            children: [
+              Icon(_groupIcon(group.number), size: 20, color: AppColors.accent),
+              const SizedBox(width: Space.s),
+              Expanded(child: Text(localizedText(group.labels, lang), style: text.titleSmall)),
+              if (indicators.groups.contains(group.number))
+                Icon(Icons.check_circle, size: 20, color: AppColors.success, semanticLabel: l10n.yes),
+            ],
+          ),
+        ),
+        const Gap(Space.xs),
+        Wrap(
+          spacing: Space.s,
+          runSpacing: Space.s,
+          children: [
+            for (final f in foods)
+              FilterChip(
+                key: ValueKey('food-${f.code}'),
+                label: Text(_foodLabel(f, lang)),
+                selected: log.foods.contains(f.code),
+                onSelected: (v) {
+                  final foods = {...log.foods};
+                  v ? foods.add(f.code) : foods.remove(f.code);
+                  _save(next(foods: foods));
+                },
+              ),
+          ],
+        ),
+      ],
       const Gap(Space.l),
       _Counter(
         label: l10n.mealsCount,
@@ -265,54 +279,25 @@ class _FeedingScreenState extends State<FeedingScreen> {
         ),
       ],
       const Gap(Space.l),
+      // Diversity is pinned at the bottom of the screen; here, the other two
+      // indicators.
       Card(
         child: Padding(
           padding: const EdgeInsets.all(Space.l),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LabelWithPill(
-                label: Text(
-                  l10n.diversityScore(indicators.groupCount, indicators.groupTotal),
-                  key: const ValueKey('diversity-score'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                pill: StatusPill(
-                  icon: indicators.diversityMet ? Icons.check_circle_outline : Icons.error_outline,
-                  label: indicators.diversityMet ? l10n.diversityOk : l10n.diversityLow,
-                  tone: indicators.diversityMet ? Tone.success : Tone.warning,
-                ),
-              ),
-              const Gap(Space.s),
-              Wrap(
-                spacing: Space.xs,
-                runSpacing: Space.xs,
-                children: [
-                  for (final g in rules.groups)
-                    Tooltip(
-                      message: localizedText(g.labels, lang),
-                      child: Icon(
-                        _groupIcon(g.number),
-                        color: indicators.groups.contains(g.number) ? AppColors.accent : AppColors.outline,
-                        semanticLabel:
-                            '${localizedText(g.labels, lang)}: ${indicators.groups.contains(g.number) ? l10n.yes : l10n.no}',
-                      ),
-                    ),
-                ],
-              ),
               if (indicators.mealsRequired != null) ...[
-                const Gap(Space.m),
-                Row(
-                  children: [
-                    Expanded(child: Text(l10n.mealsScore(log.meals, indicators.mealsRequired!))),
-                    Icon(
-                      indicators.mealsMet ? Icons.check_circle_outline : Icons.error_outline,
-                      color: indicators.mealsMet ? AppColors.success : AppColors.warning,
-                    ),
-                  ],
+                LabelWithPill(
+                  label: Text(l10n.mealsScore(log.meals, indicators.mealsRequired!)),
+                  pill: StatusPill(
+                    icon: indicators.mealsMet ? Icons.check : Icons.close,
+                    label: indicators.mealsMet ? l10n.yes : l10n.no,
+                    tone: indicators.mealsMet ? Tone.success : Tone.warning,
+                  ),
                 ),
+                const Gap(Space.s),
               ],
-              const Gap(Space.s),
               LabelWithPill(
                 label: Text(l10n.acceptableDiet),
                 pill: StatusPill(
@@ -337,11 +322,10 @@ class _FeedingScreenState extends State<FeedingScreen> {
     ];
   }
 
+  /// The food name in the chosen language only.
   static String _foodLabel(Food f, String lang) {
-    final mg = f.labels['mg'] as String?;
-    final fr = f.labels['fr'] as String?;
-    if (lang == 'mg') return mg ?? fr ?? f.code;
-    return mg == null || fr == null || mg.toLowerCase() == fr.toLowerCase() ? (fr ?? f.code) : '$fr ($mg)';
+    final label = localizedText(f.labels, lang);
+    return label.isEmpty ? f.code : label;
   }
 
   static IconData _groupIcon(int group) => switch (group) {

@@ -1,0 +1,998 @@
+{
+  "@@locale": "en",
+  "appName": "TARANAKA",
+  "languageTitle": "Choose your language",
+  "languageFrench": "Français",
+  "languageMalagasy": "Malagasy",
+  "language": "Language",
+  "continueLabel": "Continue",
+  "back": "Back",
+  "cancel": "Cancel",
+  "save": "Save",
+  "confirm": "Confirm",
+  "close": "Close",
+  "skip": "Skip",
+  "yes": "Yes",
+  "no": "No",
+  "loading": "Loading…",
+  "errorGeneric": "Something went wrong. Try again.",
+  "retry": "Try again",
+  "consentTitle": "Your data, your choice",
+  "consentWhatTitle": "What is saved",
+  "consentWhat": "Your cycle, your pregnancy, and your children's growth, meals and vaccines. Only what you enter.",
+  "consentWhereTitle": "Where your data is",
+  "consentWhere": "Only on this phone, encrypted and protected by your code. Nothing is sent without your agreement. The cycle is never sent unless you turn it on.",
+  "consentEraseTitle": "Erase your data",
+  "consentErase": "At any time: Settings → “Erase all my data”.",
+  "consentNotDiagnosis": "The app guides you; it does not replace a health professional.",
+  "consentAgree": "I understand and agree",
+  "createProfileTitle": "Create your profile",
+  "nameLabel": "First name or nickname",
+  "nameRequired": "Write a first name or a nickname.",
+  "pinChoose": "Choose a 4-digit code",
+  "pinConfirm": "Type the same code once more",
+  "pinMismatch": "The two codes are different. Start again.",
+  "pinDigits": "The code must have 4 digits.",
+  "pinDeleteDigit": "Delete the last digit",
+  "pinDigitsEntered": "{count} of 4 digits",
+  "@pinDigitsEntered": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recoveryTitle": "Recovery question (optional)",
+  "recoveryHelp": "If you forget your code, the answer lets you choose a new one without losing your data.",
+  "recoveryQuestionLabel": "Your question",
+  "recoveryQuestionHint": "E.g. Name of my home village",
+  "recoveryAnswerLabel": "Your answer",
+  "modeTitle": "Who are you using the app for?",
+  "modePersonal": "For me and my family",
+  "modePersonalHint": "Cycle, pregnancy, child. No account.",
+  "modeAgent": "I am a health worker",
+  "modeAgentHint": "Screen and refer. Account provided by your supervisor.",
+  "profilesTitle": "Who is using the phone?",
+  "profileAgentBadge": "Health worker",
+  "profilePersonalBadge": "Personal",
+  "addProfile": "Add a profile",
+  "enterPin": "Enter your code",
+  "pinWrong": "Wrong code.",
+  "pinWrongRemaining": "Wrong code. {count} more attempt(s) before a delay.",
+  "@pinWrongRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pinLockedUntil": "Too many attempts. Try again in {time}.",
+  "@pinLockedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotPin": "Forgot your code?",
+  "forgotPinRecovery": "Answer your recovery question, then choose a new code.",
+  "forgotPinNoRecovery": "This profile has no recovery question. It must be reset: all its data on this phone will be erased and cannot be recovered.",
+  "forgotPinAgent": "Ask your supervisor to reset your code on the server. Then delete this profile and log in again: synced data will be restored. Data not yet synced will be lost.",
+  "resetProfile": "Delete this profile and its data",
+  "resetProfileConfirm": "Permanently delete the profile “{name}” and all its data on this phone?",
+  "@resetProfileConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "answerWrong": "Wrong answer.",
+  "newPin": "New code",
+  "currentPin": "Current code",
+  "pinChanged": "Your code has been changed.",
+  "homeGreeting": "Hello {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileCycle": "My cycle",
+  "tilePregnancy": "My pregnancy",
+  "tileChild": "My child",
+  "tileAgent": "Malnutrition & care",
+  "tileAgentHint": "For health workers only (login required)",
+  "settings": "Settings",
+  "lockNow": "Lock",
+  "switchProfile": "Switch profile",
+  "changePin": "Change my code",
+  "eraseAll": "Erase all my data",
+  "eraseAllConfirm": "All the data of this profile on this phone will be permanently erased, then the profile will be deleted. Data already synced stays on the server.",
+  "erase": "Erase",
+  "configToValidate": "Sample clinical configuration – TO BE VALIDATED (v{version}). Do not use for treatment.",
+  "@configToValidate": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "configSource": "Source: {source}",
+  "@configSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutTitle": "About",
+  "aboutConfig": "Clinical configuration: version {version}",
+  "@aboutConfig": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyTitle": "Privacy",
+  "durationSeconds": "{count} s",
+  "@durationSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutes": "{count} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "malagasyReviewNote": "Malagasy texts to be reviewed by native speakers.",
+  "syncSaved": "Saved",
+  "syncPending": "To sync",
+  "syncSynced": "Synced",
+  "syncConflict": "Conflict",
+  "agentLoginTitle": "Health worker login",
+  "agentLoginHelp": "Use the account and code given by your supervisor. The first login needs the Internet; after that everything works offline.",
+  "identifiantLabel": "Username",
+  "serverPinLabel": "Account code",
+  "serverUrlLabel": "Server address",
+  "loginButton": "Log in",
+  "loginErrorOffline": "No network. The first login needs the Internet.",
+  "loginErrorCredentials": "Wrong username or code.",
+  "loginErrorBlocked": "Account blocked after too many attempts. Try again later or call your supervisor.",
+  "loginErrorNotAgent": "This account is not a community health worker account.",
+  "loginErrorOtherAccount": "This profile is already linked to another account. Create a new profile for this health worker.",
+  "loginErrorServer": "The server answered with an error. Try again later.",
+  "agentScreen": "Screen a child",
+  "agentScreenHint": "Measure, classify, refer",
+  "agentReferrals": "My referrals",
+  "agentFollowUps": "Appointments to follow up",
+  "agentSync": "Sync",
+  "agentAccessText": "This module is for community health workers only, with a personal account created by their supervisor. Create a “health worker” profile protected by its own code.",
+  "agentAccessCreate": "Create a health worker profile",
+  "searchChild": "Search for a child (name)",
+  "newChild": "New child",
+  "noChildren": "No child found. Add one with “New child”.",
+  "childName": "Child's full name",
+  "childSex": "Sex",
+  "sexF": "Girl",
+  "sexM": "Boy",
+  "birthDate": "Date of birth",
+  "chooseDate": "Choose the date",
+  "birthDateRequired": "Choose the date of birth.",
+  "sexRequired": "Choose girl or boy.",
+  "ageMonths": "{months} months",
+  "@ageMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "measureTitle": "Measurements",
+  "measureDate": "Date of the measurement",
+  "weightKg": "Weight (kg)",
+  "lengthCm": "Height (cm)",
+  "position": "Position",
+  "positionLying": "Lying down",
+  "positionStanding": "Standing",
+  "muacMm": "Mid-upper arm circumference – MUAC (mm)",
+  "muacOnlyFrom6": "MUAC is measured from 6 months.",
+  "oedema": "Bilateral oedema (both feet)",
+  "oedemaNone": "None",
+  "dangerSigns": "Danger signs",
+  "appetite": "Appetite test",
+  "appetiteNotTested": "Not tested",
+  "appetiteGood": "Good",
+  "appetitePoor": "Poor",
+  "complications": "Medical complication",
+  "feedingDifficulties": "Breastfeeding difficulties",
+  "fieldRequired": "Required",
+  "numberInvalid": "Write a number (e.g. 8.6).",
+  "computeResult": "Save and see the result",
+  "checkMeasureTitle": "Check the measurement",
+  "checkMeasureText": "A value looks unusual: {fields}. Measure again if possible.",
+  "@checkMeasureText": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "checkMeasureKeep": "The measurement is right",
+  "checkMeasureFix": "Correct",
+  "problemBeforeBirth": "The measurement date is before the birth.",
+  "problemFuture": "The measurement date is in the future.",
+  "problemMuacAge": "MUAC is only entered between 6 and 59 months.",
+  "problemAgeRange": "This child is older than 59 months: this screening does not apply.",
+  "resultTitle": "Screening result",
+  "classMas": "SAM – severe acute malnutrition",
+  "classMam": "MAM – moderate acute malnutrition",
+  "classNormal": "No acute malnutrition",
+  "classInfantRisk": "Infant at risk",
+  "classNone": "Not classified",
+  "urgencyRed": "Red emergency",
+  "urgencyOrange": "Orange emergency",
+  "urgencyYellow": "Yellow emergency",
+  "orientationTo": "Refer to: {centre}",
+  "@orientationTo": {
+    "placeholders": {
+      "centre": {
+        "type": "String"
+      }
+    }
+  },
+  "noReferralNeeded": "No referral: advice and next screening.",
+  "nextCheck": "Next check: {date}",
+  "@nextCheck": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "zscoresTitle": "Z-scores (WHO 2006)",
+  "zscoresMissing": "Z-scores not computed: WHO tables missing from the app ({files}). The server will compute them if it has its tables.",
+  "@zscoresMissing": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "zWfh": "Weight for height",
+  "zWfa": "Weight for age",
+  "zHfa": "Height for age",
+  "createReferral": "Create the referral sheet",
+  "done": "Finish",
+  "chooseCentre": "Choose the destination centre",
+  "noCentre": "No centre saved. Sync once to load the list.",
+  "otherCentres": "Other centres",
+  "referralTitle": "Referral sheet",
+  "notTransmitted": "Not sent — show it at the centre",
+  "transmitted": "Sent to the server",
+  "refStatusEnvoye": "Referred",
+  "refStatusRecu": "Received by the centre",
+  "refStatusPris": "In care",
+  "refStatusSuivi": "Being followed up",
+  "refStatusSortie": "Discharged",
+  "referralCode": "Code",
+  "referralChild": "Child",
+  "referralMeasures": "Measurements",
+  "referralDestination": "Destination centre",
+  "referralAgent": "Referring health worker",
+  "referralDate": "Date and time",
+  "referralReason": "Reason",
+  "referralOldCode": "Old code, already used and replaced: {code}",
+  "@referralOldCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "copyReferral": "Copy the sheet",
+  "copied": "Copied.",
+  "noReferrals": "No referrals yet.",
+  "followNotArrived": "Not at the centre after {hours} h",
+  "@followNotArrived": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "followDue": "Children to see again",
+  "followMissed": "Missed appointments",
+  "followNone": "Nothing to follow up today.",
+  "syncNow": "Sync now",
+  "syncRunning": "Syncing…",
+  "syncLast": "Last sync: {date}",
+  "@syncLast": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncNever": "Never synced",
+  "syncPendingCount": "{count} record(s) to sync",
+  "@syncPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncConflictCount": "{count} conflict(s): the centre will choose the right version",
+  "@syncConflictCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncWifiOnly": "Wi-Fi only",
+  "syncWifiOnlyHint": "Automatic sync waits for Wi-Fi. The button always works.",
+  "syncProblemOffline": "No network. Everything is saved on the phone and will be sent when the network is back.",
+  "syncProblemWifi": "Waiting for Wi-Fi.",
+  "syncProblemAuth": "Session expired. Log in again with your account code.",
+  "syncProblemServer": "The server refused or did not answer. Try again later.",
+  "syncDone": "Sync finished: {sent} sent, {received} received.",
+  "@syncDone": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "received": {
+        "type": "int"
+      }
+    }
+  },
+  "syncErrorsCount": "{count} item(s) refused by the server: they remain to be synced.",
+  "@syncErrorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reconnect": "Log in again",
+  "childHistory": "Measurement history",
+  "agentAccount": "Account: {name}",
+  "@agentAccount": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "configUpdated": "Clinical configuration updated (v{version}).",
+  "@configUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictExplain": "Another version exists on the server. Nothing is overwritten: the centre will choose.",
+  "measureSaved": "Measurement saved.",
+  "adviceSource": "Advice – {source}",
+  "@adviceSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "alertDisclaimer": "This alert does not replace a diagnosis.",
+  "myChildren": "My children",
+  "addChild": "Add a child",
+  "noMyChildren": "Add your child to follow their growth, meals and vaccines.",
+  "birthWeight": "Birth weight (kg, optional)",
+  "childAge": "{months} months",
+  "@childAge": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "childAgeDays": "{days} days",
+  "@childAgeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "growth": "Growth",
+  "feeding": "Meals",
+  "breastfeeding": "Breastfeeding",
+  "vaccines": "Vaccines",
+  "vaccinesLate": "{count} overdue",
+  "@vaccinesLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaccinesUpToDate": "Up to date",
+  "dangerSignsChild": "Danger signs",
+  "dangerSignsHint": "Tap a sign to know what to do right away.",
+  "todayMeals": "Today's meals",
+  "todayBreastfeeding": "Breastfeeding today",
+  "addMeasure": "Add a measurement",
+  "noGrowth": "No measurement yet. Add the weight and height.",
+  "growthStatusMissing": "WHO charts unavailable: the official tables are not in the app yet. Measurements are saved; ask a health worker to interpret them.",
+  "growthChartTitle": "Child's weight (kg) by age (months)",
+  "growthChartWho": "Lines: WHO curves −3, −2, median, +2, +3",
+  "growthStatus": "Status: {status}",
+  "@growthStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteMeasure": "Delete this measurement?",
+  "delete": "Delete",
+  "exclusiveQuestion": "Did your baby drink only breast milk today?",
+  "exclusiveYes": "Yes, only breast milk",
+  "exclusiveNo": "No, something else too",
+  "breastFeedsCount": "Number of breastfeeds (optional)",
+  "exclusiveLast7": "Exclusive breastfeeding: {count} day(s) out of the last 7 recorded",
+  "@exclusiveLast7": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exclusiveAdvice": "Up to 6 months, breast milk alone is enough: no water and no other food.",
+  "tapFoods": "Tap what the child ate today",
+  "mealsCount": "Number of meals",
+  "milkFeedsCount": "Milk feeds (other than breast milk)",
+  "decrease": "Less",
+  "increase": "More",
+  "diversityScore": "Diversity: {count}/{total} groups",
+  "@diversityScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "diversityOk": "Enough",
+  "diversityLow": "Not enough",
+  "mealsScore": "Meals: {count}/{needed}",
+  "@mealsScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "needed": {
+        "type": "int"
+      }
+    }
+  },
+  "acceptableDiet": "Minimum acceptable diet",
+  "feedingNotInRange": "The meal diary is for children aged 6 to 23 months.",
+  "previousDay": "Previous day",
+  "nextDay": "Next day",
+  "today": "Today",
+  "saved": "Saved.",
+  "vaccineDone": "Done on {date}",
+  "@vaccineDone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineLate": "Overdue (due on {date})",
+  "@vaccineLate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineDueToday": "Due today",
+  "vaccineUpcoming": "Due on {date}",
+  "@vaccineUpcoming": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineMarkDone": "Mark as done",
+  "vaccineUndo": "Undo “done” for this vaccine?",
+  "vaccineAtAge": "At {age}",
+  "@vaccineAtAge": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "atBirth": "birth",
+  "weeksAge": "{count} weeks",
+  "@weeksAge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "carnetPhotoNote": "Photo of the health card: not available yet in this version.",
+  "alertGo": "Go to the nearest health centre immediately.",
+  "alertSign": "Sign: {sign}",
+  "@alertSign": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      }
+    }
+  },
+  "alertCentre": "Your health centre",
+  "alertNoCentre": "Add your health centre and a number to call in Settings.",
+  "alertCall": "Call {number}",
+  "@alertCall": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "alertUnderstood": "I understand",
+  "alertTitle": "Alert",
+  "contactTitle": "My health centre",
+  "contactCentreName": "Name of the health centre (CSB)",
+  "contactCentrePhone": "Phone of the centre or emergency number",
+  "contactAgentPhone": "Phone of the community health worker",
+  "contactHelp": "Used by the alert screen, even without network.",
+  "personalDataLocal": "The data of “My child” stays on this phone.",
+  "pregnancySetupTitle": "Start the pregnancy follow-up",
+  "pregnancySetupHow": "How do you know how far along you are?",
+  "byLmp": "Date of the last period",
+  "byConfirmed": "Term confirmed by a professional",
+  "confirmedExamDate": "Date of the ultrasound or consultation",
+  "confirmedWeeks": "Weeks that day",
+  "confirmedDays": "+ days",
+  "confirmedWins": "The term confirmed by a professional comes before the date of the last period.",
+  "gaInvalid": "Check the date: the pregnancy must be between 0 and 42 weeks.",
+  "startPregnancy": "Start the follow-up",
+  "gaValue": "{weeks} wk + {days} d",
+  "@gaValue": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "gaLabel": "Pregnancy age",
+  "trimesterLabel": "Trimester {n}",
+  "@trimesterLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dueDateLabel": "Expected due date: {date}",
+  "@dueDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "postpartumLabel": "Baby born on {date} · day {days}",
+  "@postpartumLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "pregnancyDangerTitle": "Danger signs: tap if you have…",
+  "postpartumDangerTitle": "After the delivery: tap if you have…",
+  "nextContact": "Next consultation",
+  "contactAnc": "ANC {n} · {weeks} wk",
+  "@contactAnc": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "contactPnc": "Postnatal visit {n} · day {days}",
+  "@contactPnc": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "contactWent": "I went",
+  "contactDone": "Done on {date}",
+  "@contactDone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactMissed": "Not done yet (planned on {date})",
+  "@contactMissed": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactNext": "Next: {date}",
+  "@contactNext": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactPlanned": "Planned on {date}",
+  "@contactPlanned": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactUndo": "Remove “I went”?",
+  "consultations": "Consultations",
+  "antenatalTitle": "Antenatal consultations (ANC)",
+  "postnatalTitle": "Postnatal consultations",
+  "myFollowUp": "My check-ups (weight, blood pressure…)",
+  "weightKgOptional": "Weight (kg, optional)",
+  "notesLabel": "How I feel (optional)",
+  "noFollowUp": "Nothing yet. Add a measurement or a note.",
+  "add": "Add",
+  "babyMovements": "Baby's movements",
+  "movementsExplain": "First movements are usually felt around {from} to {to} weeks. The movement diary opens at {open} weeks.",
+  "@movementsExplain": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "open": {
+        "type": "int"
+      }
+    }
+  },
+  "movementsToday": "Movements counted today",
+  "movementsLess": "Is the baby moving less, or not at all?",
+  "movementsDay": "{date}: {count}",
+  "@movementsDay": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "delivery": "Delivery",
+  "deliveryDate": "Date of delivery",
+  "breastfeedingMode": "Breastfeeding",
+  "bfExclusive": "Breast milk only",
+  "bfMixed": "Mixed",
+  "bfNone": "No breast milk",
+  "deliverySaved": "Delivery saved. The follow-up after delivery begins.",
+  "endPregnancy": "End this follow-up",
+  "endPregnancyConfirm": "End this pregnancy follow-up? The data stays on the phone.",
+  "womenDiet": "My meals (10 groups)",
+  "womenDietHint": "Optional. Tick what you ate today.",
+  "womenDietScore": "{count}/10 groups",
+  "@womenDietScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "changeDates": "Correct the dates",
+  "reminderNextAnc": "Next antenatal consultation on {date}",
+  "@reminderNextAnc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderVaccines": "{name}: {count} vaccine(s) overdue",
+  "@reminderVaccines": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindersTitle": "Don't forget",
+  "pregnancyLocal": "Pregnancy data stays on this phone unless you turn on sync.",
+  "weekContentMissing": "Weekly advice will come from the validated content library (not provided yet).",
+  "periodStartedToday": "My period started today",
+  "periodEndedToday": "My period ended today",
+  "periodOtherDate": "Another date",
+  "periodStartDate": "Start of period",
+  "periodEndDate": "End of period",
+  "periodOngoing": "Period since {date}",
+  "@periodOngoing": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nextPeriod": "Next period",
+  "nextPeriodOn": "Around {date}",
+  "@nextPeriodOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nextPeriodIn": "In {count} day(s)",
+  "@nextPeriodIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fertileWindow": "Fertile window",
+  "fertileFromTo": "From {from} to {to}",
+  "@fertileFromTo": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "ovulationOn": "Ovulation around {date}",
+  "@ovulationOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "confidenceEstimate": "Estimate",
+  "confidenceReliable": "Reliable",
+  "confidenceEstimateHint": "Estimate: {count} regular cycles are needed for a reliable prediction.",
+  "@confidenceEstimateHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noPrediction": "Log at least two period starts to see a prediction.",
+  "cycleStats": "My cycles",
+  "averageCycle": "Average cycle: {days} days",
+  "@averageCycle": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "averagePeriod": "Period: {days} days on average",
+  "@averagePeriod": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "cyclesCount": "{count} cycle(s) logged",
+  "@cyclesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cycleRegular": "Regular",
+  "cycleIrregular": "Irregular",
+  "signalShort": "Several cycles shorter than {days} days.",
+  "@signalShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLong": "Several cycles longer than {days} days.",
+  "@signalLong": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLongPeriod": "A period longer than {days} days.",
+  "@signalLongPeriod": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalHeavy": "Very heavy bleeding.",
+  "signalAmenorrhoea": "No period for more than {days} days.",
+  "@signalAmenorrhoea": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLate": "Your period is {count} day(s) late. You may be pregnant: take a pregnancy test.",
+  "@signalLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signalAdvice": "Advice: talk to a health worker. This is not a diagnosis.",
+  "goToPregnancy": "Open “My pregnancy”",
+  "intensity": "Flow",
+  "intensityLight": "Light",
+  "intensityMedium": "Medium",
+  "intensityHeavy": "Heavy",
+  "pain": "Pain",
+  "painLevel": "{n} out of 3",
+  "@painLevel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mood": "Mood",
+  "moodLabels": "Very sad|Sad|Neutral|Good|Very good",
+  "periodHistory": "My periods",
+  "periodDays": "{start} – {end} ({days} d)",
+  "@periodDays": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "periodNoEnd": "{start} – ongoing",
+  "@periodNoEnd": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePeriod": "Delete this period?",
+  "calendarLegendPeriod": "Period",
+  "calendarLegendPredicted": "Expected period",
+  "calendarLegendFertile": "Fertile window",
+  "calendarLegendOvulation": "Ovulation",
+  "cycleLocal": "Cycle data stays on this phone and is never sent, unless you turn it on yourself.",
+  "cycleContentMissing": "Content on menstrual hygiene and puberty will come from the validated library.",
+  "editPeriod": "Edit",
+  "endBeforeStart": "The end must be after the start.",
+  "clearDate": "Clear the date",
+  "monthNames": "January|February|March|April|May|June|July|August|September|October|November|December",
+  "wheelDay": "Day",
+  "wheelMonth": "Month",
+  "wheelYear": "Year",
+  "wheelHour": "Hour",
+  "wheelMinute": "Minute",
+  "now": "Now",
+  "periodAddPast": "Add a past period",
+  "periodEndOtherDay": "Ended on another day",
+  "periodEndOptional": "End of period (optional)",
+  "periodOverlap": "These dates overlap a period already logged.",
+  "byDueDate": "Expected due date",
+  "dueDateHint": "Given by a health professional. It can be in the past or in the future.",
+  "duePassed": "The expected due date has passed. If the baby is born, record the delivery.",
+  "followUpWhat": "What do you want to record?",
+  "paramWeight": "Weight",
+  "paramBloodPressure": "Blood pressure",
+  "paramFundalHeight": "Fundal height",
+  "paramHemoglobin": "Haemoglobin",
+  "paramGlucose": "Blood sugar",
+  "paramTemperature": "Temperature",
+  "bpSystolic": "Upper – systolic (mmHg)",
+  "bpDiastolic": "Lower – diastolic (mmHg)",
+  "fundalHeightCm": "Fundal height (cm)",
+  "hemoglobinGdl": "Haemoglobin (g/dL)",
+  "glucoseGl": "Blood sugar (g/L)",
+  "temperatureC": "Temperature (°C)",
+  "valueInvalid": "Check the value: {field}",
+  "@valueInvalid": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "bpOrder": "The lower pressure must be smaller than the upper one.",
+  "followUpEmpty": "Enter at least one value or a note.",
+  "bpHigh": "High blood pressure ({value} mmHg). See a health worker or the health centre quickly.",
+  "@bpHigh": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "feverAlert": "Fever ({value} °C). See a health worker quickly.",
+  "@feverAlert": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFollowUp": "Delete this entry?",
+  "movementType": "What you felt",
+  "movementWhen": "Date and time",
+  "moveKick": "Kicks",
+  "moveFlutter": "Flutters",
+  "moveRoll": "Rolls, turns",
+  "moveHiccup": "Hiccups (small regular jerks)",
+  "moveStretch": "Stretches, pushes",
+  "movementAdd": "Record this movement",
+  "movementsRecent": "Recent movements",
+  "deleteMovement": "Delete this movement?",
+  "followUpTitle": "My check-ups"
+}

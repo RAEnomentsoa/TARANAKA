@@ -221,4 +221,23 @@ const List<List<String>> migrations = [
     )''',
     'CREATE INDEX cycle_debut ON cycle(date_debut)',
   ],
+  // v6 – due date entered directly (past or future), dated health
+  // parameters of the pregnancy follow-up, baby movements by type and time.
+  [
+    'ALTER TABLE grossesse ADD COLUMN dpa_saisie TEXT',
+    'ALTER TABLE suivi_grossesse ADD COLUMN tension_sys INTEGER',
+    'ALTER TABLE suivi_grossesse ADD COLUMN tension_dia INTEGER',
+    'ALTER TABLE suivi_grossesse ADD COLUMN hauteur_uterine_cm REAL',
+    'ALTER TABLE suivi_grossesse ADD COLUMN hemoglobine_g_dl REAL',
+    'ALTER TABLE suivi_grossesse ADD COLUMN glycemie_g_l REAL',
+    'ALTER TABLE suivi_grossesse ADD COLUMN temperature_c REAL',
+    '''CREATE TABLE mouvement_evenement (
+      id TEXT PRIMARY KEY,
+      grossesse_id TEXT NOT NULL REFERENCES grossesse(id) ON DELETE CASCADE,
+      horodatage TEXT NOT NULL,
+      type TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )''',
+    'CREATE INDEX mouvement_evenement_g ON mouvement_evenement(grossesse_id, horodatage)',
+  ],
 ];

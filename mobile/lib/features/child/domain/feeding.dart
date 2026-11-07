@@ -85,15 +85,47 @@ class FeedingRules {
   int get logMinMonths => asInt(_section['journal_age_min_mois']) ?? 6;
   int get logMaxMonths => asInt(_section['journal_age_max_mois']) ?? 23;
 
-  List<FoodGroup> get groups => [
-    for (final g in asMapList(_section['groupes']))
-      FoodGroup(number: asInt(g['numero'])!, field: g['champ']! as String, labels: g),
-  ];
+  /// The food groups, each number once, in order.
+  List<FoodGroup> get groups {
+    final byNumber = <int, FoodGroup>{};
+    for (final g in asMapList(_section['groupes'])) {
+      final n = asInt(g['numero']);
+      final field = g['champ'];
+      if (n == null || field is! String) continue;
+      byNumber.putIfAbsent(n, () => FoodGroup(number: n, field: field, labels: g));
+    }
+    return byNumber.values.toList()..sort((a, b) => a.number.compareTo(b.number));
+  }
 
-  List<Food> get foods => [
-    for (final f in asMapList(_section['aliments']))
-      Food(code: f['code']! as String, group: asInt(f['groupe'])!, labels: f),
-  ];
+  /// The foods, each one once: a code, or a name in a group, listed twice in
+  /// the configuration (e.g. the same pulse added by two regions) shows once.
+  List<Food> get foods {
+    final codes = <String>{};
+    final names = <String>{};
+    return [
+      for (final f in asMapList(_section['aliments']))
+        if (f['code'] is String && asInt(f['groupe']) != null)
+          if (codes.add(f['code']! as String) &&
+              names.add('${asInt(f['groupe'])}:${localizedText(f, 'fr').trim().toLowerCase()}'))
+            Food(code: f['code']! as String, group: asInt(f['groupe'])!, labels: f),
+    ];
+  }
+
+  /// Foods sorted under their group, groups without food left out.
+  List<(FoodGroup, List<Food>)> foodsByGroup() {
+    final all = foods;
+    return [
+      for (final g in groups)
+        if (all.any((f) => f.group == g.number))
+          (
+            g,
+            [
+              for (final f in all)
+                if (f.group == g.number) f,
+            ],
+          ),
+    ];
+  }
 
   /// The breast-milk group (`g1_lait_maternel`).
   int get breastMilkGroup =>
@@ -120,10 +152,12 @@ class FeedingRules {
     final milkMin = asInt(rule?['dont_lait_min']) ?? 0;
     final acceptable = diversity && mealsMet && (breastfed || day.milkFeeds >= milkMin);
 
+    final adviceCodes = <String>{};
     final advice = <Advice>[
       for (final c in asMapList(_section['conseils']))
         if (c['si_groupes_absents'] is List &&
-            (c['si_groupes_absents']! as List).every((g) => !eaten.contains(asInt(g))))
+            (c['si_groupes_absents']! as List).every((g) => !eaten.contains(asInt(g))) &&
+            adviceCodes.add(c['code']! as String))
           Advice(code: c['code']! as String, labels: c),
     ];
 

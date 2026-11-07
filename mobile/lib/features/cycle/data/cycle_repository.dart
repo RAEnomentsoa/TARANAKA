@@ -42,6 +42,14 @@ class CycleRepository {
     return (await periods()).firstWhere((p) => p.id == id);
   }
 
+  /// A period entered afterwards (e.g. three months ago), with its end.
+  Future<Period> add(DateTime startDay, DateTime? endDay) async {
+    final p = await start(startDay);
+    if (endDay == null) return p;
+    await end(p.id, endDay);
+    return (await periods()).firstWhere((e) => e.id == p.id);
+  }
+
   Future<void> end(String id, DateTime day) => _update(id, {'date_fin': isoDate(day)});
 
   Future<void> setDetails(String id, {String? intensity, int? pain, int? mood, String? notes}) =>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/i18n/language.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
 
@@ -18,7 +19,11 @@ class ConsentScreen extends StatelessWidget {
       leading: IconButton(
         tooltip: l10n.language,
         icon: const Icon(Icons.translate),
-        onPressed: () => session.setLanguage(session.languageCode == 'mg' ? 'fr' : 'mg'),
+        // mg → fr → en → mg.
+        onPressed: () {
+          final i = appLanguages.indexOf(session.languageCode ?? 'mg');
+          session.setLanguage(appLanguages[(i + 1) % appLanguages.length]);
+        },
       ),
       bottomAction: FilledButton(
         key: const ValueKey('consent-accept'),

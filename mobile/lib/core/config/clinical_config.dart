@@ -1,3 +1,5 @@
+import '../i18n/language.dart';
+
 /// The versioned clinical configuration (spec §11).
 ///
 /// Thresholds, calendars, danger signs and advice live here, never in code.
@@ -41,7 +43,7 @@ class ClinicalConfig {
   /// "Source – version" shown on every advice screen (spec §11).
   String sourceLabel(String sectionName) {
     final source = section(sectionName)['source'] as String?;
-    return source == null ? 'v$version' : '$source – v$version';
+    return source == null ? 'v$version' : '${localizedText(source, appLanguage)} – v$version';
   }
 
   factory ClinicalConfig.fromJson(Map<String, Object?> json) => ClinicalConfig(
@@ -80,15 +82,36 @@ class ClinicalConfig {
   }
 }
 
-/// Reads a `{"fr": ..., "mg": ...}` text in the user's language, falling back
-/// to French while the Malagasy text is not written yet (`"mg": null`).
+/// Translations of configuration texts, keyed by the French text
+/// (assets/config/translations.json). They fill in the languages the
+/// configuration does not carry yet ("en", or `"mg": null`), so a screen never
+/// mixes two languages.
+final Map<String, Map<String, String>> configTranslations = {};
+
+void loadConfigTranslations(Map<String, Object?> json) {
+  configTranslations.clear();
+  for (final e in json.entries) {
+    final v = e.value;
+    if (v is Map) {
+      configTranslations[e.key] = {
+        for (final t in v.entries)
+          if (t.value is String && (t.value as String).isNotEmpty) t.key as String: t.value as String,
+      };
+    }
+  }
+}
+
+/// Reads a `{"fr": ..., "mg": ..., "en": ...}` text (or a plain French string)
+/// in the user's language. A missing text comes from [configTranslations],
+/// and only as a last resort falls back to French.
 String localizedText(Object? value, String languageCode) {
-  if (value is String) return value;
+  String translate(String fr) => languageCode == 'fr' ? fr : (configTranslations[fr]?[languageCode] ?? fr);
+  if (value is String) return translate(value);
   if (value is Map) {
     final text = value[languageCode];
     if (text is String && text.isNotEmpty) return text;
     final fr = value['fr'];
-    if (fr is String) return fr;
+    if (fr is String) return translate(fr);
   }
   return '';
 }

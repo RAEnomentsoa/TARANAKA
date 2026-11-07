@@ -6,7 +6,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/big_tile.dart';
 import '../../../core/widgets/screen.dart';
 
-/// First launch, step 1 (spec §3). Both choices are written in their own
+/// First launch, step 1 (spec §3). Every choice is written in its own
 /// language, so the screen works before any choice is made.
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key, this.onChosen});
@@ -28,7 +28,7 @@ class LanguageScreen extends StatelessWidget {
         const Icon(Icons.translate, size: 48, color: AppColors.accent),
         const Gap(Space.l),
         Text(
-          'Safidio ny fiteny\nChoisissez votre langue',
+          'Safidio ny fiteny\nChoisissez votre langue\nChoose your language',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
@@ -48,8 +48,16 @@ class LanguageScreen extends StatelessWidget {
           emphasis: session.languageCode == 'fr',
           onTap: () => choose('fr'),
         ),
+        const Gap(Space.m),
+        BigTile(
+          key: const ValueKey('lang-en'),
+          icon: Icons.language,
+          title: 'English',
+          emphasis: session.languageCode == 'en',
+          onTap: () => choose('en'),
+        ),
         const Gap(Space.l),
-        if (session.languageCode != null)
+        if (session.languageCode == 'mg')
           Text(
             context.l10n.malagasyReviewNote,
             textAlign: TextAlign.center,
