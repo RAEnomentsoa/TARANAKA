@@ -84,24 +84,36 @@ async function back() {
 
 <template>
   <div class="login">
-    <header class="login__top">
+    <aside class="login__aside">
       <div class="login__brand">
         <BrandMark />
-        <span class="login__brand-text">
-          <span class="login__name">{{ t('app.name') }}</span>
-          <span class="login__tagline">{{ t('app.tagline') }}</span>
-        </span>
+        <span class="login__name">{{ t('app.name') }}</span>
       </div>
-      <LanguageSwitch />
-    </header>
+      <div class="login__pitch">
+        <p class="login__tagline">{{ t('app.tagline') }}</p>
+        <p class="login__audience">{{ t('login.intro') }}</p>
+      </div>
+    </aside>
 
     <main class="login__main">
-      <div class="login__card">
-        <p class="login__step muted">{{ onTotpStep ? t('login.stepTotp') : t('login.stepCredentials') }}</p>
+      <div class="login__lang"><LanguageSwitch /></div>
+
+      <div class="login__panel">
+        <div class="login__mobile-brand">
+          <BrandMark />
+          <span class="login__name">{{ t('app.name') }}</span>
+        </div>
+
+        <div class="login__steps" aria-hidden="true">
+          <span class="login__step-dot login__step-dot--done" />
+          <span class="login__step-dot" :class="{ 'login__step-dot--done': onTotpStep }" />
+        </div>
+        <p class="login__step">{{ onTotpStep ? t('login.stepTotp') : t('login.stepCredentials') }}</p>
         <h1 tabindex="-1" data-page-title>{{ heading }}</h1>
-        <p class="muted">
-          {{ auth.step === 'enrolement' ? t('login.enrollIntro') : onTotpStep ? t('login.totpIntro') : t('login.intro') }}
+        <p v-if="onTotpStep" class="login__intro muted">
+          {{ auth.step === 'enrolement' ? t('login.enrollIntro') : t('login.totpIntro') }}
         </p>
+        <p v-else class="login__intro login__intro--mobile muted">{{ t('login.intro') }}</p>
 
         <InlineAlert v-if="error" tone="error" class="login__error">{{ error }}</InlineAlert>
 
@@ -121,34 +133,32 @@ async function back() {
 </template>
 
 <style scoped>
+/*
+ * Two columns on wide screens: a flat brand panel and the form. One column
+ * on phones, with the brand above the form. No card around the form: the
+ * page itself is the surface.
+ */
 .login {
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--sky-50);
-}
-
-.login__top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-5);
+  display: grid;
+  grid-template-columns: minmax(20rem, 5fr) 7fr;
   background: var(--white);
-  border-bottom: 1px solid var(--sky-200);
 }
 
-.login__brand {
+.login__aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  background: var(--sky-100);
+}
+
+.login__brand,
+.login__mobile-brand {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.login__brand-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
 }
 
 .login__name {
@@ -157,56 +167,118 @@ async function back() {
   letter-spacing: 0.06em;
 }
 
+.login__pitch {
+  max-width: 26rem;
+}
+
 .login__tagline {
-  font-size: var(--text-sm);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: var(--space-3);
+}
+
+.login__audience {
   color: var(--ink-muted);
+  margin: 0;
 }
 
 .login__main {
-  flex: 1;
+  position: relative;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-7) var(--space-5);
 }
 
-.login__card {
+.login__lang {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+}
+
+.login__panel {
   width: 100%;
-  max-width: 28rem;
-  align-self: flex-start;
-  padding: var(--space-6);
-  background: var(--white);
-  border: 1px solid var(--sky-200);
-  border-top: 4px solid var(--primary);
-  border-radius: var(--radius-md);
+  max-width: 24rem;
 }
 
-.login__card h1:focus {
+.login__panel h1 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-5);
+}
+
+.login__panel h1:focus {
   outline: none;
 }
 
+.login__mobile-brand {
+  display: none;
+  margin-bottom: var(--space-6);
+}
+
+.login__steps {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+
+.login__step-dot {
+  width: 2rem;
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  transition: background-color var(--duration) var(--easing);
+}
+
+.login__step-dot--done {
+  background: var(--primary);
+}
+
 .login__step {
+  margin: 0 0 var(--space-2);
   font-size: var(--text-sm);
   font-weight: 700;
-  margin-bottom: var(--space-2);
+  color: var(--ink-muted);
+}
+
+/* Pulled up under the title it explains. */
+.login__intro {
+  margin: calc(-1 * var(--space-3)) 0 var(--space-5);
+}
+
+.login__intro--mobile {
+  display: none;
 }
 
 .login__error {
   margin-bottom: var(--space-4);
 }
 
-@media (max-width: 30rem) {
-  .login__top {
-    padding: var(--space-3) var(--space-4);
+@media (max-width: 56rem) {
+  .login {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login__aside {
+    display: none;
+  }
+
+  .login__mobile-brand {
+    display: flex;
+  }
+
+  .login__intro--mobile {
+    display: block;
   }
 
   .login__main {
-    padding: var(--space-4) 0 0;
+    align-items: flex-start;
+    padding: var(--space-5) var(--space-4) var(--space-6);
   }
 
-  .login__card {
-    padding: var(--space-5) var(--space-4);
-    border-radius: 0;
-    border-inline: none;
+  .login__lang {
+    top: var(--space-4);
+    right: var(--space-4);
   }
 }
 </style>

@@ -32,12 +32,15 @@ defineProps({
   min-height: var(--target);
   min-width: var(--target);
   padding: var(--space-2) var(--space-5);
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   font-weight: 700;
   cursor: pointer;
   text-align: center;
   line-height: 1.2;
+  transition:
+    background-color var(--duration) var(--easing),
+    border-color var(--duration) var(--easing);
 }
 
 .btn:disabled {

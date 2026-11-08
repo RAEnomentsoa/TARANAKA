@@ -38,6 +38,8 @@
     "identifierHelp": "Ny laharan-telefaoninao na ny anarana fidirana nomen'ny mpanara-maso anao.",
     "pin": "Kaody PIN",
     "pinHelp": "Isa 4 ka hatramin'ny 6.",
+    "showPin": "Asehoy ny PIN",
+    "hidePin": "Afeno ny PIN",
     "submit": "Manohy",
     "submitting": "Manamarina…",
     "stepCredentials": "Dingana 1 amin'ny 2 : anarana fidirana sy PIN",

@@ -154,8 +154,7 @@ function confirm() {
 <style scoped>
 .conflict {
   background: var(--white);
-  border: 1px solid var(--sky-200);
-  border-left: 6px solid var(--rouge-bar);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: var(--space-5);
 }

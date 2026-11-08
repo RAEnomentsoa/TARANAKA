@@ -336,7 +336,7 @@ class _SignalBox extends StatelessWidget {
   }
 }
 
-/// Flow (3 pictograms), pain 0–3, mood (5 emojis) for the ongoing period.
+/// Flow (3 pictograms), pain 0–3, mood (5 face icons) for the ongoing period.
 class _TodayDetails extends StatelessWidget {
   const _TodayDetails({required this.period, required this.onChanged});
 
@@ -347,7 +347,16 @@ class _TodayDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final moods = l10n.moodLabels.split('|');
-    const emojis = ['😢', '🙁', '😐', '🙂', '😄'];
+    // Vector faces from Material: same drawing on every phone, unlike emojis
+    // whose look depends on the Android version and maker.
+    const moodIcons = [
+      Icons.sentiment_very_dissatisfied_outlined,
+      Icons.sentiment_dissatisfied_outlined,
+      Icons.sentiment_neutral_outlined,
+      Icons.sentiment_satisfied_outlined,
+      Icons.sentiment_very_satisfied_outlined,
+    ];
+    final scheme = Theme.of(context).colorScheme;
     Future<void> set({String? intensity, int? pain, int? mood}) async {
       await cycleRepository(context).setDetails(period.id, intensity: intensity, pain: pain, mood: mood);
       onChanged();
@@ -412,10 +421,12 @@ class _TodayDetails extends StatelessWidget {
                 message: moods[m - 1],
                 child: ChoiceChip(
                   key: ValueKey('mood-$m'),
-                  label: Text(
-                    emojis[m - 1],
-                    semanticsLabel: moods[m - 1],
-                    style: const TextStyle(fontSize: 22),
+                  showCheckmark: false,
+                  label: Icon(
+                    moodIcons[m - 1],
+                    size: 28,
+                    semanticLabel: moods[m - 1],
+                    color: period.mood == m ? scheme.primary : scheme.onSurfaceVariant,
                   ),
                   selected: period.mood == m,
                   onSelected: (_) => set(mood: m),

@@ -162,7 +162,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
   gap: var(--space-4);
   padding: var(--space-2) var(--space-5);
   background: var(--white);
-  border-bottom: 1px solid var(--sky-200);
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
@@ -211,7 +211,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
   display: none;
   width: var(--target);
   height: var(--target);
-  border: 2px solid var(--sky-200);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--white);
   color: var(--primary);
@@ -231,7 +231,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
   gap: var(--space-5);
   padding: var(--space-5) var(--space-3);
   background: var(--white);
-  border-right: 1px solid var(--sky-200);
+  border-right: 1px solid var(--line);
 }
 
 .sidenav__list {
@@ -254,23 +254,23 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
   color: var(--ink);
   font-weight: 700;
   text-decoration: none;
-  border-left: 4px solid transparent;
+  transition: background-color var(--duration) var(--easing);
 }
 
 .sidenav__link:hover {
-  background: var(--sky-50);
+  background: var(--hover);
   color: var(--primary);
 }
 
 .sidenav__link--active {
   background: var(--sky-100);
   color: var(--primary);
-  border-left-color: var(--primary);
 }
 
 .sidenav__user {
   padding: var(--space-4);
-  border-top: 1px solid var(--sky-200);
+  background: var(--sky-50);
+  border-radius: var(--radius-md);
 }
 
 .sidenav__name {
@@ -286,12 +286,17 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
 .sidenav__logout {
   min-height: var(--target);
   padding: 0 var(--space-4);
-  border: 2px solid var(--primary);
+  border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
   background: var(--white);
   color: var(--primary);
   font-weight: 700;
   cursor: pointer;
+  transition: background-color var(--duration) var(--easing);
+}
+
+.sidenav__logout:hover {
+  background: var(--sky-100);
 }
 
 .main {
@@ -319,7 +324,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
   .sidenav {
     display: none;
     border-right: none;
-    border-bottom: 1px solid var(--sky-200);
+    border-bottom: 1px solid var(--line);
   }
 
   .sidenav--open {

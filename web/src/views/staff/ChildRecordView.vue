@@ -45,7 +45,7 @@ watch(() => props.id, record.run)
 
 <template>
   <ErrorState v-if="record.error.value" :error="record.error.value" retryable @retry="record.run" />
-  <LoadingState v-else-if="!child" />
+  <LoadingState v-else-if="!child" variant="detail" />
   <template v-else>
     <PageHeader :title="child.nom">
       <template #before>
@@ -121,8 +121,9 @@ watch(() => props.id, record.run)
 }
 
 .facts div {
-  padding-left: var(--space-3);
-  border-left: 3px solid var(--sky-300);
+  padding: var(--space-3) var(--space-4);
+  background: var(--sky-50);
+  border-radius: var(--radius-sm);
 }
 
 .facts dt {
@@ -149,6 +150,6 @@ watch(() => props.id, record.run)
   gap: var(--space-3);
   min-height: var(--target);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--sky-200);
+  border-bottom: 1px solid var(--line);
 }
 </style>

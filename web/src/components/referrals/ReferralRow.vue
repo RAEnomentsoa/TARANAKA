@@ -76,25 +76,18 @@ const patient = computed(() =>
   grid-template-columns: 9rem minmax(11rem, 1.2fr) minmax(10rem, 2fr) 7rem 9rem 11rem;
   align-items: center;
   gap: var(--space-3) var(--space-4);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4);
   background: var(--white);
-  border-left: 8px solid var(--sky-200);
+  transition: background-color var(--duration) var(--easing);
+}
+
+/* Urgency is carried by the badge (icon + word), not by a coloured edge. */
+.row:hover {
+  background: var(--hover);
 }
 
 .row + .row {
-  border-top: 1px solid var(--sky-200);
-}
-
-.row--rouge {
-  border-left-color: var(--rouge-bar);
-}
-
-.row--orange {
-  border-left-color: var(--orange-bar);
-}
-
-.row--jaune {
-  border-left-color: var(--jaune-bar);
+  border-top: 1px solid var(--line);
 }
 
 .row__main {

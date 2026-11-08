@@ -33,6 +33,7 @@ flutter:
   assets:
     - assets/config/
     - assets/who/
+    - assets/images/
 
 # Host tests (flutter test) load the system SQLCipher library, so the tests
 # exercise real encryption. Install it with `apt install libsqlcipher-dev`.

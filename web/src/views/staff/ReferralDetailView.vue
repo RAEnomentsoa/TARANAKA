@@ -56,7 +56,7 @@ watch(() => props.id, load)
 
 <template>
   <ErrorState v-if="loader.error.value && !referral" :error="loader.error.value" retryable @retry="load" />
-  <LoadingState v-else-if="!referral" />
+  <LoadingState v-else-if="!referral" variant="detail" />
   <div v-else class="detail" :class="`detail--${urgency}`">
     <header class="detail__head">
       <p class="detail__label muted">{{ t('referral.code') }}</p>
@@ -177,25 +177,10 @@ watch(() => props.id, load)
 </template>
 
 <style scoped>
+/* The page heading sits on the page itself: the urgency badge below says how
+   urgent it is, with an icon and a word. */
 .detail__head {
-  padding: var(--space-5);
   margin-bottom: var(--space-5);
-  background: var(--white);
-  border: 1px solid var(--sky-200);
-  border-left: 10px solid var(--sky-300);
-  border-radius: var(--radius-md);
-}
-
-.detail--rouge .detail__head {
-  border-left-color: var(--rouge-bar);
-}
-
-.detail--orange .detail__head {
-  border-left-color: var(--orange-bar);
-}
-
-.detail--jaune .detail__head {
-  border-left-color: var(--jaune-bar);
 }
 
 .detail__label {

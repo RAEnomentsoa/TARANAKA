@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Inner fill of the TARANAKA logo (web/src/assets/logo.png). -->
+    <color name="ic_launcher_background">#E4F0FB</color>
+</resources>

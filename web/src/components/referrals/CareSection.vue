@@ -223,8 +223,24 @@ onMounted(() => {
 .timeline {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 var(--space-4);
-  border-left: 3px solid var(--sky-200);
+  padding: 0;
+}
+
+/* A dot per visit instead of a rail down the side. */
+.timeline li {
+  position: relative;
+  padding-left: var(--space-5);
+}
+
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--sky-400);
 }
 
 .timeline li + li {
@@ -255,7 +271,7 @@ onMounted(() => {
   gap: 0 var(--space-3);
   align-items: baseline;
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--sky-200);
+  border-bottom: 1px solid var(--line);
 }
 
 .visits__date {

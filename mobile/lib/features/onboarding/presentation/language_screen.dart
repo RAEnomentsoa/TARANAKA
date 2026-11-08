@@ -25,7 +25,23 @@ class LanguageScreen extends StatelessWidget {
     return AppScreen(
       children: [
         const Gap(Space.xl),
-        const Icon(Icons.translate, size: 48, color: AppColors.accent),
+        // First launch: the app's logo welcomes the user. From the settings,
+        // the screen is only a language choice, so it keeps its plain icon.
+        if (onChosen == null) ...[
+          Image.asset(
+            'assets/images/logo.png',
+            width: 72,
+            height: 72,
+            excludeFromSemantics: true,
+          ),
+          const Gap(Space.s),
+          Text(
+            context.l10n.appName,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(letterSpacing: 1.5),
+          ),
+        ] else
+          const Icon(Icons.translate, size: 48, color: AppColors.accent),
         const Gap(Space.l),
         Text(
           'Safidio ny fiteny\nChoisissez votre langue\nChoose your language',

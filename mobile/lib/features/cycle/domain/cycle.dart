@@ -25,7 +25,7 @@ class Period {
   /// 0 to 3.
   final int pain;
 
-  /// 1 to 5 (emojis), optional.
+  /// 1 to 5 (face icons, very sad to very happy), optional.
   final int? mood;
   final String notes;
 

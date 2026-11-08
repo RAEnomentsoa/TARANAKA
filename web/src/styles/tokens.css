@@ -10,6 +10,9 @@
   --sky-200: #c6e4f8; /* hairlines and panel borders (decorative) */
   --sky-300: #9fd1f2; /* brand band */
   --sky-400: #6ec1ec; /* brand accent, never for text */
+  --line: #dde9f2; /* 1px hairlines between zones (decorative) */
+  --hover: #f5f9fc; /* row and link hover */
+  --skeleton: #e4edf4; /* loading placeholders */
 
   /* Ink */
   --ink: #0f2a3d; /* 13.9:1 on sky-50 */
@@ -64,9 +67,10 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 18px;
+  --radius-pill: 999px;
   --target: 3rem; /* 48px touch targets (spec section 12) */
   --target-min: 2.75rem; /* 44px: inline links in dense lists */
   --nav-width: 16rem;
