@@ -271,14 +271,18 @@ async function back() {
     display: block;
   }
 
+  /* Three languages do not fit beside the brand on a phone: the switch gets its own row. */
   .login__main {
-    align-items: flex-start;
-    padding: var(--space-5) var(--space-4) var(--space-6);
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-5);
+    padding: var(--space-4) var(--space-4) var(--space-6);
   }
 
   .login__lang {
-    top: var(--space-4);
-    right: var(--space-4);
+    position: static;
+    align-self: flex-end;
   }
 }
 </style>
