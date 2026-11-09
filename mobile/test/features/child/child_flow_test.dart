@@ -79,10 +79,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('danger-convulsions')));
     await tester.pump(); // one frame: no animation, no waiting
     expect(find.byType(RedAlertScreen), findsOneWidget);
-    expect(find.text('Allez immédiatement au centre de santé le plus proche.'), findsOneWidget);
-    expect(find.text('Signe : Convulsions'), findsOneWidget);
+    expect(find.text('URGENCE : consultez immédiatement !'), findsOneWidget);
+    expect(find.text('Vous avez signalé des convulsions.'), findsOneWidget);
+    expect(find.text("Emmenez immédiatement l'enfant dans un centre de santé."), findsOneWidget);
     expect(find.text('CSB2 Ambohitsoa'), findsOneWidget);
-    expect(find.text('Appeler 0340000000'), findsOneWidget);
+    expect(find.text('Appeler mon centre de santé'), findsOneWidget);
     expect(find.text('Cette alerte ne remplace pas un diagnostic.'), findsOneWidget);
 
     await tester.runAsync(session.lock);

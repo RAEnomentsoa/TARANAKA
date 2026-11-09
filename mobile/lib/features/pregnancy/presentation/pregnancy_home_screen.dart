@@ -6,12 +6,15 @@ import '../../../core/i18n/l10n.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/widgets/big_tile.dart';
+import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../data/pregnancy_repository.dart';
 import '../domain/pregnancy.dart';
+import '../domain/pregnancy_weeks.dart';
 import 'pregnancy_screens.dart';
+import 'pregnancy_week_screen.dart';
 import 'pregnancy_setup_screen.dart';
 
 PregnancyRepository pregnancyRepository(BuildContext context) {
@@ -28,14 +31,9 @@ class PregnancyHomeScreen extends StatefulWidget {
 }
 
 class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
-  Future<(Pregnancy?, Map<int, DateTime>, Map<int, DateTime>)>? _data;
+  Future<PregnancyContacts>? _data;
 
-  Future<(Pregnancy?, Map<int, DateTime>, Map<int, DateTime>)> _load() async {
-    final repo = pregnancyRepository(context);
-    final p = await repo.current();
-    if (p == null) return (null, <int, DateTime>{}, <int, DateTime>{});
-    return (p, await repo.contactsDone(p.id, 'cpn'), await repo.contactsDone(p.id, 'pn'));
-  }
+  Future<PregnancyContacts> _load() => PregnancyContacts.load(pregnancyRepository(context));
 
   @override
   void didChangeDependencies() {
@@ -62,12 +60,13 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
     final config = scope.services.config.current;
     final today = dateOnly(scope.services.clock.now());
     final calc = PregnancyCalculator(config);
-    return FutureBuilder<(Pregnancy?, Map<int, DateTime>, Map<int, DateTime>)>(
+    return FutureBuilder<PregnancyContacts>(
       future: _data,
       builder: (context, snap) {
         if (snap.hasError) return Scaffold(body: ErrorView(onRetry: _reload));
         if (!snap.hasData) return const Scaffold(body: LoadingView());
-        final (p, ancDone, pncDone) = snap.data!;
+        final data = snap.data!;
+        final p = data.pregnancy;
         if (p == null) {
           return PregnancySetupForm(
             onSave: (dates) async {
@@ -78,9 +77,7 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
         }
         final ga = calc.age(p.dates, today)!;
         final due = calc.dueDate(p.dates);
-        final contacts = p.delivered
-            ? calc.postnatal(p.dates, pncDone, today)
-            : calc.antenatal(p.dates, ancDone, today);
+        final contacts = p.delivered ? data.postnatal(calc, today) : data.antenatal(calc, today);
         final next = contacts.where((c) => c.status == ContactStatus.next).firstOrNull;
         final text = Theme.of(context).textTheme;
 
@@ -139,30 +136,32 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
                 text: l10n.duePassed,
               ),
             ],
-            if (next != null) ...[
+            if (!p.delivered) ...[
               const Gap(Space.m),
-              Card(
-                child: ListTile(
-                  key: const ValueKey('next-contact'),
-                  leading: const Icon(Icons.event_available, color: AppColors.accent, size: 32),
-                  title: Text(l10n.nextContact),
-                  subtitle: Text(
-                    '${p.delivered ? l10n.contactPnc(next.number, next.label) : l10n.contactAnc(next.number, next.label)}'
-                    ' · ${formatDate(next.date)}',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _open(ContactsScreen(pregnancyId: p.id)),
-                ),
+              _WeekCard(
+                weeks: ga.weeks,
+                onTap: () => _open(PregnancyWeekScreen(currentWeek: ga.weeks)),
               ),
             ],
-            SectionTitle(p.delivered ? l10n.postpartumDangerTitle : l10n.pregnancyDangerTitle),
-            DangerSignButtons(
+            if (next != null) ...[
+              const Gap(Space.m),
+              _NextContactCard(
+                contact: next,
+                pregnancy: p,
+                calc: calc,
+                today: today,
+                onOpen: () => _open(ContactsScreen(pregnancyId: p.id)),
+                onChanged: _reload,
+              ),
+            ],
+            const Gap(Space.l),
+            DangerSignsPanel(
               kind: p.delivered ? 'post_partum' : 'grossesse',
+              title: p.delivered ? l10n.postpartumDangerHeader : l10n.pregnancyDangerHeader,
               onSignal: (code) =>
                   pregnancyRepository(context)
                       .recordDanger(p.id, code, p.delivered ? 'post_partum' : 'grossesse'),
             ),
-            Text(l10n.alertDisclaimer, style: text.bodySmall),
             const Gap(Space.l),
             BigTile(
               key: const ValueKey('pregnancy-contacts'),
@@ -238,6 +237,173 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+/// "Ma grossesse semaine par semaine": the baby and the body at today's SA.
+class _WeekCard extends StatelessWidget {
+  const _WeekCard({required this.weeks, required this.onTap});
+
+  final int weeks;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final info = pregnancyWeekInfo(weeks);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: const ValueKey('pregnancy-week'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(Space.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.child_care, color: AppColors.accent, size: 28),
+                  const SizedBox(width: Space.m),
+                  Expanded(child: Text(l10n.pregnancyWeekTitle, style: text.titleMedium)),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              const Gap(Space.s),
+              Text(l10n.pregnancyWeekIntro(weeks), key: const ValueKey('pregnancy-week-intro')),
+              const Gap(Space.s),
+              Text(
+                info.babyIn(context.lang),
+                style: text.bodyMedium?.copyWith(color: AppColors.textMuted),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Gap(Space.xs),
+              Text(l10n.weekSee, style: text.labelLarge?.copyWith(color: AppColors.accent)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The next contact: its date, the SA (or day after birth) on that very date,
+/// how long until then, and "Modifier la date".
+class _NextContactCard extends StatelessWidget {
+  const _NextContactCard({
+    required this.contact,
+    required this.pregnancy,
+    required this.calc,
+    required this.today,
+    required this.onOpen,
+    required this.onChanged,
+  });
+
+  final CareContact contact;
+  final Pregnancy pregnancy;
+  final PregnancyCalculator calc;
+  final DateTime today;
+  final VoidCallback onOpen;
+  final VoidCallback onChanged;
+
+  String get _type => pregnancy.delivered ? 'pn' : 'cpn';
+
+  Future<void> _changeDate(BuildContext context) async {
+    final l10n = context.l10n;
+    final due = calc.dueDate(pregnancy.dates);
+    final last = pregnancy.delivered
+        ? addDays(pregnancy.dates.deliveredOn!, 90)
+        : addDays(due ?? addDays(today, calc.naegeleDays), 21);
+    final picked = await showDateWheel(
+      context,
+      title: l10n.contactDateTitle,
+      initial: contact.date.isBefore(today) ? today : contact.date,
+      first: today,
+      last: last.isBefore(today) ? today : last,
+    );
+    if (picked == null || !context.mounted) return;
+    await pregnancyRepository(context).moveContact(pregnancy.id, _type, contact.number, picked);
+    onChanged();
+  }
+
+  Future<void> _reset(BuildContext context) async {
+    await pregnancyRepository(context).moveContact(pregnancy.id, _type, contact.number, null);
+    onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final date = formatDate(contact.date);
+    // SA reckoned on the date of the contact itself, never today's SA.
+    final ageThen = pregnancy.delivered ? null : calc.age(pregnancy.dates, contact.date);
+    final inDays = daysBetween(today, contact.date);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.l, Space.l, Space.l, Space.s),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.event_available, color: AppColors.accent, size: 32),
+                const SizedBox(width: Space.m),
+                Expanded(
+                  child: Text(
+                    pregnancy.delivered ? l10n.nextPncTitle(date) : l10n.nextAncTitle(date),
+                    key: const ValueKey('next-contact'),
+                    style: text.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(Space.s),
+            Text(
+              ageThen == null
+                  ? l10n.contactPnc(contact.number, contact.label)
+                  : l10n.nextAncDetail(contact.number, ageThen.weeks, ageThen.days),
+              key: const ValueKey('next-contact-detail'),
+            ),
+            Text(l10n.contactInDays(inDays), style: text.bodySmall),
+            if (contact.moved)
+              Text(
+                l10n.contactMovedFrom(formatDate(contact.plannedDate)),
+                key: const ValueKey('next-contact-moved'),
+                style: text.bodySmall?.copyWith(color: AppColors.textMuted),
+              ),
+            const Gap(Space.xs),
+            Wrap(
+              spacing: Space.s,
+              children: [
+                TextButton.icon(
+                  key: const ValueKey('next-contact-edit'),
+                  onPressed: () => _changeDate(context),
+                  icon: const Icon(Icons.edit_calendar_outlined),
+                  label: Text(l10n.changeContactDate),
+                ),
+                if (contact.moved)
+                  TextButton.icon(
+                    key: const ValueKey('next-contact-reset'),
+                    onPressed: () => _reset(context),
+                    icon: const Icon(Icons.restore),
+                    label: Text(l10n.contactDateReset),
+                  ),
+                TextButton.icon(
+                  key: const ValueKey('next-contact-all'),
+                  onPressed: onOpen,
+                  icon: const Icon(Icons.event_note),
+                  label: Text(l10n.consultations),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

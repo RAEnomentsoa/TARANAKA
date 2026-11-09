@@ -2,11 +2,112 @@ import '../../../core/config/clinical_config.dart';
 
 /// Food of the configuration (local Malagasy foods), with its WHO/UNICEF group.
 class Food {
-  const Food({required this.code, required this.group, required this.labels});
+  const Food({
+    required this.code,
+    required this.group,
+    required this.labels,
+    this.custom = false,
+    this.hidden = false,
+  });
+
+  /// A food typed by the user (code `perso_…`), kept on the phone.
+  factory Food.custom({
+    required String code,
+    required int group,
+    required String name,
+    bool hidden = false,
+  }) => Food(
+    code: code,
+    group: group,
+    labels: {'fr': name, 'en': name, 'mg': name},
+    custom: true,
+    hidden: hidden,
+  );
+
   final String code;
   final int group;
   final Map<String, Object?> labels;
+  final bool custom;
+
+  /// A custom food removed from the list: no longer offered, but the days it
+  /// was noted still count its group.
+  final bool hidden;
+
+  String get name => labels['fr']?.toString() ?? code;
 }
+
+/// Common foods added to those of the configuration, so the choice is not
+/// limited to one or two foods per group (e.g. only "Lait" for dairy).
+/// Local Malagasy names; to be reviewed with the clinical configuration.
+const List<Map<String, Object?>> commonFoods = [
+  // 2 – Céréales, racines, tubercules
+  {'code': 'katsaka', 'groupe': 2, 'fr': 'Maïs', 'en': 'Maize', 'mg': 'katsaka'},
+  {'code': 'vomanga', 'groupe': 2, 'fr': 'Patate douce', 'en': 'Sweet potato', 'mg': 'vomanga'},
+  {'code': 'ovy', 'groupe': 2, 'fr': 'Pomme de terre', 'en': 'Potato', 'mg': 'ovy'},
+  {'code': 'saonjo', 'groupe': 2, 'fr': 'Taro', 'en': 'Taro', 'mg': 'saonjo'},
+  {'code': 'mofo', 'groupe': 2, 'fr': 'Pain', 'en': 'Bread', 'mg': 'mofo'},
+  {'code': 'paty', 'groupe': 2, 'fr': 'Pâtes', 'en': 'Pasta', 'mg': 'paty'},
+  // 3 – Légumineuses, noix, graines
+  {'code': 'voanjobory', 'groupe': 3, 'fr': 'Pois de terre', 'en': 'Bambara groundnut', 'mg': 'voanjobory'},
+  {'code': 'kabaro', 'groupe': 3, 'fr': 'Pois du Cap', 'en': 'Lima beans', 'mg': 'kabaro'},
+  {'code': 'lantilla', 'groupe': 3, 'fr': 'Lentilles', 'en': 'Lentils', 'mg': 'lantilla'},
+  {'code': 'voanemba', 'groupe': 3, 'fr': 'Niébé', 'en': 'Cowpeas', 'mg': 'voanemba'},
+  // 4 – Produits laitiers
+  {'code': 'yaourt', 'groupe': 4, 'fr': 'Yaourt', 'en': 'Yoghurt', 'mg': 'yaourt'},
+  {'code': 'fromazy', 'groupe': 4, 'fr': 'Fromage', 'en': 'Cheese', 'mg': 'fromazy'},
+  {'code': 'habobo', 'groupe': 4, 'fr': 'Lait caillé', 'en': 'Curdled milk', 'mg': 'habobo'},
+  {
+    'code': 'ronono_vovoka',
+    'groupe': 4,
+    'fr': 'Lait en poudre',
+    'en': 'Powdered milk',
+    'mg': 'ronono vovoka',
+  },
+  // 5 – Viandes, poissons, volailles, abats
+  {'code': 'akoho', 'groupe': 5, 'fr': 'Poulet', 'en': 'Chicken', 'mg': 'akoho'},
+  {'code': 'henomby', 'groupe': 5, 'fr': 'Bœuf', 'en': 'Beef', 'mg': "hen'omby"},
+  {'code': 'henakisoa', 'groupe': 5, 'fr': 'Porc', 'en': 'Pork', 'mg': 'henakisoa'},
+  {'code': 'aty', 'groupe': 5, 'fr': 'Foie', 'en': 'Liver', 'mg': 'aty'},
+  {'code': 'trondro_maina', 'groupe': 5, 'fr': 'Poisson séché', 'en': 'Dried fish', 'mg': 'trondro maina'},
+  {'code': 'patsa', 'groupe': 5, 'fr': 'Crevettes séchées', 'en': 'Dried shrimp', 'mg': 'patsa'},
+  // 6 – Œufs
+  {'code': 'atody_gana', 'groupe': 6, 'fr': 'Œuf de cane', 'en': 'Duck egg', 'mg': 'atody gana'},
+  {'code': 'atody_papelika', 'groupe': 6, 'fr': 'Œuf de caille', 'en': 'Quail egg', 'mg': 'atody papelika'},
+  // 7 – Fruits et légumes riches en vitamine A
+  {'code': 'karaoty', 'groupe': 7, 'fr': 'Carotte', 'en': 'Carrot', 'mg': 'karaoty'},
+  {'code': 'papay', 'groupe': 7, 'fr': 'Papaye', 'en': 'Papaya', 'mg': 'papay'},
+  {
+    'code': 'vomanga_mena',
+    'groupe': 7,
+    'fr': 'Patate douce orange',
+    'en': 'Orange sweet potato',
+    'mg': 'vomanga mena',
+  },
+  {
+    'code': 'ravimbomanga',
+    'groupe': 7,
+    'fr': 'Feuilles de patate douce',
+    'en': 'Sweet potato leaves',
+    'mg': 'ravimbomanga',
+  },
+  // 8 – Autres fruits et légumes
+  {'code': 'voasary', 'groupe': 8, 'fr': 'Orange', 'en': 'Orange', 'mg': 'voasary'},
+  {'code': 'mananasy', 'groupe': 8, 'fr': 'Ananas', 'en': 'Pineapple', 'mg': 'mananasy'},
+  {'code': 'letsy', 'groupe': 8, 'fr': 'Litchi', 'en': 'Lychee', 'mg': 'letsy'},
+  {'code': 'zavoka', 'groupe': 8, 'fr': 'Avocat', 'en': 'Avocado', 'mg': 'zavoka'},
+  {'code': 'paoma', 'groupe': 8, 'fr': 'Pomme', 'en': 'Apple', 'mg': 'paoma'},
+  {'code': 'voatabia', 'groupe': 8, 'fr': 'Tomate', 'en': 'Tomato', 'mg': 'voatabia'},
+  {'code': 'laisoa', 'groupe': 8, 'fr': 'Chou', 'en': 'Cabbage', 'mg': 'laisoa'},
+  {'code': 'baranjely', 'groupe': 8, 'fr': 'Aubergine', 'en': 'Eggplant', 'mg': 'baranjely'},
+  {
+    'code': 'tsaramaso_maitso',
+    'groupe': 8,
+    'fr': 'Haricots verts',
+    'en': 'Green beans',
+    'mg': 'tsaramaso maitso',
+  },
+  {'code': 'concombre', 'groupe': 8, 'fr': 'Concombre', 'en': 'Cucumber', 'mg': 'konkombra'},
+];
 
 class FoodGroup {
   const FoodGroup({required this.number, required this.field, required this.labels});
@@ -75,9 +176,12 @@ class FeedingIndicators {
 
 /// Feeding rules (spec §6), all read from `alimentation_enfant` in the config.
 class FeedingRules {
-  FeedingRules(this.config);
+  FeedingRules(this.config, {this.custom = const []});
 
   final ClinicalConfig config;
+
+  /// Foods typed by the user, shown after the others of their group.
+  final List<Food> custom;
 
   Map<String, Object?> get _section => config.alimentationEnfant;
 
@@ -97,18 +201,51 @@ class FeedingRules {
     return byNumber.values.toList()..sort((a, b) => a.number.compareTo(b.number));
   }
 
-  /// The foods, each one once: a code, or a name in a group, listed twice in
-  /// the configuration (e.g. the same pulse added by two regions) shows once.
+  /// The foods, each one once: those of the configuration, the common foods,
+  /// then the user's own. A code, or a name in a group, listed twice (e.g. the
+  /// same pulse added by two regions) shows once.
   List<Food> get foods {
     final codes = <String>{};
     final names = <String>{};
+    final groupNumbers = {for (final g in groups) g.number};
+    bool keep(String code, int group, String name) => codes.add(code) && names.add('$group:${foodKey(name)}');
     return [
-      for (final f in asMapList(_section['aliments']))
+      for (final f in [
+        ...asMapList(_section['aliments']),
+        // Added foods only under a group the configuration still has.
+        for (final c in commonFoods)
+          if (groupNumbers.contains(asInt(c['groupe']))) c,
+      ])
         if (f['code'] is String && asInt(f['groupe']) != null)
-          if (codes.add(f['code']! as String) &&
-              names.add('${asInt(f['groupe'])}:${localizedText(f, 'fr').trim().toLowerCase()}'))
+          if (keep(f['code']! as String, asInt(f['groupe'])!, localizedText(f, 'fr')))
             Food(code: f['code']! as String, group: asInt(f['groupe'])!, labels: f),
+      for (final f in custom)
+        if (groupNumbers.contains(f.group) && (f.hidden ? codes.add(f.code) : keep(f.code, f.group, f.name)))
+          f,
     ];
+  }
+
+  /// A name compared without case, accents nor extra spaces.
+  static String foodKey(String name) {
+    const from = 'àâäáãèéêëìíîïòóôöõùúûüçñœ';
+    const to = 'aaaaaeeeeiiiiooooouuuucne';
+    final b = StringBuffer();
+    for (final c in name.trim().toLowerCase().split('')) {
+      final i = from.indexOf(c);
+      b.write(i < 0 ? c : to[i]);
+    }
+    return b.toString().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  /// True when [name] is already a food of [group], in any language.
+  bool hasFood(int group, String name) {
+    final key = foodKey(name);
+    return foods.any(
+      (f) =>
+          f.group == group &&
+          !f.hidden &&
+          ['fr', 'en', 'mg'].any((l) => foodKey(localizedText(f.labels, l)) == key),
+    );
   }
 
   /// Foods sorted under their group, groups without food left out.
@@ -180,3 +317,89 @@ class FeedingRules {
     for (final g in groups) g.field: eaten.contains(g.number),
   };
 }
+
+// ------------------------------------------------------------ breastfeeding
+
+/// What a baby under 6 months received besides breast milk, when the answer
+/// to "uniquement du lait maternel ?" is no (stored codes, never translated).
+const List<String> otherIntakes = ['eau', 'lait_infantile', 'aliments', 'autres'];
+
+/// A feed: at the breast (with its duration) or expressed breast milk given
+/// by cup or spoon (with its quantity). Expressed breast milk is still breast
+/// milk: it keeps the feeding exclusive.
+class BreastFeed {
+  const BreastFeed({required this.id, required this.at, required this.type, this.minutes, this.millilitres});
+
+  static const atBreast = 'sein';
+  static const expressed = 'exprime';
+
+  final String id;
+  final DateTime at;
+
+  /// [atBreast] or [expressed].
+  final String type;
+  final int? minutes;
+  final int? millilitres;
+
+  bool get isExpressed => type == expressed;
+}
+
+/// Totals of one day of feeds.
+class FeedTotals {
+  const FeedTotals({
+    required this.feeds,
+    required this.minutes,
+    required this.expressedFeeds,
+    required this.millilitres,
+  });
+
+  factory FeedTotals.of(Iterable<BreastFeed> feeds) {
+    var count = 0, minutes = 0, expressed = 0, ml = 0;
+    for (final f in feeds) {
+      count++;
+      minutes += f.minutes ?? 0;
+      if (f.isExpressed) {
+        expressed++;
+        ml += f.millilitres ?? 0;
+      }
+    }
+    return FeedTotals(feeds: count, minutes: minutes, expressedFeeds: expressed, millilitres: ml);
+  }
+
+  final int feeds;
+  final int minutes;
+  final int expressedFeeds;
+  final int millilitres;
+}
+
+/// One day of the weekly summary of breastfeeding.
+enum BreastfeedingDay {
+  /// Only breast milk (at the breast or expressed).
+  exclusive,
+
+  /// Breast milk and something else (water, formula, food…).
+  mixed,
+
+  /// Nothing noted that day.
+  notNoted,
+}
+
+/// The 7 days ending on [end] (oldest first), never before [birth], with the
+/// answer noted for each: exclusive, mixed or not noted.
+List<(DateTime, BreastfeedingDay)> breastfeedingWeek({
+  required Map<DateTime, String> answers,
+  required DateTime end,
+  required DateTime birth,
+}) => [
+  for (var i = 6; i >= 0; i--)
+    if (!DateTime(end.year, end.month, end.day - i).isBefore(DateTime(birth.year, birth.month, birth.day)))
+      () {
+        final d = DateTime(end.year, end.month, end.day - i);
+        final status = switch (answers[d]) {
+          'exclusif' => BreastfeedingDay.exclusive,
+          'mixte' => BreastfeedingDay.mixed,
+          _ => BreastfeedingDay.notNoted,
+        };
+        return (d, status);
+      }(),
+];

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/app_scope.dart';
@@ -6,6 +8,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../child/application/vaccine_reminders_sync.dart';
 import '../../child/data/child_repository.dart';
 import '../../child/domain/vaccines.dart';
 import '../../pregnancy/data/pregnancy_repository.dart';
@@ -13,7 +16,9 @@ import '../../pregnancy/domain/pregnancy.dart';
 
 /// Offline reminders shown on the personal home (spec §5, §6): the next
 /// antenatal or postnatal contact within 7 days, and late vaccines. Computed
-/// on the phone, no network, no notification text outside the app.
+/// on the phone, no network. Opening the home also sets the vaccine
+/// reminders of the phone (notifications whose lock-screen text says
+/// nothing about health).
 class PersonalReminders extends StatefulWidget {
   const PersonalReminders({super.key});
 
@@ -31,13 +36,33 @@ class _PersonalRemindersState extends State<PersonalReminders> {
     final config = scope.services.config.current;
     final today = dateOnly(scope.services.clock.now());
     final out = <String>[];
+    final profileId = scope.session.active!.info.id;
+    unawaited(
+      syncVaccineReminders(
+        db: db,
+        config: config,
+        l10n: l10n,
+        profileId: profileId,
+        now: scope.services.clock.now(),
+      ).catchError((Object _) {}),
+    );
     final pregnancy = await PregnancyRepository(db).current();
     if (pregnancy != null) {
       final calc = PregnancyCalculator(config);
       final repo = PregnancyRepository(db);
       final contacts = pregnancy.delivered
-          ? calc.postnatal(pregnancy.dates, await repo.contactsDone(pregnancy.id, 'pn'), today)
-          : calc.antenatal(pregnancy.dates, await repo.contactsDone(pregnancy.id, 'cpn'), today);
+          ? calc.postnatal(
+              pregnancy.dates,
+              await repo.contactsDone(pregnancy.id, 'pn'),
+              today,
+              moved: await repo.contactsMoved(pregnancy.id, 'pn'),
+            )
+          : calc.antenatal(
+              pregnancy.dates,
+              await repo.contactsDone(pregnancy.id, 'cpn'),
+              today,
+              moved: await repo.contactsMoved(pregnancy.id, 'cpn'),
+            );
       final next = contacts.where((c) => c.status == ContactStatus.next).firstOrNull;
       if (next != null && daysBetween(today, next.date) <= 7) {
         out.add(l10n.reminderNextAnc(formatDate(next.date)));

@@ -35,8 +35,12 @@ void main() {
     final placeholder = RegExp(r'\{(\w+)\}');
     for (final other in [read('mg'), read('en')]) {
       for (final key in fr.keys.where((k) => !k.startsWith('@'))) {
-        Set<String> names(Object? s) => placeholder.allMatches(s! as String).map((m) => m.group(1)!).toSet();
+        // Only the declared placeholders: plural branches ("=1{Demain}") are text.
+        final declared = (((fr['@$key'] as Map?)?['placeholders'] as Map?)?.keys ?? const []).toSet();
+        Set<String> names(Object? s) =>
+            placeholder.allMatches(s! as String).map((m) => m.group(1)!).where(declared.contains).toSet();
         expect(names(other[key]), names(fr[key]), reason: key);
+        expect(names(fr[key]), declared, reason: '$key: every placeholder is used');
       }
     }
   });

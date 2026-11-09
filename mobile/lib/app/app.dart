@@ -1,10 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../core/i18n/fallback_localizations.dart';
 import '../core/i18n/l10n.dart';
 import '../core/i18n/language.dart';
+import '../core/platform/screen_events.dart';
 import '../core/security/profile.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/states.dart';
@@ -15,6 +14,7 @@ import '../features/onboarding/presentation/consent_screen.dart';
 import '../features/onboarding/presentation/create_profile_screen.dart';
 import '../features/onboarding/presentation/language_screen.dart';
 import '../features/onboarding/presentation/profile_type_screen.dart';
+import '../features/onboarding/presentation/welcome_screen.dart';
 import '../features/profiles/presentation/profile_picker_screen.dart';
 import 'app_scope.dart';
 import 'app_services.dart';
@@ -32,7 +32,6 @@ class TaranakaApp extends StatefulWidget {
 
 class _TaranakaAppState extends State<TaranakaApp> with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
-  Timer? _idleTimer;
   String? _gateIdentity;
 
   @override
@@ -40,14 +39,16 @@ class _TaranakaAppState extends State<TaranakaApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.session.addListener(_onSession);
-    _idleTimer = Timer.periodic(const Duration(seconds: 15), (_) => widget.session.lockIfIdle());
+    // Never locked after a delay of inactivity: only when the screen turns
+    // off, when the user locks it herself, or when the app is closed.
+    ScreenEvents.listen(widget.session.lock);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.session.removeListener(_onSession);
-    _idleTimer?.cancel();
+    ScreenEvents.stop();
     super.dispose();
   }
 
@@ -65,7 +66,19 @@ class _TaranakaAppState extends State<TaranakaApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) widget.session.lockIfIdle();
+    switch (state) {
+      // Back in front: lock if the screen turned off meanwhile (a switch to
+      // another app, however long, never locks by itself).
+      case AppLifecycleState.resumed:
+        ScreenEvents.takeScreenOff().then((off) {
+          if (off) widget.session.lock();
+        });
+      // The app is being closed completely.
+      case AppLifecycleState.detached:
+        widget.session.lock();
+      case AppLifecycleState.inactive || AppLifecycleState.hidden || AppLifecycleState.paused:
+        break;
+    }
   }
 
   @override
@@ -84,14 +97,9 @@ class _TaranakaAppState extends State<TaranakaApp> with WidgetsBindingObserver {
             locale: Locale(session.languageCode ?? 'mg'),
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: const [AppLocalizations.delegate, ...frameworkDelegates],
-            // Any touch counts as activity for the 2-minute lock.
             builder: (context, child) {
               appLanguage = Localizations.localeOf(context).languageCode;
-              return Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (_) => session.markActivity(),
-                child: child,
-              );
+              return child!;
             },
             home: const AppGate(),
           );
@@ -111,6 +119,7 @@ class AppGate extends StatelessWidget {
     return switch (session.stage) {
       SessionStage.loading => const Scaffold(body: LoadingView()),
       SessionStage.chooseLanguage => const LanguageScreen(),
+      SessionStage.welcome => const WelcomeScreen(),
       SessionStage.chooseProfileType => const ProfileTypeScreen(),
       SessionStage.consent => const ConsentScreen(),
       // "Agent de santé": straight to the account login, which creates the profile.

@@ -5,8 +5,11 @@ import '../../../core/i18n/l10n.dart';
 import '../../../core/i18n/language.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
+import 'privacy_policy_screen.dart';
 
-/// First launch, step 2: consent in plain language (spec §3, loi 2014-038).
+/// Consent in plain language (spec §3, loi 2014-038), shown right after the
+/// profile is created: "J'accepte et je continue" opens the app, "Consulter la
+/// politique de confidentialité" opens the full policy (offline).
 class ConsentScreen extends StatelessWidget {
   const ConsentScreen({super.key});
 
@@ -25,16 +28,30 @@ class ConsentScreen extends StatelessWidget {
           session.setLanguage(appLanguages[(i + 1) % appLanguages.length]);
         },
       ),
-      bottomAction: FilledButton(
-        key: const ValueKey('consent-accept'),
-        onPressed: session.acceptConsent,
-        child: Text(l10n.consentAgree),
+      bottomAction: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton(
+            key: const ValueKey('consent-accept'),
+            onPressed: session.acceptConsent,
+            child: Text(l10n.consentAgree),
+          ),
+          const Gap(Space.s),
+          OutlinedButton.icon(
+            key: const ValueKey('consent-policy'),
+            onPressed: () =>
+                Navigator.of(context)
+                    .push(MaterialPageRoute<void>(builder: (_) => const PrivacyPolicyScreen())),
+            icon: const Icon(Icons.policy_outlined),
+            label: Text(l10n.privacyPolicyOpen),
+          ),
+        ],
       ),
       children: [
         _Point(icon: Icons.edit_note, title: l10n.consentWhatTitle, text: l10n.consentWhat),
-        _Point(icon: Icons.phone_android, title: l10n.consentWhereTitle, text: l10n.consentWhere),
-        _Point(icon: Icons.delete_outline, title: l10n.consentEraseTitle, text: l10n.consentErase),
-        _Point(icon: Icons.local_hospital_outlined, title: null, text: l10n.consentNotDiagnosis),
+        _Point(icon: Icons.shield_outlined, title: l10n.consentWhereTitle, text: l10n.consentWhere),
+        _Point(icon: Icons.tune, title: l10n.consentControlTitle, text: l10n.consentControl),
       ],
     );
   }

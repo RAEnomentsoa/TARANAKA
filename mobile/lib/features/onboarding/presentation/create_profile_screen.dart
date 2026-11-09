@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/security/pin_crypto.dart';
 import '../../../core/security/profile.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/big_tile.dart';
@@ -9,13 +10,15 @@ import '../../../core/widgets/pin_pad.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../agent/presentation/agent_login_screen.dart';
+import '../../profiles/presentation/recovery_code_card.dart';
 
 enum _Step { name, pin, confirm, mode, recovery }
 
 /// Profile creation (spec §3): the profile type first ("Pour moi et ma
-/// famille" or "Agent de santé", unless already chosen), then name, 4-digit
-/// PIN and an optional recovery question (personal mode only: agents are
-/// reset by their supervisor).
+/// famille" or "Agent de santé", unless already chosen), then name and
+/// optional e-mail address (account recovery), the secret 4-digit code, and
+/// the recovery code to download or write down (personal mode only: agents
+/// are reset by their supervisor).
 ///
 /// The actions sit at the end of the scrollable content, not in a fixed bar:
 /// on small phones, with large text or with the keyboard open, the "Créer le
@@ -37,8 +40,9 @@ class CreateProfileScreen extends StatefulWidget {
 
 class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _name = TextEditingController();
-  final _question = TextEditingController();
-  final _answer = TextEditingController();
+  final _email = TextEditingController();
+  late final String _recoveryCode = PinCrypto.joinRecoveryCodes(PinCrypto().newRecoveryCodes());
+  bool _codeKept = false;
   final _pinKey = GlobalKey<PinPadState>();
   late _Step _step = _firstStep;
   String? _pin;
@@ -55,8 +59,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   @override
   void dispose() {
     _name.dispose();
-    _question.dispose();
-    _answer.dispose();
+    _email.dispose();
     super.dispose();
   }
 
@@ -99,17 +102,19 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     }
   }
 
-  Future<void> _create({bool withRecovery = false}) async {
+  Future<void> _create() async {
     if (_busy) return;
     setState(() => _busy = true);
     final session = AppScope.read(context).session;
     final navigator = Navigator.of(context);
+    final personal = _mode == ProfileMode.personal;
     await session.createProfile(
       displayName: _name.text,
       pin: _pin!,
       mode: _mode!,
-      recoveryQuestion: withRecovery ? _question.text : null,
-      recoveryAnswer: withRecovery ? _answer.text : null,
+      email: _email.text.trim().isEmpty ? null : _email.text.trim(),
+      // Valid with or without e-mail; still shown later in Paramètres.
+      recoveryCode: personal ? _recoveryCode : null,
     );
     // The gate now shows the home of the new profile.
     if (widget.canCancel && navigator.mounted) navigator.popUntil((r) => r.isFirst);
@@ -150,8 +155,11 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       _Step.name => FilledButton(
         key: const ValueKey('name-continue'),
         onPressed: () {
+          final email = _email.text.trim();
           if (_name.text.trim().isEmpty) {
             setState(() => _error = l10n.nameRequired);
+          } else if (email.isNotEmpty && !PinCrypto.isValidEmail(email)) {
+            setState(() => _error = l10n.emailInvalid);
           } else {
             _go(_Step.pin);
           }
@@ -161,24 +169,29 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       _Step.recovery => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          FilledButton(
-            key: const ValueKey('recovery-save'),
-            onPressed: _busy
-                ? null
-                : () {
-                    if (_question.text.trim().isEmpty || _answer.text.trim().isEmpty) {
-                      _create();
-                    } else {
-                      _create(withRecovery: true);
-                    }
-                  },
-            child: Text(l10n.createProfileAction),
+          CheckboxListTile(
+            key: const ValueKey('recovery-code-kept'),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            value: _codeKept,
+            onChanged: (v) => setState(() => _codeKept = v ?? false),
+            title: Text(l10n.recoveryCodeKept),
           ),
           const Gap(Space.s),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              key: const ValueKey('recovery-save'),
+              onPressed: _busy || !_codeKept ? null : _create,
+              child: Text(l10n.createProfileAction),
+            ),
+          ),
+          const Gap(Space.s),
+          // The code stays in Paramètres → "Mon code de récupération".
           TextButton(
             key: const ValueKey('recovery-skip'),
             onPressed: _busy ? null : _create,
-            child: Text(l10n.skip),
+            child: Text(l10n.recoveryCodeLater),
           ),
         ],
       ),
@@ -205,6 +218,25 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
               prefixIcon: const Icon(Icons.person_outline),
             ),
           ),
+          // Optional: the profile works without it; it will allow the account
+          // recovery by e-mail.
+          if (_mode != ProfileMode.agent) ...[
+            const Gap(Space.s),
+            TextField(
+              key: const ValueKey('profile-email'),
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textInputAction: TextInputAction.done,
+              maxLength: 120,
+              decoration: InputDecoration(
+                labelText: l10n.emailLabel,
+                helperText: l10n.emailHelp,
+                helperMaxLines: 3,
+                prefixIcon: const Icon(Icons.alternate_email),
+              ),
+            ),
+          ],
         ];
       case _Step.pin:
         return [
@@ -265,26 +297,11 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         ];
       case _Step.recovery:
         return [
-          Text(l10n.recoveryTitle, style: title),
+          Text(l10n.recoveryCodeTitle, style: title),
           const Gap(Space.s),
-          Text(l10n.recoveryHelp),
+          Text(l10n.recoveryCodeHelp),
           const Gap(Space.l),
-          TextField(
-            key: const ValueKey('recovery-question'),
-            controller: _question,
-            maxLength: 80,
-            decoration: InputDecoration(
-              labelText: l10n.recoveryQuestionLabel,
-              hintText: l10n.recoveryQuestionHint,
-            ),
-          ),
-          const Gap(Space.s),
-          TextField(
-            key: const ValueKey('recovery-answer'),
-            controller: _answer,
-            maxLength: 60,
-            decoration: InputDecoration(labelText: l10n.recoveryAnswerLabel),
-          ),
+          RecoveryCodeCard(code: _recoveryCode, onSaved: () => setState(() => _codeKept = true)),
         ];
     }
   }

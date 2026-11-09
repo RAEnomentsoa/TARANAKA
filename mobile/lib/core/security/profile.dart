@@ -11,6 +11,26 @@ enum ProfileMode {
       ProfileMode.values.firstWhere((m) => m.name == value, orElse: () => ProfileMode.personal);
 }
 
+/// Where the recovery by e-mail stands (Firebase Auth, see
+/// core/auth/auth_service.dart).
+enum EmailRecovery {
+  /// No e-mail address, or recovery not set up.
+  none,
+
+  /// Set up on the phone; the Firebase account is created when online.
+  pending,
+
+  /// Firebase account created and secret stored: the recovery works.
+  active,
+
+  /// The address already has a Firebase account (other profile, reinstall):
+  /// to confirm with the reset link, in Paramètres.
+  toConfirm;
+
+  static EmailRecovery parse(Object? value) =>
+      EmailRecovery.values.firstWhere((s) => s.name == value, orElse: () => EmailRecovery.none);
+}
+
 /// What the device knows about a profile before it is unlocked. Holds no
 /// health data: only the display name and the wrapped key material.
 class ProfileInfo {
@@ -27,6 +47,13 @@ class ProfileInfo {
     this.recoveryQuestion,
     this.recoveryVerifier,
     this.wrappedKeyByRecovery,
+    this.email,
+    this.codeVerifiers = const [],
+    this.wrappedKeysByCode = const [],
+    this.biometric = false,
+    this.emailVerifier,
+    this.wrappedKeyByEmail,
+    this.emailRecovery = EmailRecovery.none,
   });
 
   final String id;
@@ -42,7 +69,28 @@ class ProfileInfo {
   final List<int>? recoveryVerifier;
   final List<int>? wrappedKeyByRecovery;
 
+  /// E-mail address given at the creation (optional), for the account
+  /// recovery by e-mail (Firebase Auth). Not health data.
+  final String? email;
+
+  /// Recovery by e-mail: master key wrapped by a random secret kept in
+  /// Firestore, readable only once signed in to the Firebase account.
+  final List<int>? emailVerifier;
+  final List<int>? wrappedKeyByEmail;
+  final EmailRecovery emailRecovery;
+
+  /// Recovery codes (6 codes of 4 characters, each one valid; or one older
+  /// 16-character code): a verifier and the master key wrapped by each code,
+  /// same order.
+  final List<List<int>> codeVerifiers;
+  final List<List<int>> wrappedKeysByCode;
+
+  /// Unlock with the fingerprint enabled (the key itself is kept apart).
+  final bool biometric;
+
   bool get hasRecovery => recoveryQuestion != null && wrappedKeyByRecovery != null;
+  bool get hasRecoveryCode => codeVerifiers.isNotEmpty && codeVerifiers.length == wrappedKeysByCode.length;
+  bool get hasEmailRecovery => email != null && emailVerifier != null && wrappedKeyByEmail != null;
 
   ProfileInfo copyWith({
     String? displayName,
@@ -52,6 +100,13 @@ class ProfileInfo {
     int? failedAttempts,
     DateTime? lockedUntil,
     bool clearLock = false,
+    List<List<int>>? codeVerifiers,
+    List<List<int>>? wrappedKeysByCode,
+    bool? biometric,
+    String? email,
+    List<int>? emailVerifier,
+    List<int>? wrappedKeyByEmail,
+    EmailRecovery? emailRecovery,
   }) => ProfileInfo(
     id: id,
     displayName: displayName ?? this.displayName,
@@ -65,6 +120,13 @@ class ProfileInfo {
     recoveryQuestion: recoveryQuestion,
     recoveryVerifier: recoveryVerifier,
     wrappedKeyByRecovery: wrappedKeyByRecovery,
+    email: email ?? this.email,
+    codeVerifiers: codeVerifiers ?? this.codeVerifiers,
+    wrappedKeysByCode: wrappedKeysByCode ?? this.wrappedKeysByCode,
+    biometric: biometric ?? this.biometric,
+    emailVerifier: emailVerifier ?? this.emailVerifier,
+    wrappedKeyByEmail: wrappedKeyByEmail ?? this.wrappedKeyByEmail,
+    emailRecovery: emailRecovery ?? this.emailRecovery,
   );
 
   Map<String, Object?> toJson() => {
@@ -80,12 +142,27 @@ class ProfileInfo {
     'recovery_question': recoveryQuestion,
     'recovery_verifier': recoveryVerifier == null ? null : base64Encode(recoveryVerifier!),
     'wrapped_key_recovery': wrappedKeyByRecovery == null ? null : base64Encode(wrappedKeyByRecovery!),
+    'email': email,
+    'code_verifiers': [for (final v in codeVerifiers) base64Encode(v)],
+    'wrapped_keys_code': [for (final k in wrappedKeysByCode) base64Encode(k)],
+    'biometric': biometric,
+    'email_verifier': emailVerifier == null ? null : base64Encode(emailVerifier!),
+    'wrapped_key_email': wrappedKeyByEmail == null ? null : base64Encode(wrappedKeyByEmail!),
+    'email_recovery': emailRecovery.name,
   };
 
   factory ProfileInfo.fromJson(Map<String, Object?> json) {
     List<int>? bytes(String key) {
       final value = json[key];
       return value is String ? base64Decode(value) : null;
+    }
+
+    // Lists of codes; profiles created before them have one code.
+    List<List<int>> bytesList(String key, String single) {
+      final value = json[key];
+      if (value is List) return [for (final v in value.whereType<String>()) base64Decode(v)];
+      final one = bytes(single);
+      return one == null ? const [] : [one];
     }
 
     final lockedUntil = json['locked_until'];
@@ -102,6 +179,13 @@ class ProfileInfo {
       recoveryQuestion: json['recovery_question'] as String?,
       recoveryVerifier: bytes('recovery_verifier'),
       wrappedKeyByRecovery: bytes('wrapped_key_recovery'),
+      email: json['email'] as String?,
+      codeVerifiers: bytesList('code_verifiers', 'code_verifier'),
+      wrappedKeysByCode: bytesList('wrapped_keys_code', 'wrapped_key_code'),
+      biometric: json['biometric'] == true,
+      emailVerifier: bytes('email_verifier'),
+      wrappedKeyByEmail: bytes('wrapped_key_email'),
+      emailRecovery: EmailRecovery.parse(json['email_recovery']),
     );
   }
 }

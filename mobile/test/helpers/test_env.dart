@@ -3,6 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:taranaka/core/security/biometric_auth.dart';
+
+import 'fake_auth.dart';
+
 import 'package:taranaka/app/app.dart';
 import 'package:taranaka/app/app_services.dart';
 import 'package:taranaka/app/session_controller.dart';
@@ -61,6 +65,8 @@ class TestEnv {
     String? apiBaseUrl,
     http.Client? httpClient,
     NetworkStatus? network,
+    BiometricAuth biometrics = const NoBiometricAuth(),
+    FakeAuthService? auth,
   }) async {
     final directory = dir ?? Directory.systemTemp.createTempSync('taranaka_test');
     final store = secrets ?? MemorySecretStore();
@@ -76,6 +82,8 @@ class TestEnv {
       network: network ?? FakeNetworkStatus(),
       whoTables: WhoTables.empty,
       httpClient: httpClient,
+      biometrics: biometrics,
+      auth: auth ?? FakeAuthService(),
       defaultApiBaseUrl: apiBaseUrl ?? 'http://localhost:8000',
     );
     return TestEnv._(directory, services, store, clock);

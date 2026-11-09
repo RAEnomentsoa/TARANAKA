@@ -28,9 +28,33 @@ void main() {
     expect(s.regular, isTrue);
     expect(s.nextPeriod, DateTime(2026, 10, 29));
     expect(s.ovulation, DateTime(2026, 10, 15));
+    // Fertile window: 5 days before ovulation to the day after.
+    // Fertile window: the 5 days before ovulation and the day of ovulation.
     expect((s.fertileStart, s.fertileEnd), (DateTime(2026, 10, 10), DateTime(2026, 10, 15)));
+    // Pregnancy still possible 3 days before and 2 days after.
+    expect((s.riskStart, s.riskEnd), (DateTime(2026, 10, 7), DateTime(2026, 10, 17)));
     expect(s.confidence, Confidence.reliable);
     expect(s.signals, isEmpty);
+  });
+
+  test('a period marked irregular by the user: "irrégulier" and only an estimate', () {
+    final periods = [
+      p(DateTime(2026, 7, 8)),
+      p(DateTime(2026, 8, 5)),
+      p(DateTime(2026, 9, 3)),
+      Period(
+        id: 'irr',
+        start: DateTime(2026, 10, 1),
+        end: DateTime(2026, 10, 5),
+        symptoms: const {'crampes', 'fatigue'},
+        irregular: true,
+      ),
+    ];
+    final s = calc.summarise(periods, DateTime(2026, 10, 10));
+    expect(s.regular, isFalse);
+    expect(s.confidence, Confidence.estimate);
+    // The prediction itself still uses the logged dates.
+    expect(s.nextPeriod, DateTime(2026, 10, 29));
   });
 
   test('before 3 cycles: "estimation"', () {
@@ -39,10 +63,22 @@ void main() {
     expect(s.nextPeriod, DateTime(2026, 10, 29));
   });
 
-  test('one period only: no prediction yet', () {
-    final s = calc.summarise([p(DateTime(2026, 10, 1))], DateTime(2026, 10, 10));
-    expect(s.nextPeriod, isNull);
+  test('first period logged today: next period at +28 days, ovulation 14 days before', () {
+    final today = DateTime(2026, 11, 4);
+    final s = calc.summarise([Period(id: 'first', start: today)], today);
+    expect(s.averageCycle, isNull);
+    expect(s.predictionCycle, 28);
+    expect(s.nextPeriod, DateTime(2026, 12, 2));
+    expect(s.ovulation, DateTime(2026, 11, 18)); // day 14 of the cycle
+    expect((s.fertileStart, s.fertileEnd), (DateTime(2026, 11, 13), DateTime(2026, 11, 18)));
+    expect((s.riskStart, s.riskEnd), (DateTime(2026, 11, 10), DateTime(2026, 11, 20)));
     expect(s.confidence, Confidence.estimate);
+    expect(s.signals, isEmpty);
+  });
+
+  test('no period logged: no prediction', () {
+    final s = calc.summarise(const [], DateTime(2026, 10, 10));
+    expect(s.nextPeriod, isNull);
   });
 
   test('irregular cycles stay an "estimation"', () {
@@ -116,6 +152,31 @@ void main() {
     expect(calc.ongoing([p(DateTime(2026, 11, 1))], DateTime(2026, 11, 4)), isNull);
   });
 
+  test('usual period length: the setting (3 to 8 days) wins over the average', () {
+    final periods = [p(DateTime(2026, 9, 3)), p(DateTime(2026, 10, 1))];
+    expect(calc.summarise(periods, DateTime(2026, 10, 10)).periodDays, 5);
+    expect(calc.summarise(periods, DateTime(2026, 10, 10), periodDays: 7).periodDays, 7);
+    expect(usualPeriodDays(12, null), periodDaysMax);
+    expect(usualPeriodDays(1, null), periodDaysMin);
+  });
+
+  test('a period whose end was forgotten lasts its usual length, never the whole month', () {
+    final open = Period(id: 'f', start: DateTime(2026, 10, 1));
+    // Still possibly going on: up to the usual length plus 2 days.
+    expect(forgottenEnd(open, DateTime(2026, 10, 6), 5), isNull);
+    expect(calc.ongoing([open], DateTime(2026, 10, 6)), isNotNull);
+    // Then closed at the usual length.
+    expect(forgottenEnd(open, DateTime(2026, 10, 30), 5), DateTime(2026, 10, 5));
+    expect(calc.ongoing([open], DateTime(2026, 10, 30)), isNull);
+    final today = DateTime(2026, 10, 30);
+    final marks = calendarMarks(periods: [open], summary: calc.summarise([open], today), today: today);
+    expect(marks[DateTime(2026, 10, 5)], DayMark.period);
+    expect(marks[DateTime(2026, 10, 6)], isNull);
+    expect(marks[DateTime(2026, 10, 25)], isNull);
+    // One period logged: the next one expected 28 days after its start.
+    expect(marks[DateTime(2026, 10, 29)], DayMark.predicted);
+  });
+
   test('parameters come from the configuration', () {
     expect((calc.cyclesForAverage, calc.cyclesForReliable), (6, 3));
     expect((calc.ovulationBeforePeriod, calc.fertileDaysBeforeOvulation), (14, 5));
@@ -144,6 +205,14 @@ void main() {
     expect(marks[DateTime(2026, 10, 29)], DayMark.predicted);
     expect(marks[DateTime(2026, 10, 15)], DayMark.ovulation);
     expect(marks[DateTime(2026, 10, 10)], DayMark.fertile);
+    expect(marks[DateTime(2026, 10, 14)], DayMark.fertile);
+    expect(marks[DateTime(2026, 10, 16)], DayMark.risk);
+    expect(marks[DateTime(2026, 10, 7)], DayMark.risk);
+    expect(marks[DateTime(2026, 10, 17)], DayMark.risk);
+    expect(marks[DateTime(2026, 10, 18)], isNull);
+    // The "Règles prévues" pictogram: on the exact computed dates only.
+    final summary = calc.summarise(periods, today);
+    expect(predictedStarts(summary, today).take(2), [DateTime(2026, 10, 29), DateTime(2026, 11, 26)]);
     // Following cycles too, up to 3 months ahead.
     expect(marks[DateTime(2026, 11, 26)], DayMark.predicted);
     expect(marks[DateTime(2027, 1, 21)], DayMark.predicted);
@@ -151,11 +220,21 @@ void main() {
     expect(marks.keys.where((d) => d.isAfter(DateTime(2027, 1, 31))), isEmpty);
   });
 
-  test('calendar marks without any prediction: only logged days', () {
-    final periods = [p(DateTime(2026, 9, 3))];
+  test('calendar marks from the first period: expected period at +28 days', () {
+    final today = DateTime(2026, 11, 4);
+    final periods = [Period(id: 'first', start: today)];
+    final summary = calc.summarise(periods, today);
+    final marks = calendarMarks(periods: periods, summary: summary, today: today);
+    expect(marks[today], DayMark.ongoing);
+    expect(marks[DateTime(2026, 12, 2)], DayMark.predicted);
+    expect(predictedStarts(summary, today).first, DateTime(2026, 12, 2));
+    expect(marks[DateTime(2026, 11, 18)], DayMark.ovulation);
+    expect(marks[DateTime(2026, 11, 13)], DayMark.fertile);
+    expect(marks[DateTime(2026, 11, 10)], DayMark.risk);
+  });
+
+  test('calendar marks without any period: nothing', () {
     final today = DateTime(2026, 10, 2);
-    final marks = calendarMarks(periods: periods, summary: calc.summarise(periods, today), today: today);
-    expect(marks.values.toSet(), {DayMark.period});
-    expect(marks, hasLength(5));
+    expect(calendarMarks(periods: const [], summary: calc.summarise(const [], today), today: today), isEmpty);
   });
 }

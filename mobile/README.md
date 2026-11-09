@@ -250,8 +250,8 @@ assets/who/        tables OMS à ajouter
   qu'enveloppée par une clé dérivée du **PIN** et d'un secret gardé dans le
   **Keystore Android**. Sans le téléphone, les 10 000 PIN ne peuvent pas être
   essayés hors ligne. Changer de PIN ne rechiffre pas la base.
-- 5 PIN faux → 30 s, puis 1 min, 5 min, 15 min. Verrouillage après 2 minutes
-  sans activité. Question de secours facultative (mode personnel) ; sinon
+- 5 PIN faux → 30 s, puis 1 min, 5 min, 15 min. Verrouillage quand l'écran
+  s'éteint, sur « Verrouiller » ou à la fermeture (jamais par inactivité). Question de secours facultative (mode personnel) ; sinon
   réinitialisation avec perte des données, clairement annoncée. Agent : PIN
   réinitialisé par le superviseur, profil recréé, données synchronisées
   restaurées.

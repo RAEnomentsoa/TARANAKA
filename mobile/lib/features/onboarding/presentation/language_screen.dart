@@ -32,6 +32,18 @@ class LanguageScreen extends StatelessWidget {
           Image.asset('assets/images/logo_v1.png', width: 180, height: 180, excludeFromSemantics: true)
         else
           const Icon(Icons.translate, size: 48, color: AppColors.accent),
+        if (onChosen == null) ...[
+          const Gap(Space.m),
+          // What the app is for, before any choice: in the three languages.
+          Text(
+            'Fanaraha-maso ny fahasalaman’ny reny sy ny zaza\n'
+            'Le suivi santé de la mère et de l’enfant\n'
+            'Health follow-up for mother and child',
+            key: const ValueKey('app-intro-short'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+          ),
+        ],
         const Gap(Space.l),
         Text(
           'Safidio ny fiteny\nChoisissez votre langue\nChoose your language',

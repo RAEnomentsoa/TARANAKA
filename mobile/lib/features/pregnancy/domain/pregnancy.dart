@@ -38,13 +38,23 @@ class CareContact {
     required this.label,
     required this.status,
     this.doneOn,
-  });
+    DateTime? plannedDate,
+  }) : plannedDate = plannedDate ?? date;
 
   /// 1-based, as in the national calendar.
   final int number;
+
+  /// Date of the contact: the one chosen by the user, else the planned one.
   final DateTime date;
 
-  /// SA for antenatal contacts, days after birth for postnatal ones.
+  /// Date of the national calendar, before any change by the user.
+  final DateTime plannedDate;
+
+  /// The user changed the date of this contact.
+  bool get moved => date != plannedDate;
+
+  /// SA for antenatal contacts, days after birth for postnatal ones, always
+  /// reckoned on [date]: a moved contact never shows the SA of the calendar.
   final int label;
   final ContactStatus status;
   final DateTime? doneOn;
@@ -112,18 +122,35 @@ class PregnancyCalculator {
   }
 
   /// Antenatal contacts (spec §5: OMS 2016, 8 contacts; dates from the
-  /// national calendar in the configuration).
-  List<CareContact> antenatal(PregnancyDates p, Map<int, DateTime> done, DateTime today) {
+  /// national calendar in the configuration). [moved]: dates changed by the
+  /// user, by contact number.
+  List<CareContact> antenatal(
+    PregnancyDates p,
+    Map<int, DateTime> done,
+    DateTime today, {
+    Map<int, DateTime> moved = const {},
+  }) {
     final ref = referenceDate(p);
     if (ref == null) return const [];
     final weeks =
         (config.calendrierCpn['contacts_semaines_amenorrhee'] as List?)?.map((e) => asInt(e)!).toList() ??
         const <int>[];
-    return _contacts([for (final w in weeks) (w, addDays(ref, w * 7))], done, today);
+    return _contacts(
+      [for (final w in weeks) addDays(ref, w * 7)],
+      (date) => daysBetween(ref, date) ~/ 7,
+      done,
+      moved,
+      today,
+    );
   }
 
   /// Postnatal contacts after the delivery (OMS 2022: at least 4 in 6 weeks).
-  List<CareContact> postnatal(PregnancyDates p, Map<int, DateTime> done, DateTime today) {
+  List<CareContact> postnatal(
+    PregnancyDates p,
+    Map<int, DateTime> done,
+    DateTime today, {
+    Map<int, DateTime> moved = const {},
+  }) {
     final birth = p.deliveredOn;
     if (birth == null) return const [];
     final days =
@@ -131,17 +158,30 @@ class PregnancyCalculator {
             ?.map((e) => asInt(e)!)
             .toList() ??
         const <int>[];
-    return _contacts([for (final d in days) (d, addDays(birth, d))], done, today);
+    return _contacts(
+      [for (final d in days) addDays(birth, d)],
+      (date) => daysBetween(birth, date),
+      done,
+      moved,
+      today,
+    );
   }
 
-  List<CareContact> _contacts(List<(int, DateTime)> planned, Map<int, DateTime> done, DateTime today) {
+  List<CareContact> _contacts(
+    List<DateTime> planned,
+    int Function(DateTime) labelOn,
+    Map<int, DateTime> done,
+    Map<int, DateTime> moved,
+    DateTime today,
+  ) {
     final t = dateOnly(today);
     var nextGiven = false;
     return [
       for (var i = 0; i < planned.length; i++)
         () {
           final number = i + 1;
-          final (label, date) = planned[i];
+          final date = moved[number] == null ? planned[i] : dateOnly(moved[number]!);
+          final label = labelOn(date);
           ContactStatus status;
           if (done.containsKey(number)) {
             status = ContactStatus.done;
@@ -153,7 +193,14 @@ class PregnancyCalculator {
           } else {
             status = ContactStatus.upcoming;
           }
-          return CareContact(number: number, date: date, label: label, status: status, doneOn: done[number]);
+          return CareContact(
+            number: number,
+            date: date,
+            plannedDate: planned[i],
+            label: label,
+            status: status,
+            doneOn: done[number],
+          );
         }(),
     ];
   }

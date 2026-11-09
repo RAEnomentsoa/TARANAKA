@@ -3,7 +3,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/core/config/clinical_config.dart';
+import 'package:taranaka/core/util/clock.dart';
+import 'package:taranaka/features/pregnancy/domain/follow_up_checks.dart';
+import 'package:taranaka/features/pregnancy/domain/movements.dart';
 import 'package:taranaka/features/pregnancy/domain/pregnancy.dart';
+import 'package:taranaka/features/pregnancy/domain/pregnancy_weeks.dart';
 
 import '../../helpers/config_fixture.dart';
 
@@ -27,6 +31,40 @@ void main() {
     expect(contacts[1].label, 20);
     expect(contacts[1].date, lmp.add(const Duration(days: 140)));
     expect(contacts[1].status, ContactStatus.upcoming);
+  });
+
+  test('at 23 SA the next ANC (26 SA) is on 25/11/2026; its SA is reckoned on its own date', () {
+    final p = PregnancyDates(lmp: addDays(today, -23 * 7));
+    expect(calc.age(p, today)!.weeks, 23);
+    final next = calc.antenatal(p, const {}, today).firstWhere((c) => c.status == ContactStatus.next);
+    expect(next.date, DateTime(2026, 11, 25));
+    expect(next.label, 26);
+    expect(calc.age(p, next.date)!.weeks, next.label);
+    expect(next.moved, isFalse);
+  });
+
+  test('a contact moved by the user keeps its number, shows the SA of the new date', () {
+    final p = PregnancyDates(lmp: addDays(today, -23 * 7));
+    final contacts = calc.antenatal(p, const {}, today, moved: {3: DateTime(2026, 12, 2)});
+    final next = contacts.firstWhere((c) => c.status == ContactStatus.next);
+    expect(next.number, 3);
+    expect(next.date, DateTime(2026, 12, 2));
+    expect(next.plannedDate, DateTime(2026, 11, 25));
+    expect(next.moved, isTrue);
+    expect(next.label, 27);
+    expect(calc.age(p, next.date)!.weeks, 27);
+  });
+
+  test('week by week: one stage for every SA from 4 to 42', () {
+    expect(pregnancyWeekInfo(23).fromWeek, 23);
+    expect(pregnancyWeekInfo(25).fromWeek, 23);
+    expect(pregnancyWeekInfo(2).fromWeek, pregnancyWeekMin);
+    expect(pregnancyWeekInfo(45).fromWeek, 41);
+    for (final w in pregnancyWeeks) {
+      for (final lang in ['fr', 'en', 'mg']) {
+        expect([w.babyIn(lang), w.bodyIn(lang), w.tipIn(lang)].every((t) => t.isNotEmpty), isTrue);
+      }
+    }
   });
 
   test('a term confirmed by a professional wins over the DDR', () {
@@ -149,5 +187,79 @@ void main() {
       [for (final (i, l) in diet.shown('fr')) '$i=$l'],
       ['0=Légumes verts', '1=Fruits jaunes', '2=Tomate, oignon, chou, aubergine', '3=Lait', '4=Produits'],
     );
+  });
+
+  group('baby movements', () {
+    MovementEvent e(String id, DateTime at, MovementType type) => MovementEvent(id: id, at: at, type: type);
+
+    test('hiccups are noted but not counted; history by day, latest first', () {
+      final history = movementHistory(
+        {DateTime(2026, 11, 1): 5},
+        [
+          e('a', DateTime(2026, 11, 4, 8, 10), MovementType.kick),
+          e('b', DateTime(2026, 11, 4, 9, 30), MovementType.hiccup),
+          e('c', DateTime(2026, 11, 4, 10), MovementType.felt),
+          e('d', DateTime(2026, 11, 3, 21), MovementType.roll),
+        ],
+      );
+      expect(history.map((d) => d.date), [
+        DateTime(2026, 11, 4),
+        DateTime(2026, 11, 3),
+        DateTime(2026, 11, 1),
+      ]);
+      final today = history.first;
+      expect(today.count, 2);
+      expect(today.hiccups, 1);
+      expect(today.events.map((e) => e.id), ['c', 'b', 'a']);
+      // A total of the former counter, without hours.
+      expect(history.last.count, 5);
+      expect(history.last.events, isEmpty);
+      expect(MovementType.choosable, isNot(contains(MovementType.felt)));
+    });
+
+    test('what to say depends on the term: before the first movements, before and from 28 SA', () {
+      expect(movementStage(calc, const GestationalAge(12 * 7)), MovementStage.notYet);
+      expect(movementStage(calc, const GestationalAge(16 * 7)), MovementStage.early);
+      expect(movementStage(calc, const GestationalAge(27 * 7 + 6)), MovementStage.early);
+      expect(movementStage(calc, const GestationalAge(28 * 7)), MovementStage.daily);
+      expect(movementStage(calc, null), MovementStage.early);
+    });
+  });
+
+  group('Mon suivi de grossesse: worrying values', () {
+    final limits = FollowUpLimits(sampleConfig());
+
+    test('blood pressure: severe, high, low, normal', () {
+      expect(assessFollowUp(limits, systolic: 165, diastolic: 100), [FlagKind.bpSevere]);
+      expect(assessFollowUp(limits, systolic: 130, diastolic: 112), [FlagKind.bpSevere]);
+      expect(assessFollowUp(limits, systolic: 142, diastolic: 85), [FlagKind.bpHigh]);
+      expect(assessFollowUp(limits, systolic: 120, diastolic: 90), [FlagKind.bpHigh]);
+      expect(assessFollowUp(limits, systolic: 85, diastolic: 55), [FlagKind.bpLow]);
+      expect(assessFollowUp(limits, systolic: 118, diastolic: 76), isEmpty);
+    });
+
+    test('headache or blurred vision: urgent with a high pressure, else today', () {
+      expect(assessFollowUp(limits, symptoms: {QuickSymptom.headache}), [FlagKind.preEclampsiaSigns]);
+      expect(assessFollowUp(limits, systolic: 145, diastolic: 95, symptoms: {QuickSymptom.blurredVision}), [
+        FlagKind.preEclampsiaUrgent,
+        FlagKind.bpHigh,
+      ]);
+    });
+
+    test('fever and blood sugar (fasting or not), most serious first', () {
+      expect(assessFollowUp(limits, temperatureC: 37.4), isEmpty);
+      expect(assessFollowUp(limits, temperatureC: 38.2), [FlagKind.fever]);
+      expect(assessFollowUp(limits, temperatureC: 39.3), [FlagKind.feverHigh]);
+      expect(assessFollowUp(limits, glucoseGl: 0.5), [FlagKind.glucoseLow]);
+      expect(assessFollowUp(limits, glucoseGl: 0.95, glucoseFasting: true), [FlagKind.glucoseHighFasting]);
+      expect(assessFollowUp(limits, glucoseGl: 0.95, glucoseFasting: false), isEmpty);
+      expect(assessFollowUp(limits, glucoseGl: 1.5), [FlagKind.glucoseToCheck]);
+      expect(assessFollowUp(limits, glucoseGl: 2.3), [FlagKind.glucoseVeryHigh]);
+      expect(assessFollowUp(limits, hemoglobinGdl: 10.2), [FlagKind.anaemia]);
+      expect(
+        assessFollowUp(limits, temperatureC: 38.5, hemoglobinGdl: 6.5, symptoms: {QuickSymptom.dizziness}),
+        [FlagKind.anaemiaSevere, FlagKind.fever, FlagKind.dizzy],
+      );
+    });
   });
 }
