@@ -177,15 +177,15 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
               title: l10n.myFollowUp,
               onTap: () => _open(FollowUpScreen(pregnancyId: p.id)),
             ),
-            if (!p.delivered) ...[
-              const Gap(Space.m),
-              BigTile(
-                key: const ValueKey('pregnancy-movements'),
-                icon: Icons.favorite_border,
-                title: l10n.babyMovements,
-                onTap: () => _open(MovementsScreen(pregnancyId: p.id)),
-              ),
-            ],
+            const Gap(Space.m),
+            // "Mouvements du bébé", right under "Mon suivi": always shown,
+            // whatever the SA (even before 28 SA) and after the delivery.
+            BigTile(
+              key: const ValueKey('pregnancy-movements'),
+              icon: Icons.favorite_border,
+              title: l10n.babyMovements,
+              onTap: () => _open(MovementsScreen(pregnancyId: p.id)),
+            ),
             const Gap(Space.m),
             BigTile(
               key: const ValueKey('pregnancy-diet'),

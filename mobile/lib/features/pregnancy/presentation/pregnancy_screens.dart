@@ -153,7 +153,12 @@ class FollowUpScreen extends StatefulWidget {
 class _FollowUpScreenState extends State<FollowUpScreen> {
   final _fields = {for (final p in _Param.values) p: TextEditingController()};
   final _diastolic = TextEditingController();
+
+  /// "Ce que je ressens": the search text (also a symptom of her own when
+  /// nothing in the list fits) and the symptoms already chosen.
   final _notes = TextEditingController();
+  final _notesFocus = FocusNode();
+  final List<String> _feelings = [];
   final Set<_Param> _shown = {_Param.weight};
   DateTime? _date;
   Future<List<FollowUpEntry>>? _entries;
@@ -174,6 +179,7 @@ class _FollowUpScreenState extends State<FollowUpScreen> {
     for (final c in [..._fields.values, _diastolic, _notes]) {
       c.dispose();
     }
+    _notesFocus.dispose();
     super.dispose();
   }
 
@@ -253,7 +259,8 @@ class _FollowUpScreenState extends State<FollowUpScreen> {
       hemoglobinGdl: values[_Param.hemoglobin],
       glucoseGl: values[_Param.glucose],
       temperatureC: values[_Param.temperature],
-      notes: _notes.text,
+      // The chosen symptoms, then what is still typed in the field.
+      notes: [..._feelings, if (_notes.text.trim().isNotEmpty) _notes.text.trim()].join(', '),
     );
     if (entry.isEmpty) {
       setState(() => _error = l10n.followUpEmpty);
@@ -272,6 +279,7 @@ class _FollowUpScreenState extends State<FollowUpScreen> {
     }
     if (!mounted) return;
     setState(() {
+      _feelings.clear();
       _error = null;
       _advice = advice.isEmpty ? null : advice.join('\n');
       _entries = repo.followUps(widget.pregnancyId);
@@ -331,6 +339,140 @@ class _FollowUpScreenState extends State<FollowUpScreen> {
     );
   }
 
+  /// Compared without case or accents ("maux" finds "Maux de tête").
+  static String _fold(String text) {
+    const accents = {
+      'à': 'a', 'â': 'a', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e', 'î': 'i', 'ï': 'i', //
+      'ô': 'o', 'ù': 'u', 'û': 'u', 'ç': 'c', 'œ': 'oe', '’': "'",
+    };
+    var t = text.trim().toLowerCase();
+    accents.forEach((from, to) => t = t.replaceAll(from, to));
+    return t.replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  bool _chosen(String symptom) => _feelings.any((f) => _fold(f) == _fold(symptom));
+
+  /// Adds a symptom (from the list or her own words) once, then empties the
+  /// field and keeps it focused, so another one can be searched right away.
+  void _addFeeling(String symptom) {
+    final text = symptom.trim();
+    if (text.isNotEmpty && !_chosen(text)) setState(() => _feelings.add(text));
+    _notes.clear();
+    _notesFocus.requestFocus();
+  }
+
+  /// The proposals for what is typed: the common symptoms containing it, not
+  /// chosen yet, then "Ajouter « … »" when her words match none of them.
+  List<_Feeling> _feelingOptions(String query) {
+    final symptoms = context.l10n.commonSymptoms.split('|');
+    final q = _fold(query);
+    final options = [
+      for (final (i, s) in symptoms.indexed)
+        if (!_chosen(s) && (q.isEmpty || _fold(s).contains(q))) _Feeling(s, index: i),
+    ];
+    final exact = symptoms.any((s) => _fold(s) == q);
+    if (q.isNotEmpty && !exact && !_chosen(query)) options.add(_Feeling(query.trim()));
+    return options;
+  }
+
+  /// "Ce que je ressens": search, choice and free entry in one field. Typing
+  /// filters the common symptoms in a compact list right under the field
+  /// (about five lines, it scrolls); a proposal is chosen with a tap, or her
+  /// own words are added with "Ajouter « … »" or the keyboard's done key.
+  /// The chosen symptoms show as chips that can be removed.
+  Widget _notesField() {
+    final l10n = context.l10n;
+    final symptoms = l10n.commonSymptoms.split('|');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_feelings.isNotEmpty) ...[
+          Wrap(
+            spacing: Space.s,
+            runSpacing: Space.xs,
+            children: [
+              for (final (i, f) in _feelings.indexed)
+                InputChip(
+                  key: ValueKey('feeling-chip-$i'),
+                  label: Text(f),
+                  deleteButtonTooltipMessage: l10n.delete,
+                  onDeleted: () => setState(() => _feelings.removeAt(i)),
+                ),
+            ],
+          ),
+          const Gap(Space.s),
+        ],
+        LayoutBuilder(
+          builder: (context, constraints) => RawAutocomplete<_Feeling>(
+            textEditingController: _notes,
+            focusNode: _notesFocus,
+            displayStringForOption: (o) => o.label,
+            optionsBuilder: (value) => _feelingOptions(value.text),
+            onSelected: (o) => _addFeeling(o.label),
+            fieldViewBuilder: (context, controller, focusNode, _) => TextField(
+              key: const ValueKey('followup-notes'),
+              controller: controller,
+              focusNode: focusNode,
+              textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.done,
+              // Done key: the symptom from the list if typed in full, else her own words.
+              onSubmitted: (text) {
+                final match = symptoms.where((s) => _fold(s) == _fold(text)).firstOrNull;
+                _addFeeling(match ?? text);
+              },
+              decoration: InputDecoration(
+                labelText: l10n.notesLabel,
+                hintText: l10n.symptomsSearchHint,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: const Icon(Icons.arrow_drop_down, size: 32),
+              ),
+            ),
+            optionsViewBuilder: (context, onSelected, options) {
+              final list = options.toList();
+              final highlighted = AutocompleteHighlightedOption.of(context);
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  color: AppColors.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Radii.m),
+                    side: const BorderSide(color: AppColors.outline),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ConstrainedBox(
+                    // Compact: as wide as the field, about five lines high.
+                    constraints: BoxConstraints(
+                      maxWidth: constraints.maxWidth,
+                      maxHeight: 5 * Space.touch + Space.s,
+                    ),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: Space.xs),
+                      shrinkWrap: true,
+                      itemCount: list.length,
+                      itemBuilder: (context, i) {
+                        final o = list[i];
+                        return ListTile(
+                          key: ValueKey(o.index == null ? 'symptom-add' : 'symptom-${o.index}'),
+                          dense: true,
+                          minTileHeight: Space.touch,
+                          selected: i == highlighted,
+                          leading: Icon(o.index == null ? Icons.add_circle_outline : Icons.healing_outlined),
+                          title: Text(o.index == null ? l10n.symptomAdd(o.label) : o.label),
+                          onTap: () => onSelected(o),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -378,12 +520,7 @@ class _FollowUpScreenState extends State<FollowUpScreen> {
         ],
         for (final p in _Param.values)
           if (_shown.contains(p)) _input(p),
-        TextField(
-          key: const ValueKey('followup-notes'),
-          controller: _notes,
-          maxLines: 2,
-          decoration: InputDecoration(labelText: l10n.notesLabel, prefixIcon: const Icon(Icons.edit_note)),
-        ),
+        _notesField(),
         if (_advice != null) ...[
           const Gap(Space.m),
           NoticeBox(
@@ -435,10 +572,13 @@ class _FollowUpScreenState extends State<FollowUpScreen> {
 
 // ----------------------------------------------------------------- movements
 
-/// Baby movements (spec §5): the journal opens at 28 SA (config), with an
-/// explanation of when they start (16 to 22 SA, config). Each movement is
-/// noted with what the mother felt and when. "Le bébé bouge moins" opens the
-/// red alert in one tap.
+/// Baby movements (spec §5): the mother can note what she feels at any time,
+/// whatever the SA, with an explanation of when they start (16 to 22 SA,
+/// config) and of the daily count from 28 SA (config). Each movement is noted
+/// with what the mother felt and when. "Le bébé bouge moins" opens the red
+/// alert in one tap.
+///
+/// Message colours: yellow for advice, blue for information, red for alerts.
 class MovementsScreen extends StatefulWidget {
   const MovementsScreen({super.key, required this.pregnancyId});
   final String pregnancyId;
@@ -512,7 +652,6 @@ class _MovementsScreenState extends State<MovementsScreen> {
         if (!snap.hasData) return const Scaffold(body: LoadingView());
         final (p, counts, events, contact) = snap.data!;
         if (p == null) return const Scaffold(body: ErrorView());
-        final ga = calc.age(p.dates, today)!;
         final first = calc.firstMovementsWeeks;
         // Day totals: counts of the former counter plus movements noted one by one.
         final perDay = <DateTime, int>{...counts};
@@ -524,31 +663,25 @@ class _MovementsScreenState extends State<MovementsScreen> {
         final lessSign = asMapList(config.signesDanger['grossesse'])
             .where((s) => s['code'] == 'bebe_bouge_moins')
             .firstOrNull;
-        final open = calc.movementsLogOpen(ga);
         return AppScreen(
           title: l10n.babyMovements,
-          bottomAction: open
-              ? FilledButton.icon(
-                  key: const ValueKey('movements-add'),
-                  onPressed: () async {
-                    final at = _at ?? scope.services.clock.now();
-                    await pregnancyRepository(context).addMovement(p.id, at, _type);
-                    _reload();
-                  },
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.movementAdd),
-                )
-              : null,
+          bottomAction: FilledButton.icon(
+            key: const ValueKey('movements-add'),
+            onPressed: () async {
+              final at = _at ?? scope.services.clock.now();
+              await pregnancyRepository(context).addMovement(p.id, at, _type);
+              _reload();
+            },
+            icon: const Icon(Icons.add),
+            label: Text(l10n.movementAdd),
+          ),
           children: [
-            if (lessSign != null)
-              OutlinedButton.icon(
+            // Alert (red): one tap opens what to do.
+            if (lessSign != null) ...[
+              NoticeBox.alert(
                 key: const ValueKey('movements-less'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.danger,
-                  backgroundColor: AppColors.dangerSoft,
-                  side: const BorderSide(color: AppColors.danger, width: 1.5),
-                ),
-                onPressed: () {
+                text: l10n.movementsLess,
+                onTap: () {
                   RedAlertScreen.open(
                     context,
                     config: config,
@@ -557,86 +690,87 @@ class _MovementsScreenState extends State<MovementsScreen> {
                   );
                   pregnancyRepository(context).recordDanger(p.id, 'bebe_bouge_moins', 'grossesse');
                 },
-                icon: const Icon(Icons.warning_amber_rounded),
-                label: Text(l10n.movementsLess),
-              ),
-            const Gap(Space.m),
-            Text(
-              l10n.movementsExplain(first.first, first.last, calc.movementsFromWeeks),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (open) ...[
-              const Gap(Space.l),
-              LabelWithPill(
-                label: Text(l10n.movementsToday, style: Theme.of(context).textTheme.titleMedium),
-                pill: Text(
-                  '$todayCount',
-                  key: const ValueKey('movements-count'),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.accent),
-                ),
-              ),
-              SectionTitle(l10n.movementType),
-              Wrap(
-                spacing: Space.s,
-                runSpacing: Space.s,
-                children: [
-                  for (final t in MovementType.values)
-                    ChoiceChip(
-                      key: ValueKey('movement-type-${t.code}'),
-                      showCheckmark: false,
-                      avatar: Icon(_type == t ? Icons.check_circle : _typeIcon(t), size: 18),
-                      label: Text(_typeLabel(t)),
-                      selected: _type == t,
-                      onSelected: (_) => setState(() => _type = t),
-                    ),
-                ],
               ),
               const Gap(Space.m),
-              DateField(
-                key: const ValueKey('movement-when'),
-                label: l10n.movementWhen,
-                value: _at,
-                withTime: true,
-                first: addDays(today, -6),
-                last: now,
-                initial: now,
-                emptyText: l10n.now,
-                onChanged: (d) => setState(() => _at = d),
-                onCleared: () => setState(() => _at = null),
+            ],
+            // Information (blue): when movements start, daily count from 28 SA.
+            NoticeBox.info(
+              key: const ValueKey('movements-info'),
+              text: l10n.movementsExplain(first.first, first.last, calc.movementsFromWeeks),
+            ),
+            const Gap(Space.m),
+            // Advice (yellow).
+            NoticeBox.tip(key: const ValueKey('movements-tip'), text: l10n.movementsTip),
+            const Gap(Space.l),
+            LabelWithPill(
+              label: Text(l10n.movementsToday, style: Theme.of(context).textTheme.titleMedium),
+              pill: Text(
+                '$todayCount',
+                key: const ValueKey('movements-count'),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.accent),
               ),
-              if (events.isNotEmpty) ...[
-                SectionTitle(l10n.movementsRecent),
-                for (final e in events)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(_typeIcon(e.type), color: AppColors.accent),
-                    title: Text(_typeLabel(e.type)),
-                    subtitle: Text('${formatDate(e.at)} · ${_time(e.at)}'),
-                    trailing: IconButton(
-                      tooltip: l10n.delete,
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () async {
-                        final repo = pregnancyRepository(context);
-                        final ok = await confirmAction(
-                          context,
-                          message: l10n.deleteMovement,
-                          confirmLabel: l10n.delete,
-                          destructive: true,
-                        );
-                        if (!ok) return;
-                        await repo.deleteMovement(e.id);
-                        _reload();
-                      },
-                    ),
+            ),
+            SectionTitle(l10n.movementType),
+            Wrap(
+              spacing: Space.s,
+              runSpacing: Space.s,
+              children: [
+                for (final t in MovementType.values)
+                  ChoiceChip(
+                    key: ValueKey('movement-type-${t.code}'),
+                    showCheckmark: false,
+                    avatar: Icon(_type == t ? Icons.check_circle : _typeIcon(t), size: 18),
+                    label: Text(_typeLabel(t)),
+                    selected: _type == t,
+                    onSelected: (_) => setState(() => _type = t),
                   ),
               ],
-              if (perDay.keys.any((d) => d != today)) ...[
-                const Gap(Space.m),
-                for (final e
-                    in (perDay.entries.where((e) => e.key != today).toList()
-                      ..sort((a, b) => b.key.compareTo(a.key))))
-                  Text(l10n.movementsDay(formatDate(e.key), e.value)),
-              ],
+            ),
+            const Gap(Space.m),
+            DateField(
+              key: const ValueKey('movement-when'),
+              label: l10n.movementWhen,
+              value: _at,
+              withTime: true,
+              first: addDays(today, -6),
+              last: now,
+              initial: now,
+              emptyText: l10n.now,
+              onChanged: (d) => setState(() => _at = d),
+              onCleared: () => setState(() => _at = null),
+            ),
+            if (events.isNotEmpty) ...[
+              SectionTitle(l10n.movementsRecent),
+              for (final e in events)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(_typeIcon(e.type), color: AppColors.accent),
+                  title: Text(_typeLabel(e.type)),
+                  subtitle: Text('${formatDate(e.at)} · ${_time(e.at)}'),
+                  trailing: IconButton(
+                    tooltip: l10n.delete,
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      final repo = pregnancyRepository(context);
+                      final ok = await confirmAction(
+                        context,
+                        message: l10n.deleteMovement,
+                        confirmLabel: l10n.delete,
+                        destructive: true,
+                      );
+                      if (!ok) return;
+                      await repo.deleteMovement(e.id);
+                      _reload();
+                    },
+                  ),
+                ),
+            ],
+            if (perDay.keys.any((d) => d != today)) ...[
+              const Gap(Space.m),
+              for (final e
+                  in (perDay.entries.where((e) => e.key != today).toList()
+                    ..sort((a, b) => b.key.compareTo(a.key))))
+                Text(l10n.movementsDay(formatDate(e.key), e.value)),
             ],
           ],
         );
@@ -737,14 +871,17 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
     final diet = WomenDiet(config);
     final eaten = _eaten;
     if (eaten == null) return const Scaffold(body: LoadingView());
-    final ok = diet.met(eaten);
+    // Each food name is shown only once (see WomenDiet.shown).
+    final shown = diet.shown(context.lang);
+    final ok = diet.metShown(eaten, context.lang);
+    final count = diet.eatenShown(eaten, context.lang).length;
     return AppScreen(
       title: l10n.womenDiet,
       bottomAction: Container(
         padding: const EdgeInsets.all(Space.m),
         decoration: BoxDecoration(color: AppColors.accentSoft, borderRadius: BorderRadius.circular(Radii.m)),
         child: LabelWithPill(
-          label: Text(l10n.womenDietScore(eaten.length), style: Theme.of(context).textTheme.titleMedium),
+          label: Text(l10n.womenDietScore(count), style: Theme.of(context).textTheme.titleMedium),
           pill: StatusPill(
             icon: ok ? Icons.check_circle_outline : Icons.error_outline,
             label: ok ? l10n.diversityOk : l10n.diversityLow,
@@ -755,11 +892,11 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
       children: [
         Text(l10n.womenDietHint),
         const Gap(Space.m),
-        for (var i = 0; i < diet.groups.length; i++)
+        for (final (i, label) in shown)
           CheckboxListTile(
             key: ValueKey('women-group-$i'),
             value: eaten.contains(i),
-            title: Text(localizedText(diet.groups[i], context.lang)),
+            title: Text(label),
             onChanged: (v) async {
               final next = {...eaten};
               v == true ? next.add(i) : next.remove(i);
@@ -772,4 +909,12 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
       ],
     );
   }
+}
+
+/// A proposal of "Ce que je ressens": a common symptom (its [index] in the
+/// list) or her own words ([index] null).
+class _Feeling {
+  const _Feeling(this.label, {this.index});
+  final String label;
+  final int? index;
 }

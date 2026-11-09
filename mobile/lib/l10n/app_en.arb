@@ -45,9 +45,9 @@
   "recoveryAnswerLabel": "Your answer",
   "modeTitle": "Who are you using the app for?",
   "modePersonal": "For me and my family",
-  "modePersonalHint": "Cycle, pregnancy, child. No account.",
+  "modePersonalHint": "Cycle, pregnancy, child.",
   "modeAgent": "I am a health worker",
-  "modeAgentHint": "Screen and refer. Account provided by your supervisor.",
+  "modeAgentHint": "Screen, refer and follow up children.",
   "profilesTitle": "Who is using the phone?",
   "profileAgentBadge": "Health worker",
   "profilePersonalBadge": "Personal",
@@ -150,7 +150,6 @@
   "agentLoginHelp": "Use the account and code given by your supervisor. The first login needs the Internet; after that everything works offline.",
   "identifiantLabel": "Username",
   "serverPinLabel": "Account code",
-  "serverUrlLabel": "Server address",
   "loginButton": "Log in",
   "loginErrorOffline": "No network. The first login needs the Internet.",
   "loginErrorCredentials": "Wrong username or code.",
@@ -665,7 +664,7 @@
   "noFollowUp": "Nothing yet. Add a measurement or a note.",
   "add": "Add",
   "babyMovements": "Baby's movements",
-  "movementsExplain": "First movements are usually felt around {from} to {to} weeks. The movement diary opens at {open} weeks.",
+  "movementsExplain": "First movements are usually felt around {from} to {to} weeks. You can note what you feel at any time. From {open} weeks, note them every day to follow their rhythm.",
   "@movementsExplain": {
     "placeholders": {
       "from": {
@@ -980,5 +979,11 @@
   "weekdayShort": "Mon|Tue|Wed|Thu|Fri|Sat|Sun",
   "calendarPrevMonth": "Previous month",
   "calendarNextMonth": "Next month",
-  "calendarHint": "Tap a past day to log a period, or a logged period to correct it."
+  "calendarHint": "Tap a past day to log a period, or a logged period to correct it.",
+  "createProfileAction": "Create the profile",
+  "commonSymptoms": "Nausea|Vomiting|Tiredness|Back pain|Heartburn|Constipation|Headache|Leg cramps|Swollen feet or legs|Needing to pee often|Dizziness|Trouble sleeping",
+  "movementsTip": "Tip: the baby often moves after a meal or when you lie on your left side. Take a quiet moment to feel the movements.",
+  "symptomsSearchHint": "Search or write a symptom",
+  "symptomAdd": "Add “{text}”",
+  "agentLocalPinHelp": "Your account code is not 4 digits. Choose a 4-digit code to open this profile on this phone."
 }

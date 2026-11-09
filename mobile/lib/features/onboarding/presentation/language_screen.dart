@@ -29,12 +29,7 @@ class LanguageScreen extends StatelessWidget {
         // the screen is only a language choice, so it keeps its plain icon.
         // The logo image already carries the app's name.
         if (onChosen == null)
-          Image.asset(
-            'assets/images/logo_v1.png',
-            width: 180,
-            height: 180,
-            excludeFromSemantics: true,
-          )
+          Image.asset('assets/images/logo_v1.png', width: 180, height: 180, excludeFromSemantics: true)
         else
           const Icon(Icons.translate, size: 48, color: AppColors.accent),
         const Gap(Space.l),

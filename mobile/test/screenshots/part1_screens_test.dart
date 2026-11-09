@@ -12,6 +12,8 @@ void main() {
     final session = await pumpApp(tester, env);
     await shot(tester, '01_language');
     await tapKey(tester, 'lang-mg');
+    await shot(tester, '02_profile_type_mg');
+    await tapKey(tester, 'type-personal');
     await shot(tester, '02_consent_mg');
     await tapKey(tester, 'consent-accept');
     await tapKey(tester, 'name-continue');

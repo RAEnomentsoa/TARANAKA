@@ -9,7 +9,16 @@ import '../core/security/profile.dart';
 import '../core/security/profile_registry.dart';
 import 'app_services.dart';
 
-enum SessionStage { loading, chooseLanguage, consent, createFirstProfile, locked, unlocked }
+/// First launch: language → profile type → consent → profile creation.
+enum SessionStage {
+  loading,
+  chooseLanguage,
+  chooseProfileType,
+  consent,
+  createFirstProfile,
+  locked,
+  unlocked,
+}
 
 class ActiveProfile {
   ActiveProfile(this.info, this.db);
@@ -35,6 +44,12 @@ class SessionController extends ChangeNotifier {
   String? get languageCode => _languageCode;
 
   bool _consent = false;
+
+  /// Profile type chosen on first launch ("Personnel" or "Agent de santé"),
+  /// before any profile exists. Kept in memory only: nothing is stored yet.
+  ProfileMode? _firstProfileMode;
+  ProfileMode? get firstProfileMode => _firstProfileMode;
+
   List<ProfileInfo> _profiles = const [];
   List<ProfileInfo> get profiles => _profiles;
 
@@ -63,6 +78,8 @@ class SessionController extends ChangeNotifier {
       _stage = SessionStage.unlocked;
     } else if (_languageCode == null) {
       _stage = SessionStage.chooseLanguage;
+    } else if (_profiles.isEmpty && _firstProfileMode == null) {
+      _stage = SessionStage.chooseProfileType;
     } else if (!_consent) {
       _stage = SessionStage.consent;
     } else if (_profiles.isEmpty) {
@@ -79,6 +96,17 @@ class SessionController extends ChangeNotifier {
     _refreshStage();
   }
 
+  void chooseFirstProfileMode(ProfileMode mode) {
+    _firstProfileMode = mode;
+    _refreshStage();
+  }
+
+  /// Back from the profile creation to the profile type choice.
+  void clearFirstProfileMode() {
+    _firstProfileMode = null;
+    _refreshStage();
+  }
+
   Future<void> acceptConsent() async {
     _consent = true;
     await _savePrefs();
@@ -91,9 +119,11 @@ class SessionController extends ChangeNotifier {
     PinCrypto.passphrase(masterKey),
   );
 
-  Future<void> _activate(Unlocked unlocked) async {
+  Future<void> _activate(Unlocked unlocked, {Future<void> Function(AppDatabase db)? prepare}) async {
     await _closeActive();
     final db = await _openDb(unlocked.profile.id, unlocked.masterKey);
+    // Written before the home of the profile opens (e.g. the agent account).
+    await prepare?.call(db);
     _active = ActiveProfile(unlocked.profile, db);
     _profiles = await services.registry.list();
     markActivity();
@@ -106,6 +136,7 @@ class SessionController extends ChangeNotifier {
     required ProfileMode mode,
     String? recoveryQuestion,
     String? recoveryAnswer,
+    Future<void> Function(AppDatabase db)? prepare,
   }) async {
     final unlocked = await services.registry.create(
       displayName: displayName,
@@ -114,7 +145,8 @@ class SessionController extends ChangeNotifier {
       recoveryQuestion: recoveryQuestion,
       recoveryAnswer: recoveryAnswer,
     );
-    await _activate(unlocked);
+    _firstProfileMode = null;
+    await _activate(unlocked, prepare: prepare);
     return unlocked.profile;
   }
 

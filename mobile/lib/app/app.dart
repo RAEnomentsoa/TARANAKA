@@ -8,11 +8,13 @@ import '../core/i18n/language.dart';
 import '../core/security/profile.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/states.dart';
+import '../features/agent/presentation/agent_login_screen.dart';
 import '../features/home/presentation/module_routes.dart';
 import '../features/home/presentation/personal_home_screen.dart';
 import '../features/onboarding/presentation/consent_screen.dart';
 import '../features/onboarding/presentation/create_profile_screen.dart';
 import '../features/onboarding/presentation/language_screen.dart';
+import '../features/onboarding/presentation/profile_type_screen.dart';
 import '../features/profiles/presentation/profile_picker_screen.dart';
 import 'app_scope.dart';
 import 'app_services.dart';
@@ -109,8 +111,16 @@ class AppGate extends StatelessWidget {
     return switch (session.stage) {
       SessionStage.loading => const Scaffold(body: LoadingView()),
       SessionStage.chooseLanguage => const LanguageScreen(),
+      SessionStage.chooseProfileType => const ProfileTypeScreen(),
       SessionStage.consent => const ConsentScreen(),
-      SessionStage.createFirstProfile => const CreateProfileScreen(),
+      // "Agent de santé": straight to the account login, which creates the profile.
+      SessionStage.createFirstProfile =>
+        session.firstProfileMode == ProfileMode.agent
+            ? AgentLoginScreen.newProfile(onCancel: session.clearFirstProfileMode)
+            : CreateProfileScreen(
+                presetMode: session.firstProfileMode,
+                onCancel: session.clearFirstProfileMode,
+              ),
       SessionStage.locked => const ProfilePickerScreen(),
       SessionStage.unlocked =>
         session.active!.info.mode == ProfileMode.agent

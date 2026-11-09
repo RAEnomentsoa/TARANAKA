@@ -62,6 +62,11 @@ class AgentController extends ChangeNotifier {
   late final AgentRepository repo = AgentRepository(database, codes, clock: services.clock);
 
   static const _accountKey = 'agent_account';
+
+  /// Stores the account in a profile database (also before its controller
+  /// exists: a new agent profile created from the login).
+  static Future<void> saveAccount(AppDatabase db, AgentAccount account) =>
+      db.setMetaJson(_accountKey, account.toJson());
   static const _wifiOnlyKey = 'sync_wifi_only';
 
   WhoTables? _tables;
@@ -135,7 +140,7 @@ class AgentController extends ChangeNotifier {
       throw ApiException(403, 'other_account');
     }
     account = AgentAccount(baseUrl: api.baseUrl, identifiant: identifiant.trim(), user: user, tokens: tokens);
-    await database.setMetaJson(_accountKey, account!.toJson());
+    await saveAccount(database, account!);
     problem = null;
     _notify();
     await syncNow(manual: true);

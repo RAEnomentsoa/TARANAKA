@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taranaka/core/config/clinical_config.dart';
 import 'package:taranaka/features/pregnancy/domain/pregnancy.dart';
 
 import '../../helpers/config_fixture.dart';
@@ -80,16 +84,70 @@ void main() {
     expect(contacts[2].status, ContactStatus.next);
   });
 
-  test('movement journal from 28 SA; first movements explained at 16–22 SA', () {
-    expect(calc.movementsLogOpen(const GestationalAge(27 * 7 + 6)), isFalse);
-    expect(calc.movementsLogOpen(const GestationalAge(28 * 7)), isTrue);
+  test('daily movement count from 28 SA; first movements explained at 16–22 SA', () {
+    expect(calc.movementsFromWeeks, 28);
     expect(calc.firstMovementsWeeks, [16, 22]);
   });
 
   test('women dietary diversity: 10 groups, at least 5', () {
     final diet = WomenDiet(sampleConfig());
     expect(diet.groups.length, 10);
+    for (final lang in ['fr', 'mg', 'en']) {
+      final names = [for (final g in diet.groups) localizedText(g, lang).toLowerCase()];
+      expect(names.toSet().length, names.length, reason: 'no repeated meal group in $lang');
+    }
     expect(diet.met({0, 1, 2, 3}), isFalse);
     expect(diet.met({0, 1, 2, 3, 4}), isTrue);
+  });
+
+  test('meal list: all groups shown, no word twice, in any language', () {
+    loadConfigTranslations(
+      (jsonDecode(File('assets/config/translations.json').readAsStringSync()) as Map).cast<String, Object?>(),
+    );
+    addTearDown(() => loadConfigTranslations(const {}));
+    final diet = WomenDiet(sampleConfig());
+    const links = {'et', 'à', 'de', 'en', 'and', 'in', 'sy', 'ary', 'a'};
+    String norm(String w) {
+      var x = w.toLowerCase();
+      for (final (f, t) in [('é', 'e'), ('è', 'e'), ('ê', 'e'), ('œ', 'oe')]) {
+        x = x.replaceAll(f, t);
+      }
+      return x.length > 3 && x.endsWith('s') ? x.substring(0, x.length - 1) : x;
+    }
+
+    for (final lang in ['fr', 'mg', 'en']) {
+      final labels = [for (final (_, label) in diet.shown(lang)) label];
+      expect(labels.length, 10, reason: '$lang: $labels');
+      final words = [
+        for (final l in labels)
+          for (final w in l.split(RegExp(r"[^\p{L}']+", unicode: true)))
+            if (w.isNotEmpty && !links.contains(w.toLowerCase())) norm(w),
+      ];
+      for (var i = 0; i < words.length; i++) {
+        for (var j = i + 1; j < words.length; j++) {
+          final (a, b) = (words[i], words[j]);
+          final similar = a == b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a)));
+          expect(similar, isFalse, reason: '$lang: "$a" / "$b" in $labels');
+        }
+      }
+    }
+    final fr = [for (final (_, label) in diet.shown('fr')) label];
+    expect(fr.where((l) => l.toLowerCase().contains('légume')).length, 1);
+    expect(fr, contains('Légumes : tomate, oignon, chou, aubergine'));
+  });
+
+  test('meal list: an unknown label from a new configuration loses its repeated words', () {
+    final json = (jsonDecode(File('assets/config/clinical_config_v1.json').readAsStringSync()) as Map)
+        .cast<String, Object?>();
+    final content = (json['contenu'] as Map).cast<String, Object?>();
+    content['alimentation_femme'] = {
+      'diversite_minimale_groupes': 2,
+      'groupes': ['Légumes verts', 'Fruits et légumes jaunes', 'Autres légumes', 'Lait', 'Produits laitiers'],
+    };
+    final diet = WomenDiet(ClinicalConfig.fromJson(json));
+    expect(
+      [for (final (i, l) in diet.shown('fr')) '$i=$l'],
+      ['0=Légumes verts', '1=Fruits jaunes', '2=Tomate, oignon, chou, aubergine', '3=Lait', '4=Produits'],
+    );
   });
 }

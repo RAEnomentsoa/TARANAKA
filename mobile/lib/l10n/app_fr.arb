@@ -45,9 +45,9 @@
   "recoveryAnswerLabel": "Votre réponse",
   "modeTitle": "Pour qui utilisez-vous l'application ?",
   "modePersonal": "Pour moi et ma famille",
-  "modePersonalHint": "Cycle, grossesse, enfant. Sans compte.",
+  "modePersonalHint": "Cycle, grossesse, enfant.",
   "modeAgent": "Je suis agent de santé",
-  "modeAgentHint": "Dépister et référer. Compte fourni par votre superviseur.",
+  "modeAgentHint": "Dépister, référer et suivre les enfants.",
   "profilesTitle": "Qui utilise le téléphone ?",
   "profileAgentBadge": "Agent de santé",
   "profilePersonalBadge": "Personnel",
@@ -150,7 +150,6 @@
   "agentLoginHelp": "Utilisez le compte et le code fournis par votre superviseur. La première connexion demande Internet ; ensuite tout fonctionne hors ligne.",
   "identifiantLabel": "Identifiant",
   "serverPinLabel": "Code du compte",
-  "serverUrlLabel": "Adresse du serveur",
   "loginButton": "Se connecter",
   "loginErrorOffline": "Pas de réseau. La première connexion demande Internet.",
   "loginErrorCredentials": "Identifiant ou code incorrect.",
@@ -665,7 +664,7 @@
   "noFollowUp": "Rien encore. Ajoutez une mesure ou une note.",
   "add": "Ajouter",
   "babyMovements": "Mouvements du bébé",
-  "movementsExplain": "Les premiers mouvements se sentent en général vers {from} à {to} SA. Le journal des mouvements s'ouvre à {open} SA.",
+  "movementsExplain": "Les premiers mouvements se sentent en général vers {from} à {to} SA. Vous pouvez noter ce que vous sentez à tout moment. À partir de {open} SA, notez-les chaque jour pour suivre leur rythme.",
   "@movementsExplain": {
     "placeholders": {
       "from": {
@@ -980,5 +979,12 @@
   "weekdayShort": "lun|mar|mer|jeu|ven|sam|dim",
   "calendarPrevMonth": "Mois précédent",
   "calendarNextMonth": "Mois suivant",
-  "calendarHint": "Touchez un jour passé pour noter des règles, ou des règles notées pour les corriger."
+  "calendarHint": "Touchez un jour passé pour noter des règles, ou des règles notées pour les corriger.",
+  "createProfileAction": "Créer le profil",
+  "commonSymptoms": "Nausées|Vomissements|Fatigue|Maux de dos|Brûlures d'estomac|Constipation|Maux de tête|Crampes dans les jambes|Pieds ou jambes gonflés|Envie fréquente d'uriner|Vertiges|Difficultés à dormir",
+  "movementsTip": "Conseil : le bébé bouge souvent après un repas ou quand vous êtes allongée sur le côté gauche. Prenez un moment au calme pour sentir ses mouvements.",
+  "symptomsSearchHint": "Cherchez ou écrivez un symptôme",
+  "symptomAdd": "Ajouter « {text} »",
+  "@symptomAdd": {"placeholders": {"text": {"type": "String"}}},
+  "agentLocalPinHelp": "Votre code de compte n'a pas 4 chiffres. Choisissez un code à 4 chiffres pour ouvrir ce profil sur ce téléphone."
 }

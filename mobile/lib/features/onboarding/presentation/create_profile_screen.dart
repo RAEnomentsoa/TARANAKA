@@ -8,17 +8,28 @@ import '../../../core/widgets/big_tile.dart';
 import '../../../core/widgets/pin_pad.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../agent/presentation/agent_login_screen.dart';
 
 enum _Step { name, pin, confirm, mode, recovery }
 
-/// First launch, steps 3 and 4 (spec §3): name, 4-digit PIN, mode, then an
-/// optional recovery question (personal mode only: agents are reset by
-/// their supervisor).
+/// Profile creation (spec §3): the profile type first ("Pour moi et ma
+/// famille" or "Agent de santé", unless already chosen), then name, 4-digit
+/// PIN and an optional recovery question (personal mode only: agents are
+/// reset by their supervisor).
+///
+/// The actions sit at the end of the scrollable content, not in a fixed bar:
+/// on small phones, with large text or with the keyboard open, the "Créer le
+/// profil" button can always be scrolled to.
 class CreateProfileScreen extends StatefulWidget {
-  const CreateProfileScreen({super.key, this.presetMode, this.canCancel = false});
+  const CreateProfileScreen({super.key, this.presetMode, this.canCancel = false, this.onCancel});
 
   final ProfileMode? presetMode;
+
+  /// Opened as a page that can be closed (add a profile).
   final bool canCancel;
+
+  /// First launch: back from the first step returns to the profile type.
+  final VoidCallback? onCancel;
 
   @override
   State<CreateProfileScreen> createState() => _CreateProfileScreenState();
@@ -29,7 +40,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _question = TextEditingController();
   final _answer = TextEditingController();
   final _pinKey = GlobalKey<PinPadState>();
-  _Step _step = _Step.name;
+  late _Step _step = _firstStep;
   String? _pin;
   ProfileMode? _mode;
   String? _error;
@@ -49,6 +60,17 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     super.dispose();
   }
 
+  /// "Ajouter un profil" always starts with the profile type.
+  _Step get _firstStep => widget.presetMode == null ? _Step.mode : _Step.name;
+
+  void _cancel() {
+    if (widget.canCancel) {
+      Navigator.of(context).pop();
+    } else {
+      widget.onCancel?.call();
+    }
+  }
+
   void _go(_Step step) => setState(() {
     _step = step;
     _error = null;
@@ -56,23 +78,21 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
   void _back() {
     switch (_step) {
+      case _Step.mode:
+        _cancel();
       case _Step.name:
-        if (widget.canCancel) Navigator.of(context).pop();
+        _firstStep == _Step.mode ? _go(_Step.mode) : _cancel();
       case _Step.pin:
         _go(_Step.name);
       case _Step.confirm:
         _go(_Step.pin);
-      case _Step.mode:
-        _go(_Step.pin);
       case _Step.recovery:
-        _go(widget.presetMode == null ? _Step.mode : _Step.pin);
+        _go(_Step.pin);
     }
   }
 
   void _afterPin() {
-    if (_mode == null) {
-      _go(_Step.mode);
-    } else if (_mode == ProfileMode.personal) {
+    if (_mode == ProfileMode.personal) {
       _go(_Step.recovery);
     } else {
       _create();
@@ -98,9 +118,10 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final canGoBack = _step != _Step.name || widget.canCancel;
+    final atStart = _step == _firstStep;
+    final canGoBack = !atStart || widget.canCancel || widget.onCancel != null;
     return PopScope(
-      canPop: _step == _Step.name && widget.canCancel,
+      canPop: atStart && widget.canCancel,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
@@ -110,53 +131,61 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         leading: canGoBack
             ? IconButton(tooltip: l10n.back, icon: const Icon(Icons.arrow_back), onPressed: _back)
             : null,
-        bottomAction: switch (_step) {
-          _Step.name => FilledButton(
-            key: const ValueKey('name-continue'),
-            onPressed: () {
-              if (_name.text.trim().isEmpty) {
-                setState(() => _error = l10n.nameRequired);
-              } else {
-                _go(_Step.pin);
-              }
-            },
-            child: Text(l10n.continueLabel),
-          ),
-          _Step.recovery => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FilledButton(
-                key: const ValueKey('recovery-save'),
-                onPressed: _busy
-                    ? null
-                    : () {
-                        if (_question.text.trim().isEmpty || _answer.text.trim().isEmpty) {
-                          _create();
-                        } else {
-                          _create(withRecovery: true);
-                        }
-                      },
-                child: Text(l10n.save),
-              ),
-              const Gap(Space.s),
-              TextButton(
-                key: const ValueKey('recovery-skip'),
-                onPressed: _busy ? null : _create,
-                child: Text(l10n.skip),
-              ),
-            ],
-          ),
-          _ => null,
-        },
         children: [
           if (_error != null) ...[
             NoticeBox(icon: Icons.error_outline, text: _error!, tone: Tone.danger),
             const Gap(Space.l),
           ],
           ..._body(context),
+          ..._actions(context),
         ],
       ),
     );
+  }
+
+  /// The step's buttons, placed under its content (see the class comment).
+  List<Widget> _actions(BuildContext context) {
+    final l10n = context.l10n;
+    final action = switch (_step) {
+      _Step.name => FilledButton(
+        key: const ValueKey('name-continue'),
+        onPressed: () {
+          if (_name.text.trim().isEmpty) {
+            setState(() => _error = l10n.nameRequired);
+          } else {
+            _go(_Step.pin);
+          }
+        },
+        child: Text(l10n.continueLabel),
+      ),
+      _Step.recovery => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton(
+            key: const ValueKey('recovery-save'),
+            onPressed: _busy
+                ? null
+                : () {
+                    if (_question.text.trim().isEmpty || _answer.text.trim().isEmpty) {
+                      _create();
+                    } else {
+                      _create(withRecovery: true);
+                    }
+                  },
+            child: Text(l10n.createProfileAction),
+          ),
+          const Gap(Space.s),
+          TextButton(
+            key: const ValueKey('recovery-skip'),
+            onPressed: _busy ? null : _create,
+            child: Text(l10n.skip),
+          ),
+        ],
+      ),
+      _ => null,
+    };
+    if (action == null) return const [];
+    return [const Gap(Space.xl), action, const Gap(Space.l)];
   }
 
   List<Widget> _body(BuildContext context) {
@@ -219,19 +248,19 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
             subtitle: l10n.modePersonalHint,
             onTap: () {
               _mode = ProfileMode.personal;
-              _go(_Step.recovery);
+              _go(_Step.name);
             },
           ),
           const Gap(Space.m),
           BigTile(
             key: const ValueKey('mode-agent'),
             icon: Icons.medical_services_outlined,
-            title: l10n.modeAgent,
+            title: l10n.profileAgentBadge,
             subtitle: l10n.modeAgentHint,
-            onTap: () {
-              _mode = ProfileMode.agent;
-              _create();
-            },
+            // No name nor PIN here: the account login creates the agent profile.
+            onTap: () => Navigator.of(
+              context,
+            ).pushReplacement(MaterialPageRoute<void>(builder: (_) => const AgentLoginScreen.newProfile())),
           ),
         ];
       case _Step.recovery:
