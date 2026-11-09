@@ -5,15 +5,12 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 
 /**
- * Every screen of the app shows health data, so screenshots, screen recording
- * and the recent-apps preview are blocked for the whole activity (spec §8).
+ * Screenshots and screen recording are allowed: FLAG_SECURE is cleared
+ * explicitly so no other code path (or an older build) can leave it set.
  */
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE,
-        )
         super.onCreate(savedInstanceState)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 }

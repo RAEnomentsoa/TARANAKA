@@ -255,7 +255,7 @@ assets/who/        tables OMS à ajouter
   réinitialisation avec perte des données, clairement annoncée. Agent : PIN
   réinitialisé par le superviseur, profil recréé, données synchronisées
   restaurées.
-- Captures d'écran bloquées (`FLAG_SECURE`), pas de sauvegarde Android.
+- Captures d'écran et enregistrements vidéo autorisés (pas de `FLAG_SECURE`), pas de sauvegarde Android.
 - « Effacer toutes mes données » supprime le profil et son fichier.
 
 ### Synchronisation (spec §9)

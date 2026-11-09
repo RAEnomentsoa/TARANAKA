@@ -26,6 +26,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   sqflite_common_ffi: ^2.4.5
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -43,3 +44,18 @@ hooks:
     sqlite3:
       source: system
       name: sqlcipher
+
+# App icon: `dart run flutter_launcher_icons` regenerates the Android mipmaps
+# (and the iOS AppIcon set once an ios/ folder exists) from logo_v1.png.
+# On Android 8+ the tool insets the foreground by 16% so the launcher's crop
+# (circle, squircle…) never cuts the logo.
+flutter_launcher_icons:
+  image_path: "assets/images/logo_v1.png"
+  android: "ic_launcher"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo_v1.png"
+  min_sdk_android: 21
+  # No ios/ folder in this project yet. After `flutter create --platforms=ios .`
+  # set this to true and rerun the command.
+  ios: false
+  remove_alpha_ios: true
