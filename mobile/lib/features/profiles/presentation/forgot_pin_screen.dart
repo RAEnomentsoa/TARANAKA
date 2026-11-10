@@ -11,13 +11,15 @@ import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import 'email_link_form.dart';
+import 'security_question_form.dart';
 
 enum _Method { question, email }
 
 /// "Code oublié ?" (spec §8).
-/// - Personal mode: the standard Firebase reset link sent to the e-mail
-///   address (password chosen on its page, then typed here), or the recovery
-///   question of an older profile, then a new secret code; data kept.
+/// - Personal mode: the secret question (offline; the answer is checked
+///   first, then the new code is chosen), or the standard Firebase reset link
+///   sent to the e-mail address (password chosen on its page, then typed
+///   here), then a new secret code; data kept.
 /// - Without any of them: reset, with loss of the local data, clearly said.
 /// - Agent mode: the supervisor resets the server PIN; the local profile is
 ///   deleted and synced data comes back at the next login.
@@ -37,6 +39,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
   bool _choosingPin = false;
   String? _newPin;
   String? _error;
+  bool _checking = false;
 
   /// Read from Firestore after the sign-in (recovery by e-mail).
   List<int>? _emailSecret;
@@ -58,6 +61,29 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     _emailSecret = null;
     _secret.clear();
   });
+
+  /// The answer is checked before the new code is asked: a wrong one counts
+  /// like a wrong PIN (5 tries, then a delay).
+  Future<void> _checkAnswer() async {
+    final l10n = context.l10n;
+    if (_checking || _secret.text.trim().isEmpty) return;
+    setState(() => _checking = true);
+    final result = await AppScope.read(context).session.checkRecoveryAnswer(widget.profileId, _secret.text);
+    if (!mounted) return;
+    setState(() {
+      _checking = false;
+      switch (result) {
+        case Unlocked():
+          _choosingPin = true;
+          _error = null;
+        case WrongPin(:final lockedUntil):
+        case LockedOut(until: final DateTime? lockedUntil):
+          _error = lockedUntil != null
+              ? l10n.pinLockedUntil(formatWait(context, lockedUntil.difference(DateTime.now())))
+              : l10n.answerWrong;
+      }
+    });
+  }
 
   Future<void> _reset() async {
     final l10n = context.l10n;
@@ -164,6 +190,17 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
       children: [
         Text(l10n.forgotPinChoose, style: Theme.of(context).textTheme.titleLarge),
         const Gap(Space.l),
+        // The secret question first: it works without Internet.
+        if (profile.hasRecovery) ...[
+          BigTile(
+            key: const ValueKey('forgot-with-question'),
+            icon: Icons.help_outline,
+            title: l10n.forgotWithQuestion,
+            subtitle: l10n.forgotWithQuestionHint(securityQuestionText(l10n, profile.recoveryQuestion!)),
+            onTap: () => _choose(_Method.question),
+          ),
+          const Gap(Space.m),
+        ],
         // By e-mail: the standard Firebase reset link (needs Internet).
         if (profile.hasEmailRecovery && profile.emailRecovery == EmailRecovery.active) ...[
           BigTile(
@@ -179,16 +216,6 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
             key: const ValueKey('forgot-email-inactive'),
             icon: Icons.mail_outline,
             text: l10n.forgotEmailNotActive,
-          ),
-          const Gap(Space.m),
-        ],
-        if (profile.hasRecovery) ...[
-          BigTile(
-            key: const ValueKey('forgot-with-question'),
-            icon: Icons.help_outline,
-            title: l10n.forgotWithQuestion,
-            subtitle: profile.recoveryQuestion,
-            onTap: () => _choose(_Method.question),
           ),
           const Gap(Space.m),
         ],
@@ -217,14 +244,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           ? null
           : FilledButton(
               key: const ValueKey('recovery-continue'),
-              onPressed: () {
-                if (_secret.text.trim().isNotEmpty) {
-                  setState(() {
-                    _choosingPin = true;
-                    _error = null;
-                  });
-                }
-              },
+              onPressed: _checking ? null : _checkAnswer,
               child: Text(l10n.continueLabel),
             ),
       children: [
@@ -255,12 +275,21 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           else ...[
             Text(l10n.forgotPinRecovery),
             const Gap(Space.l),
-            Text(profile.recoveryQuestion!, style: title),
+            Text(securityQuestionText(l10n, profile.recoveryQuestion!), style: title),
             const Gap(Space.m),
             TextField(
               key: const ValueKey('recovery-answer-input'),
               controller: _secret,
-              decoration: InputDecoration(labelText: l10n.recoveryAnswerLabel),
+              autofocus: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _checkAnswer(),
+              decoration: InputDecoration(
+                labelText: l10n.recoveryAnswerLabel,
+                helperText: l10n.secretAnswerHelp,
+                helperMaxLines: 4,
+              ),
             ),
           ],
         ] else ...[

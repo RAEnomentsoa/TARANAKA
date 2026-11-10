@@ -10,14 +10,19 @@ import '../../../core/widgets/pin_pad.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../agent/presentation/agent_login_screen.dart';
+import '../../profiles/presentation/security_question_form.dart';
 
-enum _Step { name, pin, confirm, mode }
+enum _Step { name, secret, pin, confirm, mode }
 
 /// Profile creation (spec §3): the profile type first ("Pour moi et ma
 /// famille" or "Agent de santé", unless already chosen), then name and
 /// optional e-mail address (account recovery by e-mail, Firebase Auth), then
-/// the secret 4-digit code. The profile is created once the code is
-/// confirmed.
+/// the secret question (recovery without Internet; personal profiles only:
+/// agents go through their supervisor), then the secret 4-digit code. The
+/// profile is created once the code is confirmed.
+///
+/// Only a verifier of the answer and the key wrapped by it are kept, on the
+/// phone (see ProfileRegistry): the answer is never stored nor sent.
 ///
 /// The actions sit at the end of the scrollable content, not in a fixed bar:
 /// on small phones, with large text or with the keyboard open, the "Créer le
@@ -41,6 +46,10 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _pinKey = GlobalKey<PinPadState>();
+  final _secretKey = GlobalKey<SecurityQuestionFormState>();
+
+  /// Kept when going back to the question from the PIN.
+  ({String question, String answer})? _secret;
   late _Step _step = _firstStep;
   String? _pin;
   ProfileMode? _mode;
@@ -82,12 +91,18 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         _cancel();
       case _Step.name:
         _firstStep == _Step.mode ? _go(_Step.mode) : _cancel();
-      case _Step.pin:
+      case _Step.secret:
         _go(_Step.name);
+      case _Step.pin:
+        _go(_needsSecret ? _Step.secret : _Step.name);
       case _Step.confirm:
         _go(_Step.pin);
     }
   }
+
+  /// Personal profiles: the secret question is the recovery that works
+  /// offline. Agents get a new PIN from their supervisor.
+  bool get _needsSecret => _mode != ProfileMode.agent;
 
   Future<void> _create() async {
     if (_busy) return;
@@ -99,6 +114,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       pin: _pin!,
       mode: _mode!,
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
+      recoveryQuestion: _secret?.question,
+      recoveryAnswer: _secret?.answer,
     );
     // The gate now shows the home of the new profile.
     if (widget.canCancel && navigator.mounted) navigator.popUntil((r) => r.isFirst);
@@ -145,6 +162,17 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
           } else if (email.isNotEmpty && !PinCrypto.isValidEmail(email)) {
             setState(() => _error = l10n.emailInvalid);
           } else {
+            _go(_needsSecret ? _Step.secret : _Step.pin);
+          }
+        },
+        child: Text(l10n.continueLabel),
+      ),
+      _Step.secret => FilledButton(
+        key: const ValueKey('secret-continue'),
+        onPressed: () {
+          final secret = _secretKey.currentState!.validate();
+          if (secret != null) {
+            _secret = secret;
             _go(_Step.pin);
           }
         },
@@ -192,6 +220,14 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
               ),
             ),
           ],
+        ];
+      case _Step.secret:
+        return [
+          Text(l10n.secretQuestionTitle, style: title),
+          const Gap(Space.s),
+          Text(l10n.secretQuestionIntro),
+          const Gap(Space.l),
+          SecurityQuestionForm(key: _secretKey, initial: _secret),
         ];
       case _Step.pin:
         return [

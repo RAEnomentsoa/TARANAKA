@@ -8,6 +8,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import 'change_pin_screen.dart';
+import 'secret_question_screen.dart';
 import 'security_settings.dart';
 import 'settings_sections.dart';
 
@@ -80,6 +81,8 @@ class SettingsScreen extends StatelessWidget {
               const Divider(),
               // Personal profiles: the recovery by e-mail (Firebase Auth).
               if (session.active?.info.mode != ProfileMode.agent) ...[
+                const SecretQuestionTile(),
+                const Divider(),
                 const EmailRecoveryTile(),
                 const Divider(),
               ],

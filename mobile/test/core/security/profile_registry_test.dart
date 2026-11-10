@@ -3,6 +3,7 @@ import 'package:taranaka/core/auth/auth_service.dart';
 import 'package:taranaka/core/security/profile.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
 import 'package:taranaka/core/security/secret_store.dart';
+import 'package:taranaka/core/security/security_question.dart';
 import 'package:taranaka/core/util/clock.dart';
 
 import '../../helpers/fake_auth.dart';
@@ -85,6 +86,46 @@ void main() {
     final r = await registry.recover(created.profile.id, '  AMBOSITRA ', '5555') as Unlocked;
     expect(r.masterKey, created.masterKey);
     expect(await registry.unlock(created.profile.id, '5555'), isA<Unlocked>());
+  });
+
+  test('the answer is checked before the new PIN; wrong answers count like wrong PINs', () async {
+    final created = await registry.create(
+      displayName: 'Lalao',
+      pin: '1111',
+      mode: ProfileMode.personal,
+      recoveryQuestion: SecurityQuestion.firstPet.stored,
+      recoveryAnswer: 'Bobby',
+    );
+    final id = created.profile.id;
+    for (var i = 1; i <= 4; i++) {
+      expect(await registry.checkAnswer(id, 'Rex'), isA<WrongPin>());
+    }
+    // 5th failure: locked for a while, even with the right answer.
+    expect((await registry.checkAnswer(id, 'Rex') as WrongPin).lockedUntil, isNotNull);
+    expect(await registry.checkAnswer(id, 'bobby'), isA<LockedOut>());
+    clock.advance(const Duration(hours: 2));
+    final ok = await registry.checkAnswer(id, ' BOBBY ') as Unlocked;
+    expect(ok.masterKey, created.masterKey);
+    // Checking alone changes nothing: the old PIN still works.
+    expect(await registry.unlock(id, '1111'), isA<Unlocked>());
+  });
+
+  test('a secret question can be added later; only a verifier is kept, never the answer', () async {
+    final created = await registry.create(displayName: 'Fara', pin: '1111', mode: ProfileMode.personal);
+    expect(created.profile.hasRecovery, isFalse);
+    await registry.setRecoveryQuestion(
+      created.profile.id,
+      created.masterKey,
+      SecurityQuestion.primarySchool.stored,
+      'EPP Ambohijatovo',
+    );
+    final saved = (await registry.find(created.profile.id))!;
+    expect(saved.hasRecovery, isTrue);
+    expect(saved.recoveryQuestion, 'preset:primarySchool');
+    expect(saved.toJson().toString().toLowerCase(), isNot(contains('ambohijatovo')));
+    final r = await registry.recover(created.profile.id, 'epp  ambohijatovo', '2468') as Unlocked;
+    expect(r.masterKey, created.masterKey);
+    expect(await registry.unlock(created.profile.id, '2468'), isA<Unlocked>());
   });
 
   test('a profile without both question and answer has no recovery', () async {

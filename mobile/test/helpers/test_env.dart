@@ -150,3 +150,26 @@ Future<void> enterPin(WidgetTester tester, String pin) async {
   }
   await settle(tester);
 }
+
+/// Profile creation, personal mode: chooses the secret question in the list
+/// and types the answer twice, then continues to the PIN.
+Future<void> answerSecretQuestion(
+  WidgetTester tester, {
+  String question = 'birthPlace',
+  String answer = 'Ambositra',
+}) async {
+  await tapKey(tester, 'secret-question');
+  await tester.tap(find.byKey(ValueKey('secret-question-$question')).last);
+  await settle(tester);
+  await typeKey(tester, 'secret-answer', answer);
+  await typeKey(tester, 'secret-answer-confirm', answer);
+  await tapKey(tester, 'secret-continue');
+}
+
+/// Profile creation derives several keys and creates the encrypted
+/// database: lets it finish before checking the next stage.
+Future<void> settleUntil(WidgetTester tester, bool Function() done, {int tries = 20}) async {
+  for (var i = 0; i < tries && !done(); i++) {
+    await settle(tester);
+  }
+}

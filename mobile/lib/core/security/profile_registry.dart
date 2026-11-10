@@ -157,9 +157,11 @@ class ProfileRegistry {
     );
   }
 
-  /// Forgotten PIN, personal mode: the recovery answer gives back the master
-  /// key, then a new PIN is set. Wrong answers count like wrong PINs.
-  Future<UnlockResult> recover(String profileId, String answer, String newPin) async {
+  /// Forgotten PIN, personal mode: checks the answer to the secret question
+  /// and gives back the master key, without changing anything else. Wrong
+  /// answers count like wrong PINs (same lockout). Checked before the new PIN
+  /// is asked, so a typo does not make the user type it twice for nothing.
+  Future<UnlockResult> checkAnswer(String profileId, String answer) async {
     final profile = (await find(profileId))!;
     final now = _clock.now();
     if (!profile.hasRecovery) throw StateError('no recovery question');
@@ -169,17 +171,42 @@ class ProfileRegistry {
     final secret = await _deviceSecret();
     final normalised = 'answer:${PinCrypto.normaliseAnswer(answer)}';
     if (!PinCrypto.sameBytes(_crypto.verifier(secret, profile.salt, normalised), profile.recoveryVerifier!)) {
-      final failures = profile.failedAttempts + 1;
-      final delay = lockout.delayAfter(failures);
-      final until = delay == Duration.zero ? null : now.add(delay);
-      await _replace(
-        profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null),
-      );
-      return WrongPin(failures: failures, lockedUntil: until);
+      return _fail(profile, now);
     }
-    final master = _crypto.unwrap(secret, profile.salt, normalised, profile.wrappedKeyByRecovery!);
-    await changePin(profileId, master, newPin);
-    return Unlocked((await find(profileId))!, master);
+    return Unlocked(profile, _crypto.unwrap(secret, profile.salt, normalised, profile.wrappedKeyByRecovery!));
+  }
+
+  /// Forgotten PIN: the answer gives back the master key, then a new PIN is
+  /// set (the data are kept).
+  Future<UnlockResult> recover(String profileId, String answer, String newPin) async {
+    final check = await checkAnswer(profileId, answer);
+    if (check is! Unlocked) return check;
+    await changePin(profileId, check.masterKey, newPin);
+    return Unlocked((await find(profileId))!, check.masterKey);
+  }
+
+  /// Sets or replaces the secret question of an open profile. Only a verifier
+  /// of the answer and the master key wrapped by it are kept, on this phone:
+  /// the answer itself is never stored nor sent.
+  Future<void> setRecoveryQuestion(
+    String profileId,
+    Uint8List masterKey,
+    String question,
+    String answer,
+  ) async {
+    if (question.trim().isEmpty || answer.trim().isEmpty) {
+      throw ArgumentError('question and answer are required');
+    }
+    final profile = (await find(profileId))!;
+    final secret = await _deviceSecret();
+    final normalised = 'answer:${PinCrypto.normaliseAnswer(answer)}';
+    await _replace(
+      profile.copyWith(
+        recoveryQuestion: question.trim(),
+        recoveryVerifier: _crypto.verifier(secret, profile.salt, normalised),
+        wrappedKeyByRecovery: _crypto.wrap(secret, profile.salt, normalised, masterKey),
+      ),
+    );
   }
 
   /// A wrong PIN or answer: one more failure, and the delay of the

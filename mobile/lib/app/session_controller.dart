@@ -346,6 +346,30 @@ class SessionController extends ChangeNotifier {
     return result;
   }
 
+  /// Forgotten PIN: checks the answer to the secret question before the new
+  /// PIN is asked (a wrong answer counts as a failed attempt).
+  Future<UnlockResult> checkRecoveryAnswer(String profileId, String answer) async {
+    final result = await services.registry.checkAnswer(profileId, answer);
+    _profiles = await services.registry.list();
+    notifyListeners();
+    return result;
+  }
+
+  /// Sets or changes the secret question of the open profile, once its
+  /// current PIN is checked (a wrong one counts as a failed attempt).
+  Future<UnlockResult> setRecoveryQuestion(String currentPin, String question, String answer) async {
+    final active = _active!;
+    final check = await services.registry.unlock(active.info.id, currentPin);
+    if (check is Unlocked) {
+      await services.registry.setRecoveryQuestion(active.info.id, check.masterKey, question, answer);
+      final info = (await services.registry.find(active.info.id))!;
+      active.info = info;
+    }
+    _profiles = await services.registry.list();
+    notifyListeners();
+    return check;
+  }
+
   /// Checks the current PIN (a wrong one counts as a failed attempt), then
   /// re-wraps the key under the new PIN.
   Future<UnlockResult> changePin(String currentPin, String newPin) async {

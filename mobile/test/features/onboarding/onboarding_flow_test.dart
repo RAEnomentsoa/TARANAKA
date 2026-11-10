@@ -23,8 +23,10 @@ void main() {
     expect(find.byKey(const ValueKey('consent-accept')), findsNothing);
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
     await tapKey(tester, 'name-continue');
+    await answerSecretQuestion(tester);
     await enterPin(tester, '2580');
     await enterPin(tester, '2580');
+    await settleUntil(tester, () => session.stage != SessionStage.createFirstProfile);
     expect(session.stage, SessionStage.consent);
     expect(find.text('Comment vos données sont-elles protégées ?'), findsOneWidget);
     expect(
@@ -115,8 +117,10 @@ void main() {
     // 3. Profile + PIN (the mode is already chosen): created once confirmed
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Voahangy');
     await tapKey(tester, 'name-continue');
+    await answerSecretQuestion(tester);
     await enterPin(tester, '2580');
     await enterPin(tester, '2580');
+    await settleUntil(tester, () => session.stage != SessionStage.createFirstProfile);
     expect(find.byKey(const ValueKey('mode-personal')), findsNothing);
     // 4. Consent, in Malagasy, right after the profile
     expect(session.stage, SessionStage.consent);
@@ -144,6 +148,7 @@ void main() {
     await tapKey(tester, 'type-personal');
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
     await tapKey(tester, 'name-continue');
+    await answerSecretQuestion(tester);
     await enterPin(tester, '1111');
     await enterPin(tester, '2222');
     expect(find.text('Les deux codes sont différents. Recommencez.'), findsOneWidget);
@@ -340,6 +345,7 @@ void main() {
     );
     await enterPin(tester, '2580');
     await enterPin(tester, '2580');
+    await settleUntil(tester, () => session.stage != SessionStage.createFirstProfile);
     expect(session.stage, SessionStage.consent);
     await tapKey(tester, 'consent-accept');
     expect(session.stage, SessionStage.unlocked);
@@ -379,13 +385,16 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
     await revealKey(tester, 'name-continue');
     await tapKey(tester, 'name-continue');
+    // The secret question fits too (list, answer twice).
+    await answerSecretQuestion(tester);
+    expect(tester.takeException(), isNull);
     // The PIN pad scrolls too on this screen: each key is revealed first.
     for (final d in '25802580'.split('')) {
       await tapKey(tester, 'pin-$d');
     }
-    // No recovery codes any more: the profile is created once the PIN is
-    // confirmed (recovery by e-mail only). The consent follows; its buttons
-    // stay reachable too.
+    // No recovery codes: the profile is created once the PIN is confirmed,
+    // with its secret question. The consent follows; its buttons stay
+    // reachable too.
     expect(find.textContaining('codes de récupération'), findsNothing);
     expect(session.stage, SessionStage.consent);
     await revealKey(tester, 'consent-accept');
