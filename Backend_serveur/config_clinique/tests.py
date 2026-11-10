@@ -1,10 +1,13 @@
+import json
 from io import StringIO
+from pathlib import Path
 
 from django.core.management import call_command
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 
 from comptes.models import CodeProfile
 from config_clinique.models import ConfigurationClinique
+from config_clinique.services import EXEMPLE
 from synchro.models import JournalAudit
 from synchro.outils_tests import BaseApiTest
 
@@ -184,3 +187,21 @@ class CommandeChargementTest(BaseApiTest):
             self.assertEqual(regle["statut"], "À VALIDER")
         for regle in contenu["malnutrition"]["orientation"]["regles"]:
             self.assertEqual(regle["statut"], "À VALIDER")
+
+
+class ExempleIdentiqueAuTelephoneTest(SimpleTestCase):
+    """The phone falls back on the config bundled in the APK and only installs
+    a newer server version, so both copies of the sample must say the same
+    thing (calendrier PEV Madagascar, signes de danger, seuils…)."""
+
+    MOBILE = (
+        Path(__file__).resolve().parents[2]
+        / "mobile" / "assets" / "config" / "clinical_config_v1.json"
+    )
+
+    def test_exemple_serveur_egal_au_contenu_embarque(self):
+        if not self.MOBILE.exists():
+            self.skipTest("Dossier mobile/ absent (serveur déployé seul).")
+        mobile = json.loads(self.MOBILE.read_text(encoding="utf-8"))["contenu"]
+        serveur = json.loads(EXEMPLE.read_text(encoding="utf-8"))
+        self.assertEqual(serveur, mobile)
