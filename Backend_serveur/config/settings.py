@@ -117,6 +117,8 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves /static/ (the admin's CSS and JS) without nginx.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     # Spec §9: compressed batches, both ways.
     'django.middleware.gzip.GZipMiddleware',
     'synchro.middleware.DecompressionGzip',
@@ -134,6 +136,20 @@ ROOT_URLCONF = 'config.urls'
 # Behind the production reverse proxy: build links (pagination `next`) with
 # the public host the proxy forwards, not Django's internal address.
 USE_X_FORWARDED_HOST = os.getenv("USE_X_FORWARDED_HOST", "False") == "True"
+# The proxy (Railway, nginx) ends HTTPS and says so in X-Forwarded-Proto:
+# Django then knows the request is secure (HTTPS links, secure cookies).
+if os.getenv("BEHIND_HTTPS_PROXY", "False") == "True":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# Public https origins of the API, for the /admin/ login form (CSRF check),
+# e.g. https://taranaka-api.up.railway.app
+CSRF_TRUSTED_ORIGINS = [
+    origine.strip()
+    for origine in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origine.strip()
+]
 
 # Web dashboard on another origin. Empty (default): no cross-origin access,
 # which is right when the dashboard and the API share one domain.
@@ -226,6 +242,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# Filled by "python manage.py collectstatic" at deploy time.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
 
 
 # Email
