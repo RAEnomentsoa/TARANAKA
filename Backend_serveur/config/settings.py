@@ -195,16 +195,22 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+def _variable_base(nom, nom_postgres, defaut=""):
+    """DB_* first (local .env), else the PG* variables that Railway's
+    Postgres gives (PGDATABASE, PGUSER…). An empty value counts as missing."""
+    return os.getenv(nom) or os.getenv(nom_postgres) or defaut
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         # Read when Django connects, not when settings load: the build
         # (collectstatic) runs without the database variables.
-        "NAME": os.getenv("DB_NAME", ""),
-        "USER": os.getenv("DB_USER", ""),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "NAME": _variable_base("DB_NAME", "PGDATABASE"),
+        "USER": _variable_base("DB_USER", "PGUSER"),
+        "PASSWORD": _variable_base("DB_PASSWORD", "PGPASSWORD"),
+        "HOST": _variable_base("DB_HOST", "PGHOST", "localhost"),
+        "PORT": _variable_base("DB_PORT", "PGPORT", "5432"),
     }
 }
 
