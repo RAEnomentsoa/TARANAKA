@@ -1,10 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Configuration clinique TARANAKA",
-  "description": "Only the sections the server executes are checked strictly. The other sections (calendars, advice, texts) are read by the phone.",
+  "description": "Only the sections the server executes are checked strictly, plus the ones the phone refuses to install without (signes_danger). The other sections (calendars, advice, texts) are read by the phone.",
   "type": "object",
-  "required": ["meta", "malnutrition"],
+  "required": ["meta", "malnutrition", "signes_danger"],
   "properties": {
+    "signes_danger": {
+      "description": "Required by the phone (ClinicalConfig.problems): a version without these lists is never installed.",
+      "type": "object",
+      "required": ["enfant", "grossesse"],
+      "properties": {
+        "enfant": {"$ref": "#/$defs/liste_signes"},
+        "grossesse": {"$ref": "#/$defs/liste_signes"}
+      }
+    },
     "meta": {
       "type": "object",
       "required": ["statut_validation", "sources"],
@@ -71,6 +80,14 @@
     }
   },
   "$defs": {
+    "liste_signes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code"],
+        "properties": {"code": {"type": "string", "minLength": 1, "maxLength": 50}}
+      }
+    },
     "code_classification": {"enum": ["mas", "mam", "normal", "nourrisson_a_risque"]},
     "champ": {
       "enum": [

@@ -73,6 +73,63 @@ textarea {
   color: inherit;
 }
 
+/* Form controls inside AppField */
+.field input,
+.field select,
+.field textarea {
+  min-height: var(--target);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  transition: border-color var(--duration) var(--easing);
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+  border-color: var(--ink-muted);
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  border-radius: var(--radius-sm);
+}
+
+.field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.field--invalid input,
+.field--invalid select,
+.field--invalid textarea {
+  border-color: var(--rouge-ink);
+}
+
+/* Skeleton placeholders (LoadingState): a flat block that pulses softly. */
+.skeleton {
+  display: block;
+  background: var(--skeleton);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s var(--easing) infinite alternate;
+}
+
+@keyframes skeleton-pulse {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.5;
+  }
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -86,14 +143,15 @@ td {
 }
 
 thead th {
-  background: var(--sky-100);
+  background: var(--sky-50);
+  color: var(--ink-muted);
   font-size: var(--text-sm);
   font-weight: 700;
 }
 
 tbody tr + tr td,
 tbody tr + tr th {
-  border-top: 1px solid var(--sky-200);
+  border-top: 1px solid var(--line);
 }
 
 caption {
@@ -137,6 +195,11 @@ caption {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* A 0.01 ms infinite pulse would flicker: hold the placeholder still. */
+  .skeleton {
+    animation: none !important;
+  }
 }
 
 /*
@@ -162,7 +225,7 @@ caption {
   }
 
   table.stack-on-mobile tbody tr + tr {
-    border-top: 1px solid var(--sky-200);
+    border-top: 1px solid var(--line);
   }
 
   table.stack-on-mobile th[scope='row'],

@@ -56,41 +56,91 @@ class StatusPill extends StatelessWidget {
 }
 
 /// A coloured message block: icon + text, for warnings and notices.
+///
+/// Colour code of the message kinds (always with an icon, never colour alone):
+/// [NoticeBox.tip] yellow, [NoticeBox.info] blue, [NoticeBox.alert] red.
 class NoticeBox extends StatelessWidget {
-  const NoticeBox({super.key, required this.icon, required this.text, this.tone = Tone.info, this.title});
+  const NoticeBox({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.tone = Tone.info,
+    this.title,
+    this.onTap,
+  });
+
+  /// Advice: yellow.
+  const NoticeBox.tip({super.key, required this.text, this.title, this.onTap})
+    : icon = Icons.lightbulb_outline,
+      tone = Tone.caution;
+
+  /// Information: blue.
+  const NoticeBox.info({super.key, required this.text, this.title, this.onTap})
+    : icon = Icons.info_outline,
+      tone = Tone.info;
+
+  /// Alert: red.
+  const NoticeBox.alert({super.key, required this.text, this.title, this.onTap})
+    : icon = Icons.warning_amber_rounded,
+      tone = Tone.danger;
 
   final IconData icon;
   final String text;
   final String? title;
   final Tone tone;
 
+  /// Makes the whole block one button (e.g. an alert that opens what to do).
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    return Container(
-      padding: const EdgeInsets.all(Space.m),
-      decoration: BoxDecoration(
-        color: tone.background,
+    final box = _box(context);
+    if (onTap == null) return box;
+    return Semantics(
+      button: true,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(Radii.m),
-        border: Border.all(color: tone.foreground.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: tone.foreground),
-          const SizedBox(width: Space.m),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title != null) Text(title!, style: theme.titleSmall?.copyWith(color: tone.foreground)),
-                Text(text, style: theme.bodyMedium?.copyWith(color: AppColors.text)),
-              ],
-            ),
-          ),
-        ],
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(onTap: onTap, child: box),
       ),
     );
+  }
+
+  Widget _box(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final decoration = BoxDecoration(
+      color: tone.background,
+      borderRadius: BorderRadius.circular(Radii.m),
+      border: onTap == null
+          ? Border.all(color: tone.foreground.withValues(alpha: 0.3))
+          : Border.all(color: tone.foreground, width: 1.5),
+    );
+    const padding = EdgeInsets.all(Space.m);
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: tone.foreground),
+        const SizedBox(width: Space.m),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null) Text(title!, style: theme.titleSmall?.copyWith(color: tone.foreground)),
+              Text(text, style: theme.bodyMedium?.copyWith(color: AppColors.text)),
+            ],
+          ),
+        ),
+      ],
+    );
+    // Ink keeps the touch ripple visible over the coloured background.
+    if (onTap != null) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: Space.touch),
+        child: Ink(padding: padding, decoration: decoration, child: content),
+      );
+    }
+    return Container(padding: padding, decoration: decoration, child: content);
   }
 }
 

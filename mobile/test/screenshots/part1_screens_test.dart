@@ -12,14 +12,18 @@ void main() {
     final session = await pumpApp(tester, env);
     await shot(tester, '01_language');
     await tapKey(tester, 'lang-mg');
-    await shot(tester, '02_consent_mg');
-    await tapKey(tester, 'consent-accept');
+    await shot(tester, '02_welcome_mg');
+    await tapKey(tester, 'welcome-start');
+    await shot(tester, '02_profile_type_mg');
+    await tapKey(tester, 'type-personal');
     await tapKey(tester, 'name-continue');
     await shot(tester, '03_name_error');
     await tester.runAsync(() async {
       await session.createProfile(displayName: 'Voahangy', pin: '1234', mode: ProfileMode.personal);
     });
     await settle(tester);
+    await shot(tester, '02_consent_mg');
+    await tapKey(tester, 'consent-accept');
     await shot(tester, '04_home_mg');
     await tester.runAsync(() async {
       await session.setLanguage('fr');

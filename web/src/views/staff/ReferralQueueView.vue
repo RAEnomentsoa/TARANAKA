@@ -82,7 +82,7 @@ watch(active, (tab) => {
 
   <div id="queue-panel" role="tabpanel" :aria-labelledby="`queue-tab-${active}`" class="queue" :aria-busy="loading">
     <ErrorState v-if="error" :error="error" retryable @retry="run" />
-    <LoadingState v-else-if="loading && !list.length" />
+    <LoadingState v-else-if="loading && !list.length" variant="list" :rows="5" />
     <EmptyState v-else-if="!list.length" :title="t('queue.empty')" :hint="t('queue.emptyHint')" />
     <template v-else>
       <p class="queue__count muted" aria-live="polite">{{ t('queue.count', list.length) }}</p>
@@ -125,7 +125,8 @@ watch(active, (tab) => {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--sky-200);
+  background: var(--white);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   overflow: hidden;
 }

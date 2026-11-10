@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Spec §12: French and Malagasy at 100 %, no hard-coded text.
+/// Spec §12: Malagasy, French and English at 100 %, no hard-coded text.
 void main() {
   Map<String, Object?> read(String lang) =>
       (jsonDecode(File('lib/l10n/app_$lang.arb').readAsStringSync()) as Map).cast();
@@ -19,13 +19,36 @@ void main() {
     expect(mg.keys.where((k) => !k.startsWith('@')).toSet(), keys.toSet());
   });
 
-  test('placeholders are the same in both languages', () {
+  test('every French text has a non-empty English text', () {
     final fr = read('fr');
-    final mg = read('mg');
+    final en = read('en');
+    final keys = fr.keys.where((k) => !k.startsWith('@'));
+    for (final key in keys) {
+      expect(en[key], isA<String>(), reason: 'missing en: $key');
+      expect((en[key]! as String).trim(), isNotEmpty, reason: 'empty en: $key');
+    }
+    expect(en.keys.where((k) => !k.startsWith('@')).toSet(), keys.toSet());
+  });
+
+  test('placeholders are the same in every language', () {
+    final fr = read('fr');
     final placeholder = RegExp(r'\{(\w+)\}');
-    for (final key in fr.keys.where((k) => !k.startsWith('@'))) {
-      Set<String> names(Object? s) => placeholder.allMatches(s! as String).map((m) => m.group(1)!).toSet();
-      expect(names(mg[key]), names(fr[key]), reason: key);
+    for (final other in [read('mg'), read('en')]) {
+      for (final key in fr.keys.where((k) => !k.startsWith('@'))) {
+        // Only the declared placeholders: plural branches ("=1{Demain}") are text.
+        final declared = (((fr['@$key'] as Map?)?['placeholders'] as Map?)?.keys ?? const []).toSet();
+        Set<String> names(Object? s) =>
+            placeholder.allMatches(s! as String).map((m) => m.group(1)!).where(declared.contains).toSet();
+        expect(names(other[key]), names(fr[key]), reason: key);
+        expect(names(fr[key]), declared, reason: '$key: every placeholder is used');
+      }
+    }
+  });
+
+  test('12 month names and 7 weekday names in every language', () {
+    for (final lang in ['mg', 'fr', 'en']) {
+      expect((read(lang)['monthNames']! as String).split('|'), hasLength(12), reason: lang);
+      expect((read(lang)['weekdayShort']! as String).split('|'), hasLength(7), reason: lang);
     }
   });
 

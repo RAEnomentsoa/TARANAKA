@@ -9,7 +9,8 @@
   "language": {
     "label": "Langue",
     "fr": "Français",
-    "mg": "Malagasy"
+    "mg": "Malagasy",
+    "en": "English"
   },
   "nav": {
     "label": "Navigation principale",
@@ -38,6 +39,8 @@
     "identifierHelp": "Votre numéro de téléphone ou l'identifiant donné par votre superviseur.",
     "pin": "Code PIN",
     "pinHelp": "4 à 6 chiffres.",
+    "showPin": "Afficher le PIN",
+    "hidePin": "Masquer le PIN",
     "submit": "Continuer",
     "submitting": "Vérification…",
     "stepCredentials": "Étape 1 sur 2 : identifiant et PIN",

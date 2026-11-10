@@ -25,8 +25,7 @@ defineProps({
   gap: var(--space-3);
   align-items: flex-start;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-sm);
-  border-left: 6px solid currentColor;
+  border-radius: var(--radius-md);
 }
 
 .alert__icon {

@@ -106,7 +106,7 @@ function decimal(value, digits) {
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-weight: 700;
-  border: 1px solid var(--sky-200);
+  border: 1px solid var(--line);
 }
 
 .tag--mas {

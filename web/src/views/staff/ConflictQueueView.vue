@@ -50,7 +50,7 @@ onMounted(run)
   </PageHeader>
 
   <ErrorState v-if="error" :error="error" retryable @retry="run" />
-  <LoadingState v-else-if="loading && !data" />
+  <LoadingState v-else-if="loading && !data" :rows="6" />
   <EmptyState v-else-if="!data?.length" :title="t('conflicts.empty')" />
   <template v-else>
     <p class="muted" aria-live="polite">{{ t('conflicts.count', data.length) }}</p>

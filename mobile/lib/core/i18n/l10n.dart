@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../l10n/gen/app_localizations.dart';
-import '../util/clock.dart';
+import 'language.dart';
 
 export '../../l10n/gen/app_localizations.dart';
 
@@ -10,8 +10,8 @@ extension L10nContext on BuildContext {
   String get lang => Localizations.localeOf(this).languageCode;
 }
 
-/// Numeric dates (dd/MM/yyyy) read the same in French and Malagasy and need
-/// no month names (intl has no Malagasy date symbols).
+/// Numeric dates (dd/MM/yyyy) read the same in Malagasy, French and English
+/// and need no month names (intl has no Malagasy date symbols).
 String formatDate(DateTime d) =>
     '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
@@ -20,10 +20,11 @@ String formatDateTime(DateTime d) {
   return '${formatDate(local)} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 }
 
-/// Decimal with a comma in French and Malagasy ("8,6 kg").
-String formatDecimal(num value, {int digits = 1}) => value.toStringAsFixed(digits).replaceAll('.', ',');
+/// Decimal with a comma in French and Malagasy ("8,6 kg"), a point in English.
+String formatDecimal(num value, {int digits = 1}) {
+  final text = value.toStringAsFixed(digits);
+  return appLanguage == 'en' ? text : text.replaceAll('.', ',');
+}
 
 /// Parses "8,6" or "8.6".
 double? parseDecimal(String text) => double.tryParse(text.trim().replaceAll(',', '.'));
-
-String isoDay(DateTime d) => isoDate(d);

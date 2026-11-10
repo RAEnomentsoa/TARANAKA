@@ -143,7 +143,7 @@ onMounted(async () => {
 
   <div :aria-busy="result.loading.value">
     <ErrorState v-if="result.error.value" :error="result.error.value" retryable @retry="result.run" />
-    <LoadingState v-else-if="result.loading.value && !stats" />
+    <LoadingState v-else-if="result.loading.value && !stats" variant="stats" />
     <template v-else-if="stats">
       <p class="period">
         <strong>{{ t('stats.periodLabel', { start: fmt.date(stats.period.start), end: fmt.date(stats.period.end) }) }}</strong>

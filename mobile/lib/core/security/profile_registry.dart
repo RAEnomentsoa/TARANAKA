@@ -90,6 +90,8 @@ class ProfileRegistry {
     required ProfileMode mode,
     String? recoveryQuestion,
     String? recoveryAnswer,
+    String? recoveryCode,
+    String? email,
   }) async {
     if (!PinCrypto.isValidPin(pin)) {
       throw ArgumentError.value(pin, 'pin', 'must be 4 digits');
@@ -100,6 +102,8 @@ class ProfileRegistry {
     final withRecovery =
         (recoveryQuestion?.trim().isNotEmpty ?? false) && (recoveryAnswer?.trim().isNotEmpty ?? false);
     final answer = withRecovery ? PinCrypto.normaliseAnswer(recoveryAnswer!) : null;
+    final codes = recoveryCode == null ? const <String>[] : _codeSecrets(recoveryCode);
+    final mail = email?.trim();
     final profile = ProfileInfo(
       id: newUuid(),
       displayName: displayName.trim(),
@@ -111,6 +115,9 @@ class ProfileRegistry {
       recoveryQuestion: withRecovery ? recoveryQuestion!.trim() : null,
       recoveryVerifier: withRecovery ? _crypto.verifier(secret, salt, 'answer:$answer') : null,
       wrappedKeyByRecovery: withRecovery ? _crypto.wrap(secret, salt, 'answer:$answer', master) : null,
+      email: mail == null || mail.isEmpty ? null : mail,
+      codeVerifiers: [for (final c in codes) _crypto.verifier(secret, salt, c)],
+      wrappedKeysByCode: [for (final c in codes) _crypto.wrap(secret, salt, c, master)],
     );
     await _save([...await list(), profile]);
     return Unlocked(profile, master);
@@ -179,17 +186,160 @@ class ProfileRegistry {
     return Unlocked((await find(profileId))!, master);
   }
 
-  Future<void> rename(String profileId, String displayName) async {
-    final profile = (await find(profileId))!;
-    await _replace(profile.copyWith(displayName: displayName.trim()));
+  /// A wrong PIN, answer or code: one more failure, and the delay of the
+  /// lockout policy (from the 5th failure).
+  Future<WrongPin> _fail(ProfileInfo profile, DateTime now) async {
+    final failures = profile.failedAttempts + 1;
+    final delay = lockout.delayAfter(failures);
+    final until = delay == Duration.zero ? null : now.add(delay);
+    await _replace(profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null));
+    return WrongPin(failures: failures, lockedUntil: until);
   }
 
-  Future<void> setMode(String profileId, ProfileMode mode) async {
+  /// Forgotten PIN: the recovery code (downloaded at the creation) gives back
+  /// the master key, then a new PIN is set. Wrong codes count like wrong PINs.
+  Future<UnlockResult> recoverWithCode(String profileId, String code, String newPin) async {
     final profile = (await find(profileId))!;
-    await _replace(profile.copyWith(mode: mode));
+    final now = _clock.now();
+    if (!profile.hasRecoveryCode) throw StateError('no recovery code');
+    if (profile.lockedUntil != null && now.isBefore(profile.lockedUntil!)) {
+      return LockedOut(profile.lockedUntil!);
+    }
+    final secret = await _deviceSecret();
+    // Any of the codes works (one try, whatever the number of codes).
+    for (final typed in PinCrypto.typedRecoveryCodes(code)) {
+      final normalised = 'code:$typed';
+      final verifier = _crypto.verifier(secret, profile.salt, normalised);
+      for (var i = 0; i < profile.codeVerifiers.length; i++) {
+        if (PinCrypto.sameBytes(verifier, profile.codeVerifiers[i])) {
+          final master = _crypto.unwrap(secret, profile.salt, normalised, profile.wrappedKeysByCode[i]);
+          await changePin(profileId, master, newPin);
+          return Unlocked((await find(profileId))!, master);
+        }
+      }
+    }
+    return _fail(profile, now);
+  }
+
+  /// The secrets of the recovery codes of [text] (see [PinCrypto.splitRecoveryCodes]).
+  static List<String> _codeSecrets(String text) => [
+    for (final c in PinCrypto.splitRecoveryCodes(text)) 'code:$c',
+  ];
+
+  /// Gives a profile new recovery codes ([code]: the 6 codes as one text);
+  /// the previous codes no longer work.
+  Future<void> setRecoveryCode(String profileId, Uint8List masterKey, String code) async {
+    final profile = (await find(profileId))!;
+    final secret = await _deviceSecret();
+    final codes = _codeSecrets(code);
+    await _replace(
+      profile.copyWith(
+        codeVerifiers: [for (final c in codes) _crypto.verifier(secret, profile.salt, c)],
+        wrappedKeysByCode: [for (final c in codes) _crypto.wrap(secret, profile.salt, c, masterKey)],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------ fingerprint
+  //
+  // The master key is kept in the Keystore-backed store and read only after
+  // the phone confirmed the fingerprint (local_auth). Turning it off deletes
+  // that copy: the PIN stays the only way in.
+
+  static String _bioKey(String profileId) => 'bio_key_$profileId';
+
+  Future<void> enableBiometric(String profileId, Uint8List masterKey) async {
+    await _store.write(_bioKey(profileId), base64Encode(masterKey));
+    await _replace((await find(profileId))!.copyWith(biometric: true));
+  }
+
+  Future<void> disableBiometric(String profileId) async {
+    await _store.delete(_bioKey(profileId));
+    final profile = await find(profileId);
+    if (profile != null) await _replace(profile.copyWith(biometric: false));
+  }
+
+  /// To call only after the fingerprint was confirmed. Resets the failures.
+  Future<UnlockResult?> unlockWithBiometric(String profileId) async {
+    final profile = await find(profileId);
+    if (profile == null || !profile.biometric) return null;
+    final raw = await _store.read(_bioKey(profileId));
+    if (raw == null) return null;
+    final unlocked = profile.copyWith(failedAttempts: 0, clearLock: true);
+    if (profile.failedAttempts != 0 || profile.lockedUntil != null) await _replace(unlocked);
+    return Unlocked(unlocked, Uint8List.fromList(base64Decode(raw)));
+  }
+
+  // ---------------------------------------------------------- e-mail (Firebase)
+  //
+  // A random secret wraps one more copy of the master key. The secret goes to
+  // Firestore (readable only by the Firebase account of the e-mail address);
+  // until it is sent, it waits in the Keystore-backed store.
+
+  static String _emailSecretKey(String profileId) => 'email_secret_$profileId';
+  static String _emailMaterial(List<int> secret) => 'email:${base64Encode(secret)}';
+
+  /// Sets up the recovery by e-mail ([email] may replace the address): wraps
+  /// the key with a new secret, kept on the phone until it is sent.
+  Future<void> prepareEmailRecovery(String profileId, Uint8List masterKey, {String? email}) async {
+    final profile = (await find(profileId))!;
+    final mail = (email ?? profile.email)?.trim();
+    if (mail == null || mail.isEmpty) throw StateError('no e-mail address');
+    final device = await _deviceSecret();
+    final secret = _crypto.randomBytes();
+    final material = _emailMaterial(secret);
+    await _store.write(_emailSecretKey(profileId), base64Encode(secret));
+    await _replace(
+      profile.copyWith(
+        email: mail,
+        emailVerifier: _crypto.verifier(device, profile.salt, material),
+        wrappedKeyByEmail: _crypto.wrap(device, profile.salt, material, masterKey),
+        emailRecovery: EmailRecovery.pending,
+      ),
+    );
+  }
+
+  /// The secret not yet sent to Firestore (null once sent).
+  Future<Uint8List?> pendingEmailSecret(String profileId) async {
+    final raw = await _store.read(_emailSecretKey(profileId));
+    return raw == null ? null : Uint8List.fromList(base64Decode(raw));
+  }
+
+  /// The secret is in Firestore: the recovery by e-mail works.
+  Future<void> markEmailActive(String profileId) async {
+    await _store.delete(_emailSecretKey(profileId));
+    final profile = await find(profileId);
+    if (profile != null) await _replace(profile.copyWith(emailRecovery: EmailRecovery.active));
+  }
+
+  /// The address already has a Firebase account: to confirm in Paramètres.
+  Future<void> markEmailToConfirm(String profileId) async {
+    final profile = await find(profileId);
+    if (profile != null) await _replace(profile.copyWith(emailRecovery: EmailRecovery.toConfirm));
+  }
+
+  /// Forgotten PIN: the secret read from Firestore (after the sign-in with the
+  /// password chosen through the reset link) gives back the master key.
+  Future<UnlockResult> recoverWithEmailSecret(String profileId, List<int> secret, String newPin) async {
+    final profile = (await find(profileId))!;
+    final now = _clock.now();
+    if (!profile.hasEmailRecovery) throw StateError('no e-mail recovery');
+    if (profile.lockedUntil != null && now.isBefore(profile.lockedUntil!)) {
+      return LockedOut(profile.lockedUntil!);
+    }
+    final device = await _deviceSecret();
+    final material = _emailMaterial(secret);
+    if (!PinCrypto.sameBytes(_crypto.verifier(device, profile.salt, material), profile.emailVerifier!)) {
+      return _fail(profile, now);
+    }
+    final master = _crypto.unwrap(device, profile.salt, material, profile.wrappedKeyByEmail!);
+    await changePin(profileId, master, newPin);
+    return Unlocked((await find(profileId))!, master);
   }
 
   Future<void> remove(String profileId) async {
+    await _store.delete(_bioKey(profileId));
+    await _store.delete(_emailSecretKey(profileId));
     await _save([...await list()]..removeWhere((p) => p.id == profileId));
   }
 }

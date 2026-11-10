@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show FilterChip, InputChip;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/app/session_controller.dart';
 import 'package:taranaka/core/alerts/red_alert_screen.dart';
 import 'package:taranaka/core/security/profile.dart';
 import 'package:taranaka/core/sync/network_status.dart';
 import 'package:taranaka/core/util/clock.dart';
+import 'package:taranaka/core/widgets/status_pill.dart';
 import 'package:taranaka/features/pregnancy/data/pregnancy_repository.dart';
 import 'package:taranaka/features/pregnancy/domain/pregnancy.dart';
 
@@ -78,24 +80,44 @@ void main() {
     await finish(tester, env, session);
   });
 
-  testWidgets('movement journal closed before 28 SA, open after', (tester) async {
+  testWidgets('movement journal at 30 SA; colour-coded messages', (tester) async {
     final (env, session) = await start(tester, daysSinceLmp: 30 * 7);
     await tapKey(tester, 'tile-pregnancy');
     await tapKey(tester, 'pregnancy-movements');
-    expect(find.textContaining('vers 16 à 22 SA'), findsOneWidget);
+    // From 28 SA: a moment each day, no minimum number.
+    expect(find.textContaining('30 SA : chaque jour'), findsOneWidget);
+    expect(find.textContaining("Il n'y a pas de nombre minimum"), findsOneWidget);
+    expect(
+      find.text(
+        "Votre bébé bouge moins que d'habitude ou ne bouge plus ? Contactez immédiatement une maternité.",
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Enregistrer le mouvement'), findsOneWidget);
+    expect(tester.widget<NoticeBox>(find.byKey(const ValueKey('movements-info'))).tone, Tone.info);
+    expect(tester.widget<NoticeBox>(find.byKey(const ValueKey('movements-tip'))).tone, Tone.caution);
+    expect(tester.widget<NoticeBox>(find.byKey(const ValueKey('movements-less'))).tone, Tone.danger);
     await tapKey(tester, 'movements-add');
-    await tapKey(tester, 'movements-add');
-    expect(find.text('2'), findsOneWidget);
+    await tapKey(tester, 'movements-quick');
+    expect(tester.widget<Text>(find.byKey(const ValueKey('movements-count'))).data, '2');
+    expect(find.text('Mouvement ressenti'), findsOneWidget);
     await tapKey(tester, 'movements-less');
     expect(find.byType(RedAlertScreen), findsOneWidget);
     await finish(tester, env, session);
   });
 
-  testWidgets('before 28 SA there is no counter', (tester) async {
-    final (env, session) = await start(tester, daysSinceLmp: 20 * 7);
+  testWidgets('before 28 SA the movements can be noted too', (tester) async {
+    final (env, session) = await start(tester, daysSinceLmp: 12 * 7);
     await tapKey(tester, 'tile-pregnancy');
+    expect(await revealKey(tester, 'pregnancy-movements'), findsOneWidget);
+    final followUp = tester.getRect(find.byKey(const ValueKey('pregnancy-followup')));
+    final movements = tester.getRect(find.byKey(const ValueKey('pregnancy-movements')));
+    expect(movements.top, greaterThan(followUp.bottom));
+    expect(movements.top - followUp.bottom, lessThan(40));
     await tapKey(tester, 'pregnancy-movements');
-    expect(find.byKey(const ValueKey('movements-add')), findsNothing);
+    expect(find.textContaining('12 SA : il est normal de ne rien sentir encore'), findsOneWidget);
+    await tapKey(tester, 'movements-add');
+    expect(tester.widget<Text>(await revealKey(tester, 'movements-count')).data, '1');
     await finish(tester, env, session);
   });
 
@@ -109,6 +131,170 @@ void main() {
     expect(find.byKey(const ValueKey('danger-pertes_malodorantes')), findsOneWidget);
     expect(find.byKey(const ValueKey('danger-perte_des_eaux')), findsNothing);
     expect(find.textContaining('Consultation postnatale 2 · J3'), findsOneWidget);
+    // "Mouvements du bébé" stays reachable after the delivery too.
+    await revealKey(tester, 'pregnancy-movements');
+    expect(find.byKey(const ValueKey('pregnancy-movements')), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  Future<void> scrollWheel(WidgetTester tester, int wheel, int items) async {
+    await tester.drag(find.byType(CupertinoPicker).at(wheel), Offset(0, -48.0 * items), warnIfMissed: false);
+    await settle(tester);
+  }
+
+  testWidgets('each movement is noted with its type, date and time', (tester) async {
+    final (env, session) = await start(tester, daysSinceLmp: 30 * 7);
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'pregnancy-movements');
+    await tapKey(tester, 'movement-type-hoquet');
+    await tapKey(tester, 'movements-add');
+    // Hiccups are noted, not counted.
+    expect(tester.widget<Text>(find.byKey(const ValueKey('movements-count'))).data, '0');
+    expect(find.byKey(const ValueKey('movements-hiccups')), findsOneWidget);
+
+    // A movement felt yesterday evening.
+    await tapKey(tester, 'movement-type-coup_pied');
+    await tapKey(tester, 'movement-when');
+    await scrollWheel(tester, 0, -1); // 4 → 3 November
+    await scrollWheel(tester, 3, -1); // 09 → 08 h
+    await tapKey(tester, 'date-wheel-ok');
+    await tapKey(tester, 'movements-add');
+    final events = await tester.runAsync(() async {
+      final repo = PregnancyRepository(session.active!.db, clock: env.clock);
+      return repo.movementEvents((await repo.current())!.id);
+    });
+    expect(events!.map((e) => (e.type, e.at)), [
+      (MovementType.hiccup, DateTime(2026, 11, 4, 9)),
+      (MovementType.kick, DateTime(2026, 11, 3, 8)),
+    ]);
+    // Yesterday's kick is not today's count; it is in the history by day.
+    expect(tester.widget<Text>(await revealKey(tester, 'movements-count')).data, '0');
+    expect(await revealKey(tester, 'movement-day-2026-11-03'), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('follow-up: blood pressure and weight on a chosen date; high pressure gives advice', (
+    tester,
+  ) async {
+    final (env, session) = await start(tester, daysSinceLmp: 30 * 7);
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'pregnancy-followup');
+    await tapKey(tester, 'followup-date');
+    await scrollWheel(tester, 0, -2); // 4 → 2 November
+    await tapKey(tester, 'date-wheel-ok');
+    expect(find.text('Mon suivi de grossesse'), findsOneWidget);
+    await typeKey(tester, 'followup-weight', '64,5');
+    // Blood pressure is shown by default; measured by a professional.
+    await typeKey(tester, 'followup-bp-sys', '150');
+    await typeKey(tester, 'followup-bp-dia', '95');
+    await tapKey(tester, 'followup-source-professionnel');
+    await tapKey(tester, 'followup-add');
+    expect(find.byKey(const ValueKey('followup-advice')), findsOneWidget);
+    expect(find.textContaining('Tension élevée (150/95 mmHg)'), findsWidgets);
+    expect(find.textContaining('Reposez-vous 15 minutes'), findsOneWidget);
+    // Evolution and history: the origin is shown.
+    expect(await revealKey(tester, 'trend-bp'), findsOneWidget);
+    expect(find.text('Un professionnel de santé'), findsWidgets);
+
+    final entries = await tester.runAsync(() async {
+      final repo = PregnancyRepository(session.active!.db);
+      return repo.followUps((await repo.current())!.id);
+    });
+    final e = entries!.single;
+    expect(e.date, DateTime(2026, 11, 2));
+    expect(e.weightKg, 64.5);
+    expect((e.systolic, e.diastolic), (150, 95));
+    expect(e.source, MeasureSource.professional);
+
+    // A typing mistake: corrected from the history.
+    await tapKey(tester, 'followup-edit-${e.id}');
+    expect(find.byKey(const ValueKey('followup-editing')), findsOneWidget);
+    await typeKey(tester, 'followup-bp-sys', '125');
+    await typeKey(tester, 'followup-bp-dia', '80');
+    await tapKey(tester, 'followup-add');
+    final corrected = await tester.runAsync(() async {
+      final repo = PregnancyRepository(session.active!.db);
+      return repo.followUps((await repo.current())!.id);
+    });
+    expect(corrected!.single.id, e.id);
+    expect((corrected.single.systolic, corrected.single.diastolic), (125, 80));
+    expect(corrected.single.weightKg, 64.5);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('"Ce que je ressens": typing filters the list; choose or add own words', (tester) async {
+    final (env, session) = await start(tester, daysSinceLmp: 12 * 7);
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'pregnancy-followup');
+
+    // "maux" keeps only "Maux de dos" and "Maux de tête", in a compact list.
+    await typeKey(tester, 'followup-notes', 'maux');
+    await settle(tester);
+    expect(find.byKey(const ValueKey('symptom-3')), findsOneWidget);
+    expect(find.byKey(const ValueKey('symptom-6')), findsOneWidget);
+    expect(find.byKey(const ValueKey('symptom-0')), findsNothing);
+    expect(find.byKey(const ValueKey('symptom-add')), findsOneWidget);
+    expect(tester.getRect(find.byKey(const ValueKey('symptom-6'))).height, lessThan(100));
+    await tester.tap(find.byKey(const ValueKey('symptom-6')));
+    await settle(tester);
+    // "Maux de tête" is also a quick symptom: its chip is now selected.
+    expect(tester.widget<FilterChip>(find.byKey(const ValueKey('quick-symptom-3'))).selected, isTrue);
+    // One tap on a quick symptom: "Vision floue".
+    await tapKey(tester, 'quick-symptom-4');
+
+    // Own words: not in the list, added as they are.
+    await typeKey(tester, 'followup-notes', 'Un peu stressée');
+    await settle(tester);
+    expect(find.text('Ajouter « Un peu stressée »'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('symptom-add')));
+    await settle(tester);
+    expect(find.widgetWithText(InputChip, 'Un peu stressée'), findsOneWidget);
+
+    await tapKey(tester, 'followup-add');
+    final entries = await tester.runAsync(() async {
+      final repo = PregnancyRepository(session.active!.db);
+      return repo.followUps((await repo.current())!.id);
+    });
+    expect(entries!.single.notes, 'Maux de tête, Vision floue, Un peu stressée');
+    // Headache or blurred vision: pre-eclampsia signs, see someone today.
+    expect(find.text("À voir aujourd'hui · Maux de tête ou vision floue"), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('follow-up: a lower pressure above the upper one is refused', (tester) async {
+    final (env, session) = await start(tester, daysSinceLmp: 30 * 7);
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'pregnancy-followup');
+    await typeKey(tester, 'followup-bp-sys', '80');
+    await typeKey(tester, 'followup-bp-dia', '120');
+    await tapKey(tester, 'followup-add');
+    expect(find.text('La tension basse doit être plus petite que la tension haute.'), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('a past due date can be entered: the follow-up is dated from it', (tester) async {
+    final env = await TestEnv.create(network: FakeNetworkStatus(NetworkKind.none));
+    final session = await pumpApp(tester, env);
+    await tester.runAsync(() async {
+      await session.setLanguage('fr');
+      await session.acceptConsent();
+      await session.createProfile(displayName: 'Lalao', pin: '1234', mode: ProfileMode.personal);
+    });
+    await settle(tester);
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'dating-due');
+    await tapKey(tester, 'due-field');
+    await tapKey(tester, 'date-wheel-today');
+    await tapKey(tester, 'due-field');
+    await scrollWheel(tester, 0, -3); // today → 3 days ago: a past DPA
+    await tapKey(tester, 'date-wheel-ok');
+    await tapKey(tester, 'pregnancy-save');
+    expect(find.text('40 SA + 3 j'), findsOneWidget);
+    expect(find.text("Date probable d'accouchement : 01/11/2026"), findsOneWidget);
+    expect(find.byKey(const ValueKey('due-passed')), findsOneWidget);
+    final p = await tester.runAsync(() => PregnancyRepository(session.active!.db).current());
+    expect(p!.dates.dueOn, DateTime(2026, 11, 1));
+    expect(p.dueDate, DateTime(2026, 11, 1));
     await finish(tester, env, session);
   });
 }

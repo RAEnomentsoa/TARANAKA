@@ -39,6 +39,20 @@ class ConfigurationCliniqueTest(BaseApiTest):
         self.assertEqual(reponse.status_code, 400)
         self.assertIn("contenu", reponse.data)
 
+    def test_signes_danger_exiges_comme_par_le_telephone(self):
+        # The phone never installs a version without these lists
+        # (ClinicalConfig.problems): the server must not publish one.
+        for retirer in ("signes_danger", "enfant", "grossesse"):
+            with self.subTest(retirer=retirer):
+                contenu = self.config_exemple()
+                if retirer == "signes_danger":
+                    del contenu["signes_danger"]
+                else:
+                    del contenu["signes_danger"][retirer]
+                reponse = self.creer(contenu)
+                self.assertEqual(reponse.status_code, 400)
+                self.assertIn("contenu", reponse.data)
+
     def test_seul_l_admin_ecrit(self):
         superviseur = self.compte("sup", CodeProfile.SUPERVISEUR)
         for user in (self.asc, self.agent, self.femme, superviseur):

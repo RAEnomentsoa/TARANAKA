@@ -1,0 +1,70 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+flycheck_*.xml
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .dart_tool directory contains build artifacts and generated code
+.dart_tool/
+
+# The build directory contains build outputs (APK, app bundles, web builds, etc.)
+build/
+
+# JetBrains Rider
+*.sln
+*.suo
+
+# Flutter/Dart/Pub related
+**/pubspec.lock
+.packages
+pubspec.lock
+
+# Android related
+android/captures/
+android/.gradle
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/app/generated/
+android/app/release/
+android/app/snapshot_profile/
+android/app/symbol_list/
+
+# iOS related
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Pods/
+ios/.symlinks/
+ios/Runner/GeneratedPluginRegistrant.swift
+*.xcworkspace
+*.xcodeproj
+
+# Web related
+# .web/ # (Décommentez si vous utilisez le dossier .web généré)
+
+# Linux/Windows/macOS native build outputs
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+macos/Flutter/Ephemeral/
+
+# Temporary files generated during testing and tracking
+*.dill
+*.so
+*.apk
+*.aab
+*.ipa

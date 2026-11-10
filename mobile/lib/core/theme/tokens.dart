@@ -58,10 +58,3 @@ abstract final class Radii {
   static const double m = 12;
   static const double l = 16;
 }
-
-abstract final class Durations2 {
-  /// Transitions stay between 150 and 250 ms (skill), and are dropped when the
-  /// system asks to disable animations.
-  static const Duration short = Duration(milliseconds: 150);
-  static const Duration medium = Duration(milliseconds: 200);
-}

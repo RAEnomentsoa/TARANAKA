@@ -23,7 +23,7 @@ defineProps({
 .tile {
   padding: var(--space-4);
   background: var(--white);
-  border: 1px solid var(--sky-200);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
 
