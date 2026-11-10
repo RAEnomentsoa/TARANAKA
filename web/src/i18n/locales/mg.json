@@ -21,7 +21,8 @@
     "openMenu": "Sokafy ny menio",
     "closeMenu": "Hidio ny menio",
     "agents": "Ireo mpiasako",
-    "accessRequests": "Fangatahana fidirana"
+    "accessRequests": "Fangatahana fidirana",
+    "beneficiaries": "Mpisitraka"
   },
   "user": {
     "signedInAs": "Tafiditra : {name}",
@@ -217,7 +218,8 @@
     "late": "Mbola tsy tonga taorian'ny fotoana voafetra",
     "lateShort": "Tara",
     "facilityType": "{name} ({type})",
-    "stepSkipped": "tsy nolalovana"
+    "stepSkipped": "tsy nolalovana",
+    "openBeneficiary": "Sokafy ny taratasin'ny mpisitraka"
   },
   "care": {
     "title": "Fitsaboana sy fanaraha-maso",
@@ -290,7 +292,26 @@
       "decede": "Maty"
     },
     "referrals": "Fandefasana ny zaza",
-    "noReferrals": "Tsy misy fandefasana hitan'ny toeram-pitsaboanao."
+    "noReferrals": "Tsy misy fandefasana hitan'ny toeram-pitsaboanao.",
+    "mother": "Reny",
+    "vaccines": "Vakisiny",
+    "noVaccines": "Tsy misy vakisiny voarakitra.",
+    "vaccineCode": "Vakisiny",
+    "vaccineCentre": "Toeram-pitsaboana",
+    "vaccineSource": "Loharano",
+    "vaccineConfirmed": "Voamarina tamin'ny karine",
+    "vaccineDeclared": "Nambaran'ny reny",
+    "meals": "Sakafo (diarin'ny reny)",
+    "noMeals": "Tsy misy diarin-tsakafo.",
+    "breastfeeding": "Fampinonoana",
+    "breastfeedingTypes": {
+      "exclusif": "Fampinonoana fotsiny",
+      "mixte": "Mifangaro",
+      "aucun": "Tsy misy"
+    },
+    "mealsCount": "Sakafo",
+    "diversityScore": "Karazan-tsakafo",
+    "diversityValue": "{n}/8"
   },
   "measurements": {
     "title": "Tantaran'ny fandrefesana",
@@ -428,7 +449,15 @@
       "nourrissons_a_risque": "Zazakely atahorana",
       "rendez_vous_manques": "Fotoana tsy natrehina",
       "taux_arrivee_pct": "Tahan'ny tonga",
-      "delai_moyen_arrivee_heures": "Faharetan'ny fahatongavana"
+      "delai_moyen_arrivee_heures": "Faharetan'ny fahatongavana",
+      "beneficiaires_actives": "Mpisitraka mavitrika",
+      "grossesses_suivies": "Vohoka arahi-maso",
+      "signes_danger": "Famantarana loza voalaza",
+      "referencements_grossesse": "Fandefasana vehivavy bevohoka",
+      "referencements_grossesse_arrives": "Fandefasana vehivavy bevohoka tonga",
+      "enfants_vaccines": "Zaza voavakisiny",
+      "taux_arrivee_grossesse_pct": "Tahan'ny tonga (vohoka)",
+      "couverture_vaccinale_pct": "Fandrakofana ara-bakisiny (Penta 3, 12–23 volana)"
     },
     "hoursValue": "{n} ora",
     "byZone": "Isaky ny faritra",
@@ -465,7 +494,9 @@
         "ofTotal": "{arrived} amin'ny {sent}",
         "none": "Tsy misy nalefa"
       }
-    }
+    },
+    "beneficiariesTitle": "Mpisitraka mampiasa ny fampiharana",
+    "beneficiariesIntro": "Ireo vehivavy mampiasa ny fampiharana amin'ny telefaoniny manokana."
   },
   "validation": {
     "required": "Tsy maintsy fenoina ity."
@@ -594,5 +625,63 @@
     "actions": "Asa atao",
     "active": "Mandeha",
     "inactive": "Tsy mandeha"
+  },
+  "beneficiaries": {
+    "title": "Mpisitraka",
+    "intro": "Ireo vehivavy ao amin'ny faritrao mampiasa ny fampiharana TARANAKA.",
+    "searchLabel": "Hikaroka mpisitraka",
+    "searchHint": "Anarana, telefaonina, na ny kaody hita ao amin'ny fampiharany. Ny kaody feno dia mahita azy na dia ivelan'ny faritrao aza.",
+    "searchPlaceholder": "Voahangy, 034… na K7Q-M4Z",
+    "submit": "Hikaroka",
+    "count": "Tsy misy mpisitraka | Mpisitraka 1 | Mpisitraka {n}",
+    "empty": "Tsy nisy mpisitraka hita.",
+    "emptyHint": "Andramo ny anarana, ny telefaonina, na ny kaody feno hita ao amin'ny fampiharany.",
+    "followed": "Arahi-maso",
+    "pregnant": "Bevohoka",
+    "children": "Tsy misy zaza | Zaza 1 | Zaza {n}",
+    "codeColumn": "Kaodin'ny mpisitraka"
+  },
+  "beneficiary": {
+    "title": "Taratasin'ny mpisitraka",
+    "code": "Kaodin'ny mpisitraka",
+    "phone": "Telefaonina",
+    "notProvided": "Tsy voasoratra",
+    "childrenCount": "Zaza",
+    "pregnancy": "Vohoka ankehitriny",
+    "noPregnancy": "Tsy misy vohoka ankehitriny.",
+    "gestationalAge": "Faharetan'ny vohoka",
+    "weeks": "{n} herinandro | {n} herinandro",
+    "dpa": "Daty fiterahana vinavinaina",
+    "ddr": "Fadim-bolana farany",
+    "cpn": "Fitsirihana mialoha ny fiterahana (CPN)",
+    "cpnItem": "CPN {n}",
+    "noCpn": "Tsy misy fitsirihana CPN voarakitra.",
+    "finishedPregnancies": "Tsy misy vohoka vita | Vohoka vita 1 ao amin'ny antontan-taratasy | Vohoka vita {n} ao amin'ny antontan-taratasy",
+    "dangers": "Famantarana loza",
+    "noDangers": "Tsy misy famantarana loza voalaza.",
+    "periods": {
+      "grossesse": "nandritra ny vohoka",
+      "post_partum": "taorian'ny fiterahana"
+    },
+    "children": "Zaza",
+    "noChildren": "Tsy misy zaza voarakitra.",
+    "referrals": "Fandefasana",
+    "noReferrals": "Tsy misy fandefasana.",
+    "auditNote": "Voarakitra ao amin'ny diarin'ny fanaraha-maso isaky ny sokafana ity antontan-taratasy ity."
+  },
+  "dangers": {
+    "codes": {
+      "saignement_vaginal": "Mandeha ra amin'ny fivaviana",
+      "convulsions": "Fifanintonana",
+      "maux_de_tete_vision": "Aretin'andoha mafy na manjavozavo ny fahitana",
+      "fievre_elevee": "Tazo mahery",
+      "difficulte_respirer": "Sarotra ny miaina",
+      "douleur_abdominale": "Fanaintainana mafy amin'ny kibo",
+      "perte_des_eaux": "Vaky rano",
+      "bebe_bouge_moins": "Mihetsika kely na tsy mihetsika intsony ny zaza",
+      "gonflement_visage_mains": "Mivonto tampoka ny tarehy na ny tanana",
+      "saignement_abondant": "Fandehanan-dra be",
+      "fievre": "Tazo"
+    }
   }
 }

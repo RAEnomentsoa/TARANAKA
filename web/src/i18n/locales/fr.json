@@ -21,7 +21,8 @@
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
     "agents": "Mes agents",
-    "accessRequests": "Demandes d'accès"
+    "accessRequests": "Demandes d'accès",
+    "beneficiaries": "Bénéficiaires"
   },
   "user": {
     "signedInAs": "Connecté : {name}",
@@ -217,7 +218,8 @@
     "late": "Non arrivé après le délai prévu",
     "lateShort": "En retard",
     "facilityType": "{name} ({type})",
-    "stepSkipped": "non franchie"
+    "stepSkipped": "non franchie",
+    "openBeneficiary": "Ouvrir la fiche de la bénéficiaire"
   },
   "care": {
     "title": "Soins et suivi",
@@ -290,7 +292,26 @@
       "decede": "Décédé"
     },
     "referrals": "Référencements de l'enfant",
-    "noReferrals": "Aucun référencement visible pour votre centre."
+    "noReferrals": "Aucun référencement visible pour votre centre.",
+    "mother": "Mère",
+    "vaccines": "Vaccins",
+    "noVaccines": "Aucun vaccin enregistré.",
+    "vaccineCode": "Vaccin",
+    "vaccineCentre": "Centre",
+    "vaccineSource": "Source",
+    "vaccineConfirmed": "Confirmé sur le carnet",
+    "vaccineDeclared": "Déclaré par la mère",
+    "meals": "Alimentation (journal de la mère)",
+    "noMeals": "Aucun journal alimentaire.",
+    "breastfeeding": "Allaitement",
+    "breastfeedingTypes": {
+      "exclusif": "Exclusif",
+      "mixte": "Mixte",
+      "aucun": "Aucun"
+    },
+    "mealsCount": "Repas",
+    "diversityScore": "Diversité",
+    "diversityValue": "{n}/8"
   },
   "measurements": {
     "title": "Historique des mesures",
@@ -428,7 +449,15 @@
       "nourrissons_a_risque": "Nourrissons à risque",
       "rendez_vous_manques": "Rendez-vous manqués",
       "taux_arrivee_pct": "Taux d'arrivée",
-      "delai_moyen_arrivee_heures": "Délai moyen d'arrivée"
+      "delai_moyen_arrivee_heures": "Délai moyen d'arrivée",
+      "beneficiaires_actives": "Bénéficiaires actives",
+      "grossesses_suivies": "Grossesses suivies",
+      "signes_danger": "Signes de danger signalés",
+      "referencements_grossesse": "Référencements grossesse",
+      "referencements_grossesse_arrives": "Référencements grossesse arrivés",
+      "enfants_vaccines": "Enfants vaccinés",
+      "taux_arrivee_grossesse_pct": "Taux d'arrivée (grossesses)",
+      "couverture_vaccinale_pct": "Couverture vaccinale (Penta 3, 12–23 mois)"
     },
     "hoursValue": "{n} h",
     "byZone": "Par région",
@@ -465,7 +494,9 @@
         "ofTotal": "{arrived} sur {sent}",
         "none": "Aucun référencement"
       }
-    }
+    },
+    "beneficiariesTitle": "Bénéficiaires connectées",
+    "beneficiariesIntro": "Les femmes qui utilisent l'application sur leur propre téléphone."
   },
   "validation": {
     "required": "Ce champ est obligatoire."
@@ -594,5 +625,63 @@
     "actions": "Actions",
     "active": "Actif",
     "inactive": "Désactivé"
+  },
+  "beneficiaries": {
+    "title": "Bénéficiaires",
+    "intro": "Les femmes de votre zone qui utilisent l'application TARANAKA.",
+    "searchLabel": "Rechercher une bénéficiaire",
+    "searchHint": "Nom, téléphone, ou le code affiché dans son application. Un code exact la retrouve même hors de votre zone.",
+    "searchPlaceholder": "Voahangy, 034… ou K7Q-M4Z",
+    "submit": "Rechercher",
+    "count": "Aucune bénéficiaire | 1 bénéficiaire | {n} bénéficiaires",
+    "empty": "Aucune bénéficiaire trouvée.",
+    "emptyHint": "Essayez le nom, le téléphone, ou le code exact affiché dans son application.",
+    "followed": "Suivie",
+    "pregnant": "Enceinte",
+    "children": "Aucun enfant | 1 enfant | {n} enfants",
+    "codeColumn": "Code bénéficiaire"
+  },
+  "beneficiary": {
+    "title": "Fiche bénéficiaire",
+    "code": "Code bénéficiaire",
+    "phone": "Téléphone",
+    "notProvided": "Non renseigné",
+    "childrenCount": "Enfants",
+    "pregnancy": "Grossesse en cours",
+    "noPregnancy": "Aucune grossesse en cours.",
+    "gestationalAge": "Âge gestationnel",
+    "weeks": "{n} semaine | {n} semaines",
+    "dpa": "Accouchement prévu",
+    "ddr": "Dernières règles",
+    "cpn": "Consultations prénatales (CPN)",
+    "cpnItem": "CPN {n}",
+    "noCpn": "Aucune consultation prénatale enregistrée.",
+    "finishedPregnancies": "Aucune grossesse terminée | 1 grossesse terminée dans le dossier | {n} grossesses terminées dans le dossier",
+    "dangers": "Signes de danger",
+    "noDangers": "Aucun signe de danger signalé.",
+    "periods": {
+      "grossesse": "pendant la grossesse",
+      "post_partum": "après l'accouchement"
+    },
+    "children": "Enfants",
+    "noChildren": "Aucun enfant enregistré.",
+    "referrals": "Référencements",
+    "noReferrals": "Aucun référencement.",
+    "auditNote": "Chaque ouverture de ce dossier est enregistrée dans le journal d'audit."
+  },
+  "dangers": {
+    "codes": {
+      "saignement_vaginal": "Saignement vaginal",
+      "convulsions": "Convulsions",
+      "maux_de_tete_vision": "Maux de tête violents ou vision trouble",
+      "fievre_elevee": "Fièvre élevée",
+      "difficulte_respirer": "Difficulté à respirer",
+      "douleur_abdominale": "Douleur abdominale intense",
+      "perte_des_eaux": "Perte des eaux",
+      "bebe_bouge_moins": "Le bébé bouge moins ou plus du tout",
+      "gonflement_visage_mains": "Gonflement soudain du visage ou des mains",
+      "saignement_abondant": "Saignement abondant",
+      "fievre": "Fièvre"
+    }
   }
 }

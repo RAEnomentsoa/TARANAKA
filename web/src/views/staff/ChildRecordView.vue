@@ -26,12 +26,20 @@ const fmt = useFormatters()
 const auth = useAuthStore()
 
 const record = useAsync(async () => {
-  const [child, measurements, referrals] = await Promise.all([
+  const [child, measurements, referrals, vaccinations, foodLogs] = await Promise.all([
     childrenApi.get(props.id),
     childrenApi.measurements(props.id),
     referralsApi.forChild(props.id),
+    childrenApi.vaccinations(props.id),
+    childrenApi.foodLogs(props.id),
   ])
-  return { child, measurements, referrals: sortForTriage(referrals) }
+  return {
+    child,
+    measurements,
+    referrals: sortForTriage(referrals),
+    vaccinations: [...vaccinations].sort((a, b) => a.date_faite.localeCompare(b.date_faite)),
+    foodLogs: [...foodLogs].sort((a, b) => b.date_jour.localeCompare(a.date_jour)),
+  }
 })
 
 const child = computed(() => record.data.value?.child ?? null)
@@ -70,6 +78,19 @@ watch(() => props.id, record.run)
         <dt>{{ t('child.careStatus') }}</dt>
         <dd>{{ t(`child.careStatuses.${child.statut_prise_en_charge}`) }}</dd>
       </div>
+      <div v-if="child.mere">
+        <dt>{{ t('child.mother') }}</dt>
+        <dd>
+          <RouterLink
+            v-if="auth.can('beneficiaries:read')"
+            :to="{ name: 'beneficiary', params: { id: child.mere.id } }"
+            class="mother-link"
+          >
+            {{ child.mere.prenom }} {{ child.mere.nom }}
+          </RouterLink>
+          <template v-else>{{ child.mere.prenom }} {{ child.mere.nom }}</template>
+        </dd>
+      </div>
     </dl>
 
     <div class="stack">
@@ -85,6 +106,56 @@ watch(() => props.id, record.run)
       <SectionPanel :title="t('measurements.title')">
         <MeasurementTable v-if="record.data.value?.measurements.length" :measurements="record.data.value.measurements" />
         <p v-else class="muted">{{ t('measurements.empty') }}</p>
+      </SectionPanel>
+
+      <SectionPanel :title="t('child.vaccines')">
+        <p v-if="!record.data.value?.vaccinations.length" class="muted">{{ t('child.noVaccines') }}</p>
+        <div v-else class="table-scroll">
+          <table class="plain-table">
+            <caption class="visually-hidden">{{ t('child.vaccines') }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{{ t('child.vaccineCode') }}</th>
+                <th scope="col">{{ t('measurements.date') }}</th>
+                <th scope="col">{{ t('child.vaccineCentre') }}</th>
+                <th scope="col">{{ t('child.vaccineSource') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in record.data.value.vaccinations" :key="v.id">
+                <th scope="row" class="vaccine-code">{{ v.code.toUpperCase() }}</th>
+                <td><time :datetime="v.date_faite">{{ fmt.date(v.date_faite) }}</time></td>
+                <td>{{ v.centre || '–' }}</td>
+                <td>{{ v.confirme_carnet ? t('child.vaccineConfirmed') : t('child.vaccineDeclared') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </SectionPanel>
+
+      <SectionPanel :title="t('child.meals')">
+        <p v-if="!record.data.value?.foodLogs.length" class="muted">{{ t('child.noMeals') }}</p>
+        <div v-else class="table-scroll">
+          <table class="plain-table">
+            <caption class="visually-hidden">{{ t('child.meals') }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{{ t('measurements.date') }}</th>
+                <th scope="col">{{ t('child.breastfeeding') }}</th>
+                <th scope="col">{{ t('child.mealsCount') }}</th>
+                <th scope="col">{{ t('child.diversityScore') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="log in record.data.value.foodLogs" :key="log.id">
+                <th scope="row"><time :datetime="log.date_jour">{{ fmt.date(log.date_jour) }}</time></th>
+                <td>{{ t(`child.breastfeedingTypes.${log.type_allaitement}`) }}</td>
+                <td>{{ log.repas }}</td>
+                <td>{{ t('child.diversityValue', { n: log.score_diversite }) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </SectionPanel>
 
       <SectionPanel :title="t('child.referrals')">
@@ -135,6 +206,33 @@ watch(() => props.id, record.run)
   margin: 0;
   font-size: var(--text-md);
   font-weight: 700;
+}
+
+.mother-link {
+  color: var(--primary);
+}
+
+.plain-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.plain-table th,
+.plain-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.plain-table thead th {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.vaccine-code {
+  font-family: var(--font-code);
+  letter-spacing: 0.04em;
 }
 
 .refs {

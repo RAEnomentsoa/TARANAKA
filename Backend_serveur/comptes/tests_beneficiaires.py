@@ -3,7 +3,7 @@ health worker opens, and the sync of her own data."""
 
 
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from comptes.models import CodeProfile, SuiviBeneficiaire, User
@@ -16,7 +16,8 @@ from sante_femme.models import (
     MouvementBebe,
     SuiviGrossesse,
 )
-from statistiques.services import calculer
+from sante_femme.models import DangerGrossesse
+from statistiques.services import calculer, masquer
 from synchro.models import JournalAudit
 from synchro.outils_tests import BaseApiTest
 
@@ -227,6 +228,32 @@ class DossierTest(BaseApiTest):
         )
         self.assertEqual(reponse.status_code, 403)
 
+    def test_agent_csb_ouvre_une_femme_referee_a_son_centre(self):
+        """Out of the centre's region, but her pregnancy was referred to it."""
+        grossesse = self.grossesse(self.autre_femme)
+        self.comme(self.agent)
+        url = f"{BENEFICIAIRES}{self.autre_femme.pk}/"
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.referencement(code="R-G", grossesse=grossesse, csb=self.csb)
+        reponse = self.client.get(url)
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(len(reponse.data["referencements"]), 1)
+        # Opening her file made the centre follow her: she is in its list now.
+        self.assertIn(str(self.autre_femme.pk), self.ids(self.client.get(BENEFICIAIRES)))
+        # The other centre still can't.
+        self.comme(self.autre_agent)
+        self.assertEqual(self.client.get(f"{BENEFICIAIRES}{self.femme.pk}/").status_code, 404)
+
+    def test_la_fiche_enfant_donne_la_mere(self):
+        self.suivre(self.agent)
+        self.comme(self.agent)
+        reponse = self.client.get(f"/api/children/{self.petit.pk}/")
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.assertEqual(
+            reponse.data["mere"],
+            {"id": str(self.femme.pk), "nom": "Femme", "prenom": "Test"},
+        )
+
     def test_ne_plus_suivre(self):
         self.suivre(self.asc)
         self.comme(self.asc)
@@ -393,6 +420,76 @@ class StatistiquesTest(BaseApiTest):
         self.mesure(enfant, asc=None, date_mesure=date(2026, 3, 2))
         indicateurs = calculer(date(2026, 3, 1), date(2026, 3, 31))
         self.assertEqual(indicateurs["depistages"], 1)
+
+
+class IndicateursBeneficiairesTest(BaseApiTest):
+    """The supervisor's indicators on the connected beneficiaries (D16)."""
+
+    DEBUT, FIN = date(2026, 11, 1), date(2026, 11, 30)
+
+    def setUp(self):
+        super().setUp()
+        self.femmes = [
+            self.compte(f"mere{n}", CodeProfile.BENEFICIAIRE, region=self.region)
+            for n in range(6)
+        ]
+        for n, femme in enumerate(self.femmes):
+            grossesse = self.grossesse(femme)
+            DangerGrossesse.objects.create(
+                grossesse=grossesse,
+                code="saignement_vaginal",
+                date_signalement=datetime(2026, 11, 3 + n, tzinfo=UTC),
+            )
+            self.referencement(
+                code=f"RG-{n}",
+                grossesse=grossesse,
+                date_referencement=datetime(2026, 11, 3 + n, tzinfo=UTC),
+                date_reception=datetime(2026, 11, 4 + n, tzinfo=UTC),
+            )
+            # Aged 12 to 23 months on the last day; all had penta 3.
+            enfant = self.enfant(
+                mere=femme, nom=f"Bebe {n}", date_naissance=date(2025, 6, 1)
+            )
+            VaccinFait.objects.create(
+                enfant=enfant, code="penta3", date_faite=date(2026, 11, 2)
+            )
+
+    def indicateurs(self):
+        return masquer(calculer(self.DEBUT, self.FIN, None))["indicateurs"]
+
+    def test_compteurs(self):
+        indicateurs = self.indicateurs()
+        self.assertEqual(indicateurs["beneficiaires_actives"], 6)
+        self.assertEqual(indicateurs["grossesses_suivies"], 6)
+        self.assertEqual(indicateurs["signes_danger"], 6)
+        self.assertEqual(indicateurs["referencements_grossesse"], 6)
+        self.assertEqual(indicateurs["referencements_grossesse_arrives"], 6)
+        self.assertEqual(indicateurs["taux_arrivee_grossesse_pct"], 100.0)
+        self.assertEqual(indicateurs["enfants_vaccines"], 6)
+        self.assertEqual(indicateurs["couverture_vaccinale_pct"], 100.0)
+
+    def test_couverture_masquee_si_un_a_quatre_enfants_sans_vaccin(self):
+        VaccinFait.objects.filter(enfant__nom="Bebe 0").delete()
+        brut = calculer(self.DEBUT, self.FIN, None)
+        self.assertEqual(brut["couverture_vaccinale_pct"], 83.3)
+        resultat = masquer(brut)
+        self.assertIsNone(resultat["indicateurs"]["couverture_vaccinale_pct"])
+        self.assertIn("couverture_vaccinale_pct", resultat["masques"])
+
+    def test_referencements_enfant_de_un_a_quatre_cachent_ceux_de_grossesse(self):
+        """Total − pregnancy = 1 child referral: one of the two is hidden."""
+        self.referencement(
+            code="RE-1", enfant=self.enfant(nom="Ref"),
+            date_referencement=datetime(2026, 11, 5, tzinfo=UTC),
+        )
+        indicateurs = self.indicateurs()
+        self.assertEqual(indicateurs["referencements"], 7)
+        self.assertIsNone(indicateurs["referencements_grossesse"])
+        self.assertIsNone(indicateurs["taux_arrivee_grossesse_pct"])
+
+    def test_petits_effectifs(self):
+        DangerGrossesse.objects.exclude(grossesse__user=self.femmes[0]).delete()
+        self.assertIsNone(self.indicateurs()["signes_danger"])
 
 
 class UnJourParFemmeTest(BaseApiTest):

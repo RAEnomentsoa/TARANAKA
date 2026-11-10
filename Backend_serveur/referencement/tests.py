@@ -240,7 +240,10 @@ class AccesTest(BaseApiTest):
         ligne = self.referencement(code="R-3", grossesse=self.grossesse())
         self.comme(self.agent)
         reponse = self.client.get(url(ligne))
-        self.assertEqual(reponse.data["femme"], {"nom": "Femme", "prenom": "Test"})
+        self.assertEqual(
+            reponse.data["femme"],
+            {"id": str(self.femme.pk), "nom": "Femme", "prenom": "Test"},
+        )
         self.assertIsNone(self.client.get(url(self.vers_mon_csb)).data["femme"])
 
     def test_suppression_par_admin_cache_la_ligne(self):

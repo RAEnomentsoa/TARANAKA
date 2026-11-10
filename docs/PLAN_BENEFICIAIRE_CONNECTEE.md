@@ -98,12 +98,18 @@ Ce sont des points juridiques et de confiance, à faire confirmer par le respons
 
 ## 3. Web (Vue)
 
-- [ ] **Fiche bénéficiaire** : identité, grossesse en cours (âge gestationnel, DPA, CPN, signes de danger), enfants avec liens vers leur fiche.
-- [ ] **Fiche enfant** : afficher la mère, les vaccins et les repas.
-- [ ] **Référencements grossesse** dans la file, avec lien vers la fiche bénéficiaire.
-- [ ] **Recherche** par code bénéficiaire, nom ou téléphone (agent CSB).
-- [ ] **Statistiques superviseur** (anonymes, règle « < 5 ») : nombre de bénéficiaires actives, grossesses suivies, signes de danger signalés, référencements grossesse et taux d'arrivée, couverture vaccinale.
-- [ ] Traductions FR/MG/EN.
+- [x] **Fiche bénéficiaire** : identité, grossesse en cours (âge gestationnel, DPA, CPN, signes de danger), enfants avec liens vers leur fiche.
+- [x] **Fiche enfant** : afficher la mère, les vaccins et les repas.
+- [x] **Référencements grossesse** dans la file, avec lien vers la fiche bénéficiaire.
+- [x] **Recherche** par code bénéficiaire, nom ou téléphone (agent CSB) : page « Bénéficiaires » ; un code exact retrouve une femme hors zone (`lookup`).
+- [x] **Statistiques superviseur** (anonymes, règle « < 5 ») : bénéficiaires actives, grossesses suivies, signes de danger signalés, référencements grossesse et taux d'arrivée, couverture vaccinale (Penta 3, 12–23 mois).
+- [x] Traductions FR/MG/EN.
+
+### Ajouts backend faits pour le web (sans impact mobile, lecture seule)
+
+- [x] `femme` (référencement, grossesse) et nouveau champ `mere` (enfant) portent maintenant l'`id` de la femme, pour ouvrir sa fiche.
+- [x] Un agent CSB peut ouvrir le dossier d'une femme **référée à son centre** (grossesse ou enfant), même hors de sa région.
+- [x] Nouveaux indicateurs `/api/stats/` : `beneficiaires_actives`, `grossesses_suivies`, `signes_danger`, `referencements_grossesse(_arrives)`, `taux_arrivee_grossesse_pct`, `enfants_vaccines`, `couverture_vaccinale_pct` — masqués sous 5 comme les autres.
 
 ## 4. Tests et livraison
 

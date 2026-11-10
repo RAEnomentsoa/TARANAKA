@@ -8,6 +8,7 @@ from comptes.services import asc_visibles, beneficiaires_visibles
 from config_clinique.services import config_active
 from referencement.services import referencements_visibles
 from referentiel.models import CSB, Region
+from sante_femme.serializers import FemmeSerializer
 from sante_femme.services import grossesses_visibles
 from synchro.serializers import (
     CHAMPS_SYNC,
@@ -36,6 +37,7 @@ class EnfantSerializer(SyncSerializer):
         required=False,
         allow_null=True,
     )
+    mere = FemmeSerializer(read_only=True, allow_null=True)
     asc_id = LienVisible(asc_visibles, source="asc", required=False, allow_null=True)
     grossesse_id = LienVisible(
         grossesses_visibles,
@@ -56,6 +58,7 @@ class EnfantSerializer(SyncSerializer):
             "id",
             "nom",
             "mere_id",
+            "mere",
             "asc_id",
             "grossesse_id",
             "region_id",

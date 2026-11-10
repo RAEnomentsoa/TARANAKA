@@ -34,6 +34,7 @@ export const HIDDEN = { hidden: true }
  *   | 'referencements'
  *   | 'referencements_arrives'
  *   | 'rendez_vous_manques'
+ *   | BeneficiaryIndicator
  *   | OutcomeIndicator
  * )} CountIndicator
  */
@@ -47,6 +48,28 @@ export const OUTCOME_INDICATORS = [
   'sorties_decede',
 ]
 
+/**
+ * @typedef {(
+ *   | 'beneficiaires_actives'
+ *   | 'grossesses_suivies'
+ *   | 'signes_danger'
+ *   | 'referencements_grossesse'
+ *   | 'referencements_grossesse_arrives'
+ *   | 'enfants_vaccines'
+ * )} BeneficiaryIndicator
+ */
+
+/** Connected beneficiaries (D16): counts about women with an account. */
+/** @type {BeneficiaryIndicator[]} */
+export const BENEFICIARY_INDICATORS = [
+  'beneficiaires_actives',
+  'grossesses_suivies',
+  'signes_danger',
+  'referencements_grossesse',
+  'referencements_grossesse_arrives',
+  'enfants_vaccines',
+]
+
 /** @type {CountIndicator[]} */
 export const COUNT_INDICATORS = [
   'depistages',
@@ -57,6 +80,7 @@ export const COUNT_INDICATORS = [
   'referencements',
   'referencements_arrives',
   'rendez_vous_manques',
+  ...BENEFICIARY_INDICATORS,
   ...OUTCOME_INDICATORS,
 ]
 
@@ -84,6 +108,8 @@ function protectMeasure(value) {
  * @typedef {Object} ProtectedBlock
  * @property {Record<CountIndicator, Protected>} counts
  * @property {Protected} arrivalRate Percentage, 0 to 100.
+ * @property {Protected} pregnancyArrivalRate Percentage, pregnancy referrals only.
+ * @property {Protected} vaccineCoverage Percentage, children 12–23 months.
  * @property {Protected} meanDelayHours
  */
 
@@ -99,6 +125,8 @@ export function protectBlock(block) {
       Object.fromEntries(COUNT_INDICATORS.map((key) => [key, protectCount(raw(key))]))
     ),
     arrivalRate: protectMeasure(raw('taux_arrivee_pct')),
+    pregnancyArrivalRate: protectMeasure(raw('taux_arrivee_grossesse_pct')),
+    vaccineCoverage: protectMeasure(raw('couverture_vaccinale_pct')),
     meanDelayHours: protectMeasure(raw('delai_moyen_arrivee_heures')),
   }
 }

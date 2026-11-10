@@ -22,6 +22,7 @@ from nutrition.services import (
     tetees_visibles,
     vaccins_visibles,
 )
+from referencement.models import Referencement
 from referencement.serializers import ReferencementSerializer, RendezVousSerializer
 from referencement.services import referencements_visibles, rendez_vous_visibles
 from sante_femme.models import Grossesse
@@ -77,12 +78,20 @@ SECTIONS = (
 
 
 def accessibles(agent):
-    """The beneficiaries whose file agent may open: their zone and the women
-    they already follow."""
+    """The beneficiaries whose file agent may open: their zone, the women
+    they already follow and, for a centre, the women referred to it (her
+    pregnancy or her child), wherever she lives."""
     if agent.profile.code == CodeProfile.ADMIN:
         return zone_beneficiaires(agent)
+    condition = Q(pk__in=beneficiaires_suivies(agent))
+    if agent.profile.code == CodeProfile.AGENT_CSB and agent.csb_id is not None:
+        referees = Referencement.objects.filter(csb_id=agent.csb_id)
+        condition |= Q(pk__in=referees.values("grossesse__user")) | Q(
+            pk__in=referees.values("enfant__mere")
+        )
     return zone_beneficiaires(agent) | User.objects.filter(
-        pk__in=beneficiaires_suivies(agent),
+        condition,
+        profile__code=CodeProfile.BENEFICIAIRE,
         efface_le__isnull=True,
     )
 

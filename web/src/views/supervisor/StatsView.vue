@@ -167,6 +167,18 @@ onMounted(async () => {
           <StatTile :label="t('stats.metrics.rendez_vous_manques')" :value="stats.total.counts.rendez_vous_manques" />
         </dl>
 
+        <SectionPanel :title="t('stats.beneficiariesTitle')">
+          <p class="muted panel-intro">{{ t('stats.beneficiariesIntro') }}</p>
+          <dl class="tiles">
+            <StatTile :label="t('stats.metrics.beneficiaires_actives')" :value="stats.total.counts.beneficiaires_actives" />
+            <StatTile :label="t('stats.metrics.grossesses_suivies')" :value="stats.total.counts.grossesses_suivies" />
+            <StatTile :label="t('stats.metrics.signes_danger')" :value="stats.total.counts.signes_danger" />
+            <StatTile :label="t('stats.metrics.referencements_grossesse')" :value="stats.total.counts.referencements_grossesse" />
+            <StatTile :label="t('stats.metrics.taux_arrivee_grossesse_pct')" :value="stats.total.pregnancyArrivalRate" :format="percent" />
+            <StatTile :label="t('stats.metrics.couverture_vaccinale_pct')" :value="stats.total.vaccineCoverage" :format="percent" />
+          </dl>
+        </SectionPanel>
+
         <div class="charts">
           <SectionPanel v-if="stats.byMonth.length" :title="t('stats.charts.cases.title')" class="charts__main">
             <MonthlyCasesChart :months="stats.byMonth" />

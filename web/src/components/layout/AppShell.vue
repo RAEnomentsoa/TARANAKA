@@ -33,6 +33,7 @@ const menuOpen = ref(false)
 /** @type {NavItem[]} */
 const NAV = [
   { name: 'referrals', labelKey: 'nav.referrals', permission: 'referrals:read' },
+  { name: 'beneficiaries', labelKey: 'nav.beneficiaries', permission: 'beneficiaries:read' },
   { name: 'conflicts', labelKey: 'nav.conflicts', permission: 'conflicts:resolve' },
   { name: 'stats', labelKey: 'nav.stats', permission: 'stats:read' },
   { name: 'agents', labelKey: 'nav.agents', permission: 'agents:manage' },

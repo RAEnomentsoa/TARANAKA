@@ -42,11 +42,12 @@ CHAMPS_TERME = ("ddr", "dpa", "dpa_saisie", "terme_confirme_date", "date_accouch
 
 
 class FemmeSerializer(serializers.ModelSerializer):
-    """Only the name: this is what an agent of CSB may see of the woman."""
+    """Her name, and her id to open her file (D16): what a referral or a
+    child shows of the woman."""
 
     class Meta:
         model = User
-        fields = ("nom", "prenom")
+        fields = ("id", "nom", "prenom")
         read_only_fields = fields
 
 
