@@ -1,10 +1,10 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import CredentialsForm from '@/components/auth/CredentialsForm.vue'
 import TotpForm from '@/components/auth/TotpForm.vue'
-import BrandMark from '@/components/layout/BrandMark.vue'
+import logo from '@/assets/logo_v1.png'
 import InlineAlert from '@/components/ui/InlineAlert.vue'
 import LanguageSwitch from '@/components/ui/LanguageSwitch.vue'
 import { loginErrorMessage } from '@/i18n/errors'
@@ -85,10 +85,7 @@ async function back() {
 <template>
   <div class="login">
     <aside class="login__aside">
-      <div class="login__brand">
-        <BrandMark />
-        <span class="login__name">{{ t('app.name') }}</span>
-      </div>
+      <img class="login__logo" :src="logo" width="500" height="500" :alt="t('app.logoAlt')" />
       <div class="login__pitch">
         <p class="login__tagline">{{ t('app.tagline') }}</p>
         <p class="login__audience">{{ t('login.intro') }}</p>
@@ -100,8 +97,7 @@ async function back() {
 
       <div class="login__panel">
         <div class="login__mobile-brand">
-          <BrandMark />
-          <span class="login__name">{{ t('app.name') }}</span>
+          <img class="login__mobile-logo" :src="logo" width="500" height="500" :alt="t('app.logoAlt')" />
         </div>
 
         <div class="login__steps" aria-hidden="true">
@@ -127,6 +123,11 @@ async function back() {
           @back="back"
         />
         <CredentialsForm v-else ref="credentials" :busy="busy" @submit="onCredentials" />
+
+        <p v-if="!onTotpStep" class="login__request">
+          {{ t('login.noAccount') }}
+          <RouterLink :to="{ name: 'access-request' }">{{ t('login.requestAccess') }}</RouterLink>
+        </p>
       </div>
     </main>
   </div>
@@ -148,27 +149,30 @@ async function back() {
 .login__aside {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: var(--space-6);
-  padding: var(--space-6);
-  background: var(--sky-100);
-}
-
-.login__brand,
-.login__mobile-brand {
-  display: flex;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  /* A soft light behind the logo, then the page's sky blue. */
+  background: radial-gradient(circle at 50% 40%, var(--white) 0, var(--white) 28%, var(--sky-100) 70%);
+  text-align: center;
 }
 
-.login__name {
-  font-weight: 700;
-  font-size: var(--text-md);
-  letter-spacing: 0.06em;
+.login__logo {
+  width: min(100%, 26rem);
+  height: auto;
+  animation: logo-in 600ms var(--easing) backwards;
+}
+
+.login__mobile-logo {
+  width: 9rem;
+  height: auto;
+  animation: logo-in 600ms var(--easing) backwards;
 }
 
 .login__pitch {
   max-width: 26rem;
+  animation: rise-in 500ms 150ms var(--easing) backwards;
 }
 
 .login__tagline {
@@ -213,7 +217,8 @@ async function back() {
 
 .login__mobile-brand {
   display: none;
-  margin-bottom: var(--space-6);
+  justify-content: center;
+  margin-bottom: var(--space-4);
 }
 
 .login__steps {
@@ -252,6 +257,18 @@ async function back() {
 
 .login__error {
   margin-bottom: var(--space-4);
+}
+
+.login__request {
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.login__request a {
+  font-weight: 700;
 }
 
 @media (max-width: 56rem) {

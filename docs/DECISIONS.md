@@ -307,3 +307,44 @@ or silent. Each one follows the principles of `docs/SPEC.md` §1, quoted as
   recommended setup.
 - Left for later, as asked: TOTP backup codes, and server error messages in
   Malagasy (issue 9).
+
+## D15. Access requests for web accounts, and the supervisor's agents page
+
+Not in the spec, asked by the team: a person can ask for a web account from
+the login page, and an admin approves it first.
+
+- **Who can ask:** `agent_csb` (nurse or doctor of a CSB, CRENAS, CRENI,
+  CRENAM) and `superviseur` only. An ASC is still created by their supervisor
+  (spec §2, §8): they work in the field, often without email, and the
+  supervisor knows them. A beneficiary needs no account. An admin is never
+  self-declared.
+- **Nothing opens before approval.** A request lives in its own table
+  (`demande_acces`), not as an inactive user: no account, no token, nothing
+  listed anywhere else. An `agent_csb` account sees the records of its
+  centre, so the admin, not the person, decides the profile, centre and
+  region: they may correct them when approving.
+- **Same login as today:** identifiant + PIN (chosen in the request), then
+  the mandatory two-factor login on the web. The PIN is stored hashed in the
+  request and erased once it is handled. No email login and no email
+  verification: the admin's check (a phone call to the centre) is the real
+  safeguard, and the server sends no email yet (none configured on the
+  hosting). The phone number is therefore required; the email is optional.
+- **Abuse:** the form is public, so it is throttled (5 per hour per address,
+  `demande_acces` rate) and an identifiant can't be reserved twice by pending
+  requests. The public options endpoint gives centre and region names only.
+- **Audit:** `demande_acces_creee`, `demande_acces_approuvee` (plus `create`
+  for the new account), `demande_acces_refusee`.
+- **Supervisor's agents page:** the web dashboard now uses the existing
+  `/api/profiles/` and `reset-pin` endpoints (D1) in a "Mes agents" page:
+  list, create an ASC in the supervisor's region, reset a PIN. The PIN is
+  shown once to the supervisor to hand over; the server never returns it.
+  No change to the API or to the phone.
+- **Usernames ignore case** (asked after review): a phone keyboard often
+  capitalises the first letter, and an email used as a username may be typed
+  in any case. Login (phone, web, Django admin) compares without case; a
+  database constraint on `lower(identifiant)` refuses two accounts that differ
+  only by case, and so does the access request check. The username is stored
+  as typed. Migration `0008` stops with the list of conflicting usernames if
+  an existing database already has some, so they can be renamed first. The
+  web forms turn off auto-capitalisation on the username fields. No change on
+  the phone: the server does the comparison.

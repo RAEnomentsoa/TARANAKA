@@ -4,7 +4,8 @@
     "tagline": "Tableau de bord des centres de santé",
     "skipToContent": "Aller au contenu principal",
     "loading": "Chargement…",
-    "pageLoaded": "Page chargée : {title}"
+    "pageLoaded": "Page chargée : {title}",
+    "logoAlt": "Logo de Taranaka : une mère enceinte et ses enfants. Femmes, grossesse, santé de l'enfant, nutrition."
   },
   "language": {
     "label": "Langue",
@@ -18,7 +19,9 @@
     "conflicts": "Conflits de synchronisation",
     "stats": "Statistiques",
     "openMenu": "Ouvrir le menu",
-    "closeMenu": "Fermer le menu"
+    "closeMenu": "Fermer le menu",
+    "agents": "Mes agents",
+    "accessRequests": "Demandes d'accès"
   },
   "user": {
     "signedInAs": "Connecté : {name}",
@@ -65,7 +68,9 @@
       "totpFormat": "Le code doit contenir exactement 6 chiffres.",
       "required": "Ce champ est obligatoire.",
       "noWebAccess": "Votre profil n'a pas accès à ce tableau de bord. Les agents communautaires utilisent l'application mobile."
-    }
+    },
+    "noAccount": "Pas encore de compte ?",
+    "requestAccess": "Demander un accès"
   },
   "access": {
     "title": "Accès non autorisé",
@@ -439,7 +444,28 @@
     "filename": "taranaka-statistiques-{start}-{end}.csv",
     "hiddenNote": "« < 5 » : chiffre masqué pour protéger l'anonymat (moins de 5 cas, ou déductible des autres chiffres).",
     "monthColumn": "Mois",
-    "exported": "Fichier CSV téléchargé."
+    "exported": "Fichier CSV téléchargé.",
+    "charts": {
+      "hiddenKey": "Masqué (< 5)",
+      "outcomesIntro": "Comment se terminent les prises en charge de la période.",
+      "cases": {
+        "title": "Les cas de malnutrition aiguë augmentent-ils ?",
+        "summaryShort": "Enfants MAS et MAM dépistés, mois par mois ({n} mois).",
+        "trend": {
+          "up": "{month} : {n} cas, {diff} de plus qu'en {previous}.",
+          "down": "{month} : {n} cas, {diff} de moins qu'en {previous}.",
+          "same": "{month} : {n} cas, autant qu'en {previous}."
+        },
+        "columnLabel": "{month} : {sam} MAS, {mam} MAM, {screenings} dépistages"
+      },
+      "arrival": {
+        "title": "Les enfants référés arrivent-ils au centre ?",
+        "introRegion": "Référencements arrivés sur le total, par région. La plus en retard en premier.",
+        "introMonth": "Référencements arrivés sur le total, par mois. Le mois le plus en retard en premier.",
+        "ofTotal": "{arrived} sur {sent}",
+        "none": "Aucun référencement"
+      }
+    }
   },
   "validation": {
     "required": "Ce champ est obligatoire."
@@ -456,5 +482,117 @@
   "contact": {
     "call": "Appeler {name} au {phone}",
     "noPhone": "Pas de téléphone enregistré"
+  },
+  "accessRequest": {
+    "title": "Demander un accès",
+    "intro": "Pour les infirmiers et médecins des CSB, CRENAS, CRENI, CRENAM, et pour les superviseurs. Un administrateur vérifie chaque demande avant d'ouvrir le compte.",
+    "agentsNote": "Agent communautaire ? Votre compte est créé par votre superviseur : adressez-vous à lui.",
+    "sections": {
+      "role": "Votre rôle",
+      "identity": "Qui êtes-vous ?",
+      "login": "Votre connexion"
+    },
+    "profileHints": {
+      "agent_csb": "Reçoit les référencements de son centre et met à jour les dossiers.",
+      "superviseur": "Voit les statistiques anonymes et gère les agents communautaires de sa région."
+    },
+    "fields": {
+      "region": "Région",
+      "supervisedRegion": "Région supervisée",
+      "centre": "Centre de santé",
+      "fonction": "Fonction",
+      "nom": "Nom",
+      "prenom": "Prénom",
+      "phone": "Téléphone",
+      "email": "Adresse e-mail",
+      "pinConfirm": "Confirmer le PIN",
+      "message": "Message à l'administrateur"
+    },
+    "hints": {
+      "nationalRegion": "Laissez « National » si vous suivez tout le pays ou un programme.",
+      "phone": "L'administrateur vous appellera pour vérifier votre demande.",
+      "identifiant": "Celui que vous taperez pour vous connecter, par exemple prenom.centre.",
+      "message": "Par exemple votre service ou le nom de votre responsable."
+    },
+    "allRegions": "Toutes les régions",
+    "national": "National",
+    "chooseCentre": "Choisissez votre centre",
+    "afterSubmit": "Votre compte restera fermé jusqu'à la validation. Ensuite, à la première connexion, vous activerez la double authentification.",
+    "submit": "Envoyer la demande",
+    "sentTitle": "Demande envoyée",
+    "sentBody": "Un administrateur va vérifier votre demande. Il peut vous appeler au numéro indiqué.",
+    "sentNext": "Une fois la demande approuvée, connectez-vous avec l'identifiant et le PIN que vous avez choisis.",
+    "backToLogin": "Retour à la connexion",
+    "errors": {
+      "email": "Adresse e-mail invalide.",
+      "pin": "Le PIN doit contenir de 4 à 6 chiffres.",
+      "pinMismatch": "Les deux PIN ne sont pas identiques.",
+      "throttled": "Trop de demandes depuis cette connexion. Réessayez dans une heure."
+    }
+  },
+  "accessRequests": {
+    "title": "Demandes d'accès",
+    "intro": "Vérifiez l'identité de la personne (par exemple en appelant son centre) avant d'approuver : le profil et le centre décident des dossiers qu'elle verra.",
+    "filterLabel": "Afficher les demandes",
+    "statuses": {
+      "en_attente": "En attente",
+      "approuvee": "Approuvées",
+      "refusee": "Refusées"
+    },
+    "empty": {
+      "en_attente": "Aucune demande en attente",
+      "approuvee": "Aucune demande approuvée",
+      "refusee": "Aucune demande refusée"
+    },
+    "place": "Centre ou région",
+    "sentOn": "Envoyée le",
+    "handledOn": {
+      "approuvee": "Approuvée le",
+      "refusee": "Refusée le"
+    },
+    "reason": "Motif",
+    "reasonHint": "Pour la trace : la personne ne reçoit pas de message.",
+    "approve": "Approuver",
+    "refuse": "Refuser",
+    "approveTitle": "Approuver la demande de {name}",
+    "refuseTitle": "Refuser la demande de {name}",
+    "checkFirst": "Le compte sera ouvert avec ce profil et ce centre. Corrigez-les si la demande est inexacte.",
+    "profile": "Profil",
+    "approveSubmit": "Ouvrir le compte",
+    "refuseSubmit": "Refuser la demande",
+    "approved": "Compte ouvert pour {name}.",
+    "refused": "Demande de {name} refusée."
+  },
+  "agents": {
+    "title": "Mes agents communautaires",
+    "intro": "Créez les comptes des agents de votre région et réinitialisez un PIN oublié. Vous ne voyez que leur identité, jamais les dossiers de santé.",
+    "create": "Nouvel agent",
+    "createTitle": "Créer un compte d'agent communautaire",
+    "createIntro": "L'agent utilisera cet identifiant et ce PIN dans l'application mobile, en mode agent.",
+    "identifiantHint": "Par exemple son numéro de téléphone ou prenom.village. Il doit être unique.",
+    "firstPin": "PIN de départ",
+    "createSubmit": "Créer le compte",
+    "resetPin": "Nouveau PIN",
+    "resetTitle": "Nouveau PIN pour {name}",
+    "resetIntro": "Le compte est débloqué et ses sessions sont fermées. L'agent se reconnecte avec ce PIN ; ses données synchronisées reviennent à la connexion.",
+    "newPin": "Nouveau PIN",
+    "resetSubmit": "Enregistrer le PIN",
+    "handover": {
+      "createdTitle": "Compte créé pour {name}",
+      "resetTitle": "Nouveau PIN enregistré pour {name}",
+      "note": "Donnez ces informations à l'agent en main propre. Le PIN ne sera plus affiché.",
+      "done": "C'est noté"
+    },
+    "empty": "Aucun agent pour l'instant",
+    "emptyHint": "Créez le premier compte avec « Nouvel agent ».",
+    "noMatch": "Aucun agent ne correspond à la recherche",
+    "search": "Rechercher (nom, identifiant, téléphone)",
+    "count": "Aucun agent | 1 agent | {n} agents",
+    "name": "Nom",
+    "createdOn": "Créé le",
+    "state": "État",
+    "actions": "Actions",
+    "active": "Actif",
+    "inactive": "Désactivé"
   }
 }

@@ -8,13 +8,19 @@ from rest_framework.views import APIView
 
 from rest_framework.exceptions import ValidationError
 
-from synchro.services import LONGUEUR_DEVICE_ID, contexte_depuis
+from referentiel.models import CSB, Region
+from synchro.services import LONGUEUR_DEVICE_ID, Contexte, contexte_depuis
 
-from . import donnees_personnelles, services
+from . import demandes, donnees_personnelles, services
 from .exceptions import TotpNonDisponible
-from .models import CodeProfile, Profile
+from .models import CodeProfile, DemandeAcces, Profile
 from .permissions import AccesParAction, IsBeneficiaire, acces
 from .serializers import (
+    ApprobationSerializer,
+    DemandeAccesAdminSerializer,
+    DemandeAccesSerializer,
+    OptionsDemandeSerializer,
+    RefusSerializer,
     ChangerPinReponseSerializer,
     ChangerPinSerializer,
     CompteSerializer,
@@ -34,7 +40,7 @@ from .serializers import (
     TotpPreparationSerializer,
     UtilisateurSerializer,
 )
-from .throttles import LoginRateThrottle
+from .throttles import DemandeAccesRateThrottle, LoginRateThrottle
 
 
 def _adresse_ip(request):
@@ -313,3 +319,88 @@ class EffacerMesDonneesView(APIView):
             request,
             serializer.validated_data["inclure_enfants"],
         )
+
+
+# ---------- Access requests (D15) ----------
+
+
+class DemandeAccesView(APIView):
+    """POST /api/auth/access-request/: public. Creates a pending request only."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [DemandeAccesRateThrottle]
+
+    @extend_schema(request=DemandeAccesSerializer, responses={201: DemandeAccesSerializer})
+    def post(self, request):
+        serializer = DemandeAccesSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        contexte = Contexte(
+            user=None,
+            ip=_adresse_ip(request),
+            device_id=request.headers.get("X-Device-Id", "")[:LONGUEUR_DEVICE_ID],
+        )
+        demande = demandes.creer_demande(serializer.validated_data, contexte)
+        return Response(DemandeAccesSerializer(demande).data, status=201)
+
+
+class OptionsDemandeAccesView(APIView):
+    """GET /api/auth/access-request/options/: public. Regions and centres
+    (names and types only) to fill the request form."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(responses=OptionsDemandeSerializer)
+    def get(self, request):
+        return Response(
+            OptionsDemandeSerializer(
+                {
+                    "regions": Region.objects.order_by("nom"),
+                    "centres": CSB.objects.order_by("name"),
+                }
+            ).data
+        )
+
+
+class DemandeAccesViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """/access-requests/: the admin reads, approves or refuses the requests."""
+
+    serializer_class = DemandeAccesAdminSerializer
+    permission_classes = [AccesParAction]
+    profils_par_action = acces(
+        lecture=(CodeProfile.ADMIN,),
+        ecriture=(CodeProfile.ADMIN,),
+        approuver=(CodeProfile.ADMIN,),
+        refuser=(CodeProfile.ADMIN,),
+    )
+    filterset_fields = ("statut", "profil_demande")
+
+    def get_queryset(self):
+        return DemandeAcces.objects.select_related(
+            "region", "csb", "traitee_par__profile"
+        ).order_by("-date_creation", "-id")
+
+    @extend_schema(request=ApprobationSerializer, responses=DemandeAccesAdminSerializer)
+    @action(detail=True, methods=["post"], url_path="approve")
+    def approuver(self, request, pk=None):
+        serializer = ApprobationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        demande = demandes.approuver(
+            self.get_object(), serializer.validated_data, contexte_depuis(request)
+        )
+        return Response(DemandeAccesAdminSerializer(demande).data)
+
+    @extend_schema(request=RefusSerializer, responses=DemandeAccesAdminSerializer)
+    @action(detail=True, methods=["post"], url_path="refuse")
+    def refuser(self, request, pk=None):
+        serializer = RefusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        demande = demandes.refuser(
+            self.get_object(), serializer.validated_data["motif"], contexte_depuis(request)
+        )
+        return Response(DemandeAccesAdminSerializer(demande).data)

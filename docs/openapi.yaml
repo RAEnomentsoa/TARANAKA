@@ -4,6 +4,141 @@ info:
   version: 1.0.0
   description: API du serveur central TARANAKA.
 paths:
+  /api/access-requests/:
+    get:
+      operationId: access_requests_list
+      description: '/access-requests/: the admin reads, approves or refuses the requests.'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: profil_demande
+        schema:
+          type: string
+          enum:
+          - agent_csb
+          - superviseur
+        description: |-
+          * `agent_csb` - Agent de CSB
+          * `superviseur` - Superviseur
+      - in: query
+        name: statut
+        schema:
+          type: string
+          enum:
+          - approuvee
+          - en_attente
+          - refusee
+        description: |-
+          * `en_attente` - En attente
+          * `approuvee` - Approuvée
+          * `refusee` - Refusée
+      tags:
+      - access-requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDemandeAccesAdminList'
+          description: ''
+  /api/access-requests/{id}/:
+    get:
+      operationId: access_requests_retrieve
+      description: '/access-requests/: the admin reads, approves or refuses the requests.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Demande d'accès.
+        required: true
+      tags:
+      - access-requests
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeAccesAdmin'
+          description: ''
+  /api/access-requests/{id}/approve/:
+    post:
+      operationId: access_requests_approve_create
+      description: '/access-requests/: the admin reads, approves or refuses the requests.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Demande d'accès.
+        required: true
+      tags:
+      - access-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprobationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ApprobationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ApprobationRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeAccesAdmin'
+          description: ''
+  /api/access-requests/{id}/refuse/:
+    post:
+      operationId: access_requests_refuse_create
+      description: '/access-requests/: the admin reads, approves or refuses the requests.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Demande d'accès.
+        required: true
+      tags:
+      - access-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefusRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefusRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefusRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeAccesAdmin'
+          description: ''
   /api/appointments/:
     get:
       operationId: appointments_list
@@ -374,6 +509,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TotpPreparation'
+          description: ''
+  /api/auth/access-request/:
+    post:
+      operationId: auth_access_request_create
+      description: 'POST /api/auth/access-request/: public. Creates a pending request
+        only.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemandeAccesRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DemandeAccesRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DemandeAccesRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandeAcces'
+          description: ''
+  /api/auth/access-request/options/:
+    get:
+      operationId: auth_access_request_options_retrieve
+      description: |-
+        GET /api/auth/access-request/options/: public. Regions and centres
+        (names and types only) to fill the request form.
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptionsDemande'
           description: ''
   /api/auth/changer-pin/:
     post:
@@ -3511,6 +3691,18 @@ components:
         * `non_teste` - Non testé
         * `bon` - Bon
         * `mauvais` - Mauvais
+    ApprobationRequest:
+      type: object
+      description: 'Optional corrections: by default the account gets what was asked.'
+      properties:
+        profil_demande:
+          $ref: '#/components/schemas/ProfilDemandeEnum'
+        region_id:
+          type: integer
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
     BlankEnum:
       enum:
       - ''
@@ -4331,6 +4523,210 @@ components:
         * `conseil` - Conseil
         * `reference` - Référence
         * `prise_en_charge` - Prise en charge
+    DemandeAcces:
+      type: object
+      description: 'Public form: what the person asks for. The PIN is never returned.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+          maxLength: 100
+        prenom:
+          type: string
+          maxLength: 100
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 20
+        identifiant:
+          type: string
+          maxLength: 50
+        profil_demande:
+          $ref: '#/components/schemas/ProfilDemandeEnum'
+        region_id:
+          type: integer
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        fonction:
+          type: string
+          maxLength: 150
+        message:
+          type: string
+          maxLength: 1000
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/StatutDemandeEnum'
+          readOnly: true
+        date_creation:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_creation
+      - id
+      - identifiant
+      - nom
+      - phone
+      - prenom
+      - profil_demande
+      - statut
+    DemandeAccesAdmin:
+      type: object
+      description: What the admin sees to decide. Never the PIN, not even hashed.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        identifiant:
+          type: string
+          readOnly: true
+        profil_demande:
+          allOf:
+          - $ref: '#/components/schemas/ProfilDemandeEnum'
+          readOnly: true
+        region_id:
+          type: integer
+          readOnly: true
+        region_nom:
+          type: string
+          readOnly: true
+        csb_id:
+          type: integer
+          readOnly: true
+        csb_nom:
+          type: string
+          readOnly: true
+        csb_type:
+          type: string
+          readOnly: true
+        fonction:
+          type: string
+          readOnly: true
+        message:
+          type: string
+          readOnly: true
+        statut:
+          allOf:
+          - $ref: '#/components/schemas/StatutDemandeEnum'
+          readOnly: true
+        motif_refus:
+          type: string
+          readOnly: true
+        traitee_par:
+          allOf:
+          - $ref: '#/components/schemas/TraitePar'
+          readOnly: true
+        date_traitement:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        utilisateur_id:
+          type: string
+          format: uuid
+          readOnly: true
+        date_creation:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - csb_id
+      - csb_nom
+      - csb_type
+      - date_creation
+      - date_traitement
+      - email
+      - fonction
+      - id
+      - identifiant
+      - message
+      - motif_refus
+      - nom
+      - phone
+      - prenom
+      - profil_demande
+      - region_id
+      - region_nom
+      - statut
+      - traitee_par
+      - utilisateur_id
+    DemandeAccesRequest:
+      type: object
+      description: 'Public form: what the person asks for. The PIN is never returned.'
+      properties:
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        prenom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        identifiant:
+          type: string
+          minLength: 1
+          maxLength: 50
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 1
+        profil_demande:
+          $ref: '#/components/schemas/ProfilDemandeEnum'
+        region_id:
+          type: integer
+          nullable: true
+        csb_id:
+          type: integer
+          nullable: true
+        fonction:
+          type: string
+          maxLength: 150
+        message:
+          type: string
+          maxLength: 1000
+      required:
+      - identifiant
+      - nom
+      - phone
+      - pin
+      - prenom
+      - profil_demande
     DonneesPersonnelles:
       type: object
       properties:
@@ -5124,6 +5520,53 @@ components:
         * `create` - Création
         * `update` - Modification
         * `delete` - Suppression
+    OptionCentre:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        type_centre:
+          allOf:
+          - $ref: '#/components/schemas/TypeCentreEnum'
+          readOnly: true
+        region_id:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - name
+      - region_id
+      - type_centre
+    OptionRegion:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nom:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - nom
+    OptionsDemande:
+      type: object
+      properties:
+        regions:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptionRegion'
+        centres:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptionCentre'
+      required:
+      - centres
+      - regions
     OrigineEnum:
       enum:
       - enfant
@@ -5293,6 +5736,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DangerGrossesse'
+    PaginatedDemandeAccesAdminList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DemandeAccesAdmin'
     PaginatedEnfantList:
       type: object
       required:
@@ -5993,6 +6459,14 @@ components:
         * `urgente` - Urgente
         * `haute` - Haute
         * `normale` - Normale
+    ProfilDemandeEnum:
+      enum:
+      - agent_csb
+      - superviseur
+      type: string
+      description: |-
+        * `agent_csb` - Agent de CSB
+        * `superviseur` - Superviseur
     Profile:
       type: object
       properties:
@@ -6274,6 +6748,13 @@ components:
         * `rouge` - rouge
         * `orange` - orange
         * `jaune` - jaune
+    RefusRequest:
+      type: object
+      properties:
+        motif:
+          type: string
+          default: ''
+          maxLength: 1000
     Region:
       type: object
       properties:
@@ -6541,6 +7022,16 @@ components:
       description: |-
         * `a_verifier` - À vérifier
         * `resolu` - Résolu
+    StatutDemandeEnum:
+      enum:
+      - en_attente
+      - approuvee
+      - refusee
+      type: string
+      description: |-
+        * `en_attente` - En attente
+        * `approuvee` - Approuvée
+        * `refusee` - Refusée
     StatutOperationEnum:
       enum:
       - applique
@@ -6697,6 +7188,23 @@ components:
       required:
       - secret
       - uri
+    TraitePar:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - nom
+      - prenom
     TypeAllaitementEnum:
       enum:
       - exclusif

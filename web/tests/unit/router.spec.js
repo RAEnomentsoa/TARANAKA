@@ -60,4 +60,21 @@ describe('role-based routing', () => {
   it('sends a signed-in user away from the login page', async () => {
     expect((await go('/connexion', 'superviseur')).name).toBe('stats')
   })
+
+  it('opens the access request form without an account (D15)', async () => {
+    expect((await go('/demande-acces')).name).toBe('access-request')
+    expect((await go('/demande-acces', 'agent_csb')).name).toBe('referrals')
+  })
+
+  it('gives the agents page to supervisors only', async () => {
+    expect((await go('/agents', 'superviseur')).name).toBe('agents')
+    expect((await go('/agents', 'agent_csb')).name).toBe('no-access')
+    expect((await go('/agents', 'admin')).name).toBe('no-access')
+  })
+
+  it('gives the access requests to administrators only', async () => {
+    expect((await go('/demandes-acces', 'admin')).name).toBe('access-requests')
+    expect((await go('/demandes-acces', 'superviseur')).name).toBe('no-access')
+    expect((await go('/demandes-acces', 'agent_csb')).name).toBe('no-access')
+  })
 })

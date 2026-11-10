@@ -29,14 +29,13 @@ from .exceptions import (
     TotpObligatoire,
     TotpRequis,
 )
-from .models import PROFILS_TOTP, CodeProfile, User
+from .models import MESSAGE_IDENTIFIANT_UTILISE, PROFILS_TOTP, CodeProfile, User
 
 DUREES_BLOCAGE = {
     5: timedelta(minutes=15),
     10: timedelta(hours=1),
 }
 SEUIL_BLOCAGE_ADMIN = 15
-MESSAGE_IDENTIFIANT_UTILISE = "Cet identifiant est déjà utilisé."
 
 
 def beneficiaires_visibles(user):
@@ -164,7 +163,8 @@ def connecter(identifiant, pin, ip, device_id="", code_totp=None):
     with transaction.atomic():
         user = (
             User.objects.select_for_update(of=("self",))
-            .filter(identifiant=identifiant)
+            # Case doesn't matter: "Rasoa" signs in to "rasoa".
+            .filter(identifiant__iexact=identifiant)
             .first()
         )
         erreur = _verifier_connexion(user, identifiant, pin, ip, device_id, code_totp)
