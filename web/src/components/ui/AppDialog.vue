@@ -86,7 +86,6 @@ function onCancel(event) {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-5) var(--space-5) 0;
-  border-top: 4px solid var(--primary);
 }
 
 .dialog__close {

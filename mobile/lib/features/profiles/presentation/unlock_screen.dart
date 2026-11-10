@@ -23,11 +23,15 @@ class UnlockScreen extends StatefulWidget {
   State<UnlockScreen> createState() => _UnlockScreenState();
 }
 
+/// "Entrez votre code secret": 5 attempts, then a delay that grows (30 s,
+/// 1 min, 5 min, 15 min). The fingerprint, when enabled on this profile and
+/// available on the phone, is offered at once and stays one tap away.
 class _UnlockScreenState extends State<UnlockScreen> {
   String? _error;
   DateTime? _lockedUntil;
   Timer? _ticker;
   bool _busy = false;
+  bool _biometric = false;
 
   @override
   void initState() {
@@ -35,6 +39,34 @@ class _UnlockScreenState extends State<UnlockScreen> {
     final profile = _profile();
     final until = profile?.lockedUntil;
     if (until != null && DateTime.now().isBefore(until)) _startLock(until);
+    if (profile?.biometric ?? false) {
+      AppScope.read(context).services.biometrics.available().then((ok) {
+        if (!mounted || !ok) return;
+        setState(() => _biometric = true);
+        _withBiometric();
+      });
+    }
+  }
+
+  Future<void> _withBiometric() async {
+    if (_busy) return;
+    final l10n = context.l10n;
+    final scope = AppScope.read(context);
+    final navigator = Navigator.of(context);
+    setState(() => _busy = true);
+    final confirmed = await scope.services.biometrics.authenticate(l10n.biometricReason);
+    final opened = confirmed && await scope.session.unlockWithBiometric(widget.profileId);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (opened) {
+      navigator.popUntil((r) => r.isFirst);
+    } else if (confirmed) {
+      // The saved key is gone (e.g. data cleared): the PIN, then re-enable.
+      setState(() {
+        _biometric = false;
+        _error = l10n.biometricUnavailable;
+      });
+    }
   }
 
   ProfileInfo? _profile() {
@@ -85,8 +117,9 @@ class _UnlockScreenState extends State<UnlockScreen> {
             _startLock(lockedUntil);
             _error = null;
           } else {
+            // 5 attempts in all, then a delay.
             final left = PinLockoutPolicy.freeAttempts - failures + 1;
-            _error = left <= 2 ? l10n.pinWrongRemaining(left) : l10n.pinWrong;
+            _error = l10n.pinWrongRemaining(left);
           }
         });
       case LockedOut(:final until):
@@ -115,6 +148,15 @@ class _UnlockScreenState extends State<UnlockScreen> {
           NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
         const Gap(Space.m),
         PinPad(enabled: !locked && !_busy, onCompleted: _submit),
+        if (_biometric) ...[
+          const Gap(Space.l),
+          OutlinedButton.icon(
+            key: const ValueKey('unlock-biometric'),
+            onPressed: _busy ? null : _withBiometric,
+            icon: const Icon(Icons.fingerprint, size: 28),
+            label: Text(l10n.biometricUse),
+          ),
+        ],
         const Gap(Space.l),
         TextButton(
           key: const ValueKey('forgot-pin'),

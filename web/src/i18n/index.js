@@ -1,9 +1,10 @@
 import { createI18n } from 'vue-i18n'
 import fr from './locales/fr.json'
 import mg from './locales/mg.json'
+import en from './locales/en.json'
 
 /** @typedef {typeof fr} MessageSchema */
-export const SUPPORTED_LOCALES = ['mg', 'fr']
+export const SUPPORTED_LOCALES = ['mg', 'fr', 'en']
 /** @typedef {(typeof SUPPORTED_LOCALES)[number]} AppLocale */
 
 const STORAGE_KEY = 'taranaka.locale'
@@ -34,7 +35,7 @@ export function createAppI18n(locale = initialLocale()) {
     legacy: false,
     locale,
     fallbackLocale: 'fr',
-    messages: { fr, mg },
+    messages: { fr, mg, en },
     // A missing key must show up in development, not silently fall back.
     missingWarn: import.meta.env.DEV,
     fallbackWarn: import.meta.env.DEV,

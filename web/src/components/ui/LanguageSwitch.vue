@@ -34,7 +34,7 @@ function choose(next) {
 <style scoped>
 .lang {
   display: inline-flex;
-  border: 2px solid var(--sky-200);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }

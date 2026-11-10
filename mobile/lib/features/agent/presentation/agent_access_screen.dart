@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/i18n/l10n.dart';
-import '../../../core/security/profile.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
-import '../../onboarding/presentation/create_profile_screen.dart';
+import 'agent_login_screen.dart';
 
 /// Personal mode, 4th tile (spec §3): the malnutrition module is not
 /// reachable without professional credentials. It lives in a separate agent
@@ -20,11 +19,9 @@ class AgentAccessScreen extends StatelessWidget {
       title: l10n.tileAgent,
       bottomAction: FilledButton.icon(
         key: const ValueKey('agent-access-create'),
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => const CreateProfileScreen(presetMode: ProfileMode.agent, canCancel: true),
-          ),
-        ),
+        onPressed: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => const AgentLoginScreen.newProfile())),
         icon: const Icon(Icons.medical_services_outlined),
         label: Text(l10n.agentAccessCreate),
       ),

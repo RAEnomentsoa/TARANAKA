@@ -50,6 +50,7 @@ const describedBy = computed(
 
 .field__label {
   font-weight: 700;
+  font-size: var(--text-sm);
 }
 
 .field__optional {
@@ -73,25 +74,6 @@ const describedBy = computed(
   font-size: var(--text-sm);
 }
 
-.field :slotted(input),
-.field :slotted(select),
-.field :slotted(textarea) {
-  min-height: var(--target);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: 2px solid var(--field-border);
-  border-radius: var(--radius-sm);
-  background: var(--white);
-}
-
-.field :slotted(textarea) {
-  min-height: 6rem;
-  resize: vertical;
-}
-
-.field--invalid :slotted(input),
-.field--invalid :slotted(select),
-.field--invalid :slotted(textarea) {
-  border-color: var(--rouge-ink);
-}
+/* The controls themselves are styled in styles/base.css (.field input…), so
+   a control wrapped in extra markup (the PIN with its show button) matches. */
 </style>

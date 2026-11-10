@@ -16,6 +16,7 @@ class ConfigRepository extends ChangeNotifier {
 
   static const bundledAsset = 'assets/config/clinical_config_v1.json';
   static const fileName = 'clinical_config.json';
+  static const translationsAsset = 'assets/config/translations.json';
 
   final Future<Directory> Function() directory;
   final AssetBundle _bundle;
@@ -31,6 +32,13 @@ class ConfigRepository extends ChangeNotifier {
   bool get isLoaded => _current != null;
 
   Future<ClinicalConfig> load() async {
+    try {
+      loadConfigTranslations(
+        (jsonDecode(await _bundle.loadString(translationsAsset)) as Map).cast<String, Object?>(),
+      );
+    } on Object {
+      // Without the file, texts fall back to the configuration's own languages.
+    }
     final bundled = ClinicalConfig.fromJson(
       (jsonDecode(await _bundle.loadString(bundledAsset)) as Map).cast<String, Object?>(),
     );

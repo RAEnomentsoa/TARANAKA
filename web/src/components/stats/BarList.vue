@@ -6,7 +6,7 @@ import ProtectedValue from './ProtectedValue.vue'
 
 /**
  * Horizontal bars, labelled directly with their value. A hidden value gets
- * a hatched stub, so its absence is visible but its size is not.
+ * an empty dashed stub, so its absence is visible but its size is not.
  */
 const props = defineProps({
   caption: { type: String, required: true },
@@ -81,8 +81,8 @@ function width(value) {
 }
 
 .bars__bar--hidden {
-  background: repeating-linear-gradient(135deg, var(--sky-200) 0 4px, var(--white) 4px 8px);
-  border: 1px solid var(--sky-300);
+  background: transparent;
+  border: 1px dashed var(--field-border);
 }
 
 .bars__value {

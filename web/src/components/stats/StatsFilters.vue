@@ -101,7 +101,7 @@ defineExpose({ submit })
   gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
   background: var(--white);
-  border: 1px solid var(--sky-200);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-5);
 }

@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import fr from '@/i18n/locales/fr.json'
 import mg from '@/i18n/locales/mg.json'
+import en from '@/i18n/locales/en.json'
 
 /** @typedef {{ [key: string]: string | Tree }} Tree */
 
@@ -22,6 +23,7 @@ function flatten(tree, prefix = '') {
 
 const frKeys = flatten(fr)
 const mgKeys = flatten(mg)
+const enKeys = flatten(en)
 /** @param {string} text */
 const placeholders = (text) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
 
@@ -41,21 +43,27 @@ describe('translations', () => {
     expect(Object.keys(mgKeys).sort()).toEqual(Object.keys(frKeys).sort())
   })
 
+  it('French and English have exactly the same keys', () => {
+    expect(Object.keys(enKeys).sort()).toEqual(Object.keys(frKeys).sort())
+  })
+
   it('has no empty message', () => {
-    for (const [key, value] of [...Object.entries(frKeys), ...Object.entries(mgKeys)]) {
+    for (const [key, value] of [...Object.entries(frKeys), ...Object.entries(mgKeys), ...Object.entries(enKeys)]) {
       expect(value.trim(), key).not.toBe('')
     }
   })
 
-  it('uses the same placeholders in both languages', () => {
+  it('uses the same placeholders in every language', () => {
     for (const key of Object.keys(frKeys)) {
       expect(placeholders(mgKeys[key] ?? ''), key).toEqual(placeholders(frKeys[key] ?? ''))
+      expect(placeholders(enKeys[key] ?? ''), key).toEqual(placeholders(frKeys[key] ?? ''))
     }
   })
 
-  it('has the same number of plural forms in both languages', () => {
+  it('has the same number of plural forms in every language', () => {
     for (const key of Object.keys(frKeys)) {
       expect((mgKeys[key] ?? '').split(' | ').length, key).toBe((frKeys[key] ?? '').split(' | ').length)
+      expect((enKeys[key] ?? '').split(' | ').length, key).toBe((frKeys[key] ?? '').split(' | ').length)
     }
   })
 

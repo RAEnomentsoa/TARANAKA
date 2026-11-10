@@ -7,9 +7,13 @@ import '../../../core/util/clock.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../cycle/data/cycle_repository.dart';
 import '../domain/pregnancy.dart';
 
-/// DDR or a term confirmed by a professional (spec §5).
+enum _DatingMode { lmp, confirmed, due }
+
+/// DDR, a term confirmed by a professional (spec §5), or the expected due date
+/// (DPA) itself – future, or past for a follow-up entered afterwards.
 class PregnancySetupForm extends StatefulWidget {
   const PregnancySetupForm({super.key, this.initial, required this.onSave, this.title});
 
@@ -22,8 +26,13 @@ class PregnancySetupForm extends StatefulWidget {
 }
 
 class _PregnancySetupFormState extends State<PregnancySetupForm> {
-  late bool _confirmed = widget.initial?.hasConfirmedTerm ?? false;
+  late _DatingMode _mode = switch (widget.initial) {
+    final i? when i.hasConfirmedTerm => _DatingMode.confirmed,
+    final i? when i.lmp == null && i.dueOn != null => _DatingMode.due,
+    _ => _DatingMode.lmp,
+  };
   late DateTime? _lmp = widget.initial?.lmp;
+  late DateTime? _due = widget.initial?.dueOn;
   late DateTime? _exam = widget.initial?.confirmedOn;
   late final _weeks = TextEditingController(
     text: widget.initial?.confirmedAgeDays == null ? '' : '${widget.initial!.confirmedAgeDays! ~/ 7}',
@@ -33,6 +42,36 @@ class _PregnancySetupFormState extends State<PregnancySetupForm> {
   );
   String? _error;
   bool _busy = false;
+
+  /// Start of the last period logged in "Mon cycle", used as DDR when the
+  /// pregnancy has no date yet (no need to type it again).
+  DateTime? _fromCycle;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initial?.lmp == null && widget.initial?.dueOn == null) _prefillFromCycle();
+  }
+
+  Future<void> _prefillFromCycle() async {
+    final scope = AppScope.read(context);
+    final today = dateOnly(scope.services.clock.now());
+    final db = scope.session.active?.db;
+    if (db == null) return;
+    final DateTime? start;
+    try {
+      start = await CycleRepository(db).lastPeriodStart();
+    } on Object {
+      return; // No cycle data: the DDR is typed as before.
+    }
+    // Only a date the field accepts (up to 300 days back, not in the future).
+    if (start == null || start.isAfter(today) || start.isBefore(addDays(today, -300))) return;
+    if (!mounted || _lmp != null) return;
+    setState(() {
+      _lmp = start;
+      _fromCycle = start;
+    });
+  }
 
   @override
   void dispose() {
@@ -47,7 +86,18 @@ class _PregnancySetupFormState extends State<PregnancySetupForm> {
     final today = dateOnly(scope.services.clock.now());
     final calc = PregnancyCalculator(scope.services.config.current);
     PregnancyDates dates;
-    if (_confirmed) {
+    if (_mode == _DatingMode.due) {
+      if (_due == null) {
+        setState(() => _error = l10n.fieldRequired);
+        return;
+      }
+      // A past DPA is allowed (follow-up entered afterwards, correction).
+      setState(() => _busy = true);
+      await widget.onSave(PregnancyDates(dueOn: _due));
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    if (_mode == _DatingMode.confirmed) {
       final w = int.tryParse(_weeks.text.trim());
       final d = int.tryParse(_days.text.trim().isEmpty ? '0' : _days.text.trim());
       if (_exam == null || w == null || d == null || d < 0 || d > 6) {
@@ -89,37 +139,70 @@ class _PregnancySetupFormState extends State<PregnancySetupForm> {
       ),
       children: [
         Text(l10n.pregnancySetupHow, style: Theme.of(context).textTheme.titleMedium),
-        const Gap(Space.m),
-        SegmentedButton<bool>(
-          segments: [
-            ButtonSegment(value: false, icon: const Icon(Icons.water_drop_outlined), label: Text(l10n.byLmp)),
-            ButtonSegment(
-              value: true,
-              icon: const Icon(Icons.medical_information_outlined),
-              label: Text(l10n.byConfirmed),
-            ),
-          ],
-          selected: {_confirmed},
-          onSelectionChanged: (s) => setState(() {
-            _confirmed = s.first;
+        const Gap(Space.s),
+        // A vertical list: the three long labels stay readable at 320 dp.
+        RadioGroup<_DatingMode>(
+          groupValue: _mode,
+          onChanged: (v) => setState(() {
+            _mode = v ?? _mode;
             _error = null;
           }),
+          child: Column(
+            children: [
+              for (final (mode, icon, label) in [
+                (_DatingMode.lmp, Icons.water_drop_outlined, l10n.byLmp),
+                (_DatingMode.confirmed, Icons.medical_information_outlined, l10n.byConfirmed),
+                (_DatingMode.due, Icons.event_outlined, l10n.byDueDate),
+              ])
+                RadioListTile<_DatingMode>(
+                  key: ValueKey('dating-${mode.name}'),
+                  value: mode,
+                  contentPadding: EdgeInsets.zero,
+                  secondary: Icon(icon, color: AppColors.accent),
+                  title: Text(label),
+                ),
+            ],
+          ),
         ),
-        const Gap(Space.l),
+        const Gap(Space.m),
         if (_error != null) ...[
           NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
           const Gap(Space.m),
         ],
-        if (!_confirmed)
+        if (_mode == _DatingMode.lmp) ...[
           DateField(
             key: const ValueKey('lmp-field'),
             label: l10n.byLmp,
             value: _lmp,
             first: addDays(today, -300),
             last: today,
+            initial: addDays(today, -60),
             onChanged: (d) => setState(() => _lmp = d),
-          )
-        else ...[
+          ),
+          if (_fromCycle != null && _lmp == _fromCycle) ...[
+            const Gap(Space.s),
+            NoticeBox.info(
+              key: const ValueKey('lmp-from-cycle'),
+              text: l10n.lmpFromCycle(formatDate(_fromCycle!)),
+            ),
+          ],
+        ] else if (_mode == _DatingMode.due) ...[
+          DateField(
+            key: const ValueKey('due-field'),
+            label: l10n.byDueDate,
+            value: _due,
+            // Up to one year in the past, up to a full term ahead.
+            first: addDays(today, -365),
+            last: addDays(
+              today,
+              PregnancyCalculator(AppScope.of(context).services.config.current).naegeleDays,
+            ),
+            initial: addDays(today, 140),
+            onChanged: (d) => setState(() => _due = d),
+          ),
+          const Gap(Space.s),
+          Text(l10n.dueDateHint, style: Theme.of(context).textTheme.bodySmall),
+        ] else ...[
           DateField(
             label: l10n.confirmedExamDate,
             value: _exam,

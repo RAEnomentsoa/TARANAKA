@@ -22,6 +22,8 @@ class AppScope extends InheritedNotifier<SessionController> {
     return scope!;
   }
 
-  /// Without rebuilding when the session changes (for callbacks).
   static AppScope read(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>()!;
+
+  /// Null outside the app (e.g. a screen tested alone).
+  static AppScope? maybeRead(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>();
 }

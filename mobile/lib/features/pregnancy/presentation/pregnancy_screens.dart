@@ -12,8 +12,11 @@ import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../data/pregnancy_repository.dart';
+import '../domain/movements.dart';
 import '../domain/pregnancy.dart';
 import 'pregnancy_home_screen.dart';
+
+export 'follow_up_screen.dart' show FollowUpScreen;
 
 // ------------------------------------------------------------------ contacts
 
@@ -27,16 +30,9 @@ class ContactsScreen extends StatefulWidget {
 }
 
 class _ContactsScreenState extends State<ContactsScreen> {
-  Future<(Pregnancy?, Map<int, DateTime>, Map<int, DateTime>)>? _data;
+  Future<PregnancyContacts>? _data;
 
-  Future<(Pregnancy?, Map<int, DateTime>, Map<int, DateTime>)> _load() async {
-    final repo = pregnancyRepository(context);
-    return (
-      await repo.current(),
-      await repo.contactsDone(widget.pregnancyId, 'cpn'),
-      await repo.contactsDone(widget.pregnancyId, 'pn'),
-    );
-  }
+  Future<PregnancyContacts> _load() => PregnancyContacts.load(pregnancyRepository(context));
 
   @override
   void didChangeDependencies() {
@@ -69,11 +65,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
     final config = scope.services.config.current;
     final calc = PregnancyCalculator(config);
     final today = scope.services.clock.now();
-    return FutureBuilder<(Pregnancy?, Map<int, DateTime>, Map<int, DateTime>)>(
+    return FutureBuilder<PregnancyContacts>(
       future: _data,
       builder: (context, snap) {
         if (!snap.hasData) return const Scaffold(body: LoadingView());
-        final (p, anc, pnc) = snap.data!;
+        final data = snap.data!;
+        final p = data.pregnancy;
         if (p == null) return const Scaffold(body: ErrorView());
         Widget tile(String type, CareContact c) {
           final title = type == 'cpn'
@@ -122,11 +119,11 @@ class _ContactsScreenState extends State<ContactsScreen> {
             Text(l10n.contactWent, style: Theme.of(context).textTheme.bodySmall),
             if (p.delivered) ...[
               SectionTitle(l10n.postnatalTitle),
-              for (final c in calc.postnatal(p.dates, pnc, today)) tile('pn', c),
+              for (final c in data.postnatal(calc, today)) tile('pn', c),
               Text(config.sourceLabel('calendrier_postnatal'), style: Theme.of(context).textTheme.bodySmall),
             ],
             SectionTitle(l10n.antenatalTitle),
-            for (final c in calc.antenatal(p.dates, anc, today)) tile('cpn', c),
+            for (final c in data.antenatal(calc, today)) tile('cpn', c),
             Text(config.sourceLabel('calendrier_cpn'), style: Theme.of(context).textTheme.bodySmall),
           ],
         );
@@ -135,125 +132,20 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 }
 
-// ----------------------------------------------------------------- follow-up
-
-class FollowUpScreen extends StatefulWidget {
-  const FollowUpScreen({super.key, required this.pregnancyId});
-  final String pregnancyId;
-
-  @override
-  State<FollowUpScreen> createState() => _FollowUpScreenState();
-}
-
-class _FollowUpScreenState extends State<FollowUpScreen> {
-  final _weight = TextEditingController();
-  final _notes = TextEditingController();
-  Future<List<FollowUpEntry>>? _entries;
-  String? _error;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _entries ??= pregnancyRepository(context).followUps(widget.pregnancyId);
-  }
-
-  @override
-  void dispose() {
-    _weight.dispose();
-    _notes.dispose();
-    super.dispose();
-  }
-
-  Future<void> _add() async {
-    final l10n = context.l10n;
-    final weight = _weight.text.trim().isEmpty ? null : parseDecimal(_weight.text);
-    if ((_weight.text.trim().isNotEmpty && (weight == null || weight < 25 || weight > 200)) ||
-        (weight == null && _notes.text.trim().isEmpty)) {
-      setState(() => _error = l10n.numberInvalid);
-      return;
-    }
-    final repo = pregnancyRepository(context);
-    await repo.addFollowUp(
-      widget.pregnancyId,
-      AppScope.read(context).services.clock.now(),
-      weight,
-      _notes.text,
-    );
-    _weight.clear();
-    _notes.clear();
-    setState(() {
-      _error = null;
-      _entries = repo.followUps(widget.pregnancyId);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppScreen(
-      title: l10n.myFollowUp,
-      children: [
-        if (_error != null) ...[
-          NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
-          const Gap(Space.m),
-        ],
-        TextField(
-          key: const ValueKey('followup-weight'),
-          controller: _weight,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: l10n.weightKgOptional,
-            prefixIcon: const Icon(Icons.monitor_weight_outlined),
-          ),
-        ),
-        const Gap(Space.m),
-        TextField(
-          key: const ValueKey('followup-notes'),
-          controller: _notes,
-          maxLines: 2,
-          decoration: InputDecoration(labelText: l10n.notesLabel, prefixIcon: const Icon(Icons.edit_note)),
-        ),
-        const Gap(Space.m),
-        FilledButton.icon(
-          key: const ValueKey('followup-add'),
-          onPressed: _add,
-          icon: const Icon(Icons.add),
-          label: Text(l10n.add),
-        ),
-        SectionTitle(l10n.childHistory),
-        FutureBuilder<List<FollowUpEntry>>(
-          future: _entries,
-          builder: (context, snap) {
-            if (!snap.hasData) return const LoadingView();
-            if (snap.data!.isEmpty) return EmptyView(icon: Icons.edit_note, message: l10n.noFollowUp);
-            return Column(
-              children: [
-                for (final e in snap.data!)
-                  Card(
-                    child: ListTile(
-                      title: Text(
-                        [
-                          formatDate(e.date),
-                          if (e.weightKg != null) '${formatDecimal(e.weightKg!)} kg',
-                        ].join(' · '),
-                      ),
-                      subtitle: e.notes.isEmpty ? null : Text(e.notes),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
 // ----------------------------------------------------------------- movements
 
-/// Baby movements (spec §5): the journal opens at 28 SA (config), with an
-/// explanation of when they start (16 to 22 SA, config). "Le bébé bouge
-/// moins" opens the red alert in one tap.
+/// Baby movements (spec §5).
+///
+/// At the top, without scrolling: the alert (red, one tap opens what to do),
+/// today's count with "+1 mouvement" (one tap, now), what was felt and when,
+/// and "Enregistrer le mouvement". Then a short message for the term (before
+/// the first movements, up to 28 SA, from 28 SA), the advice, and the whole
+/// history by day and hour.
+///
+/// Hiccups are noted but not counted in the movements. No minimum number of
+/// movements is set: each baby has its own rhythm.
+///
+/// Message colours: yellow for advice, blue for information, red for alerts.
 class MovementsScreen extends StatefulWidget {
   const MovementsScreen({super.key, required this.pregnancyId});
   final String pregnancyId;
@@ -262,13 +154,22 @@ class MovementsScreen extends StatefulWidget {
   State<MovementsScreen> createState() => _MovementsScreenState();
 }
 
-class _MovementsScreenState extends State<MovementsScreen> {
-  Future<(Pregnancy?, Map<DateTime, int>, AlertContact)>? _data;
+typedef _MovementsData = (Pregnancy?, List<MovementDay>, AlertContact);
 
-  Future<(Pregnancy?, Map<DateTime, int>, AlertContact)> _load() async {
+class _MovementsScreenState extends State<MovementsScreen> {
+  Future<_MovementsData>? _data;
+  MovementType _type = MovementType.kick;
+  bool _saving = false;
+
+  /// Null: "now" at the moment of saving.
+  DateTime? _at;
+
+  Future<_MovementsData> _load() async {
     final repo = pregnancyRepository(context);
     final db = AppScope.read(context).session.active!.db;
-    return (await repo.current(), await repo.movements(widget.pregnancyId), await AlertContact.load(db));
+    final counts = await repo.movements(widget.pregnancyId);
+    final events = await repo.movementEvents(widget.pregnancyId);
+    return (await repo.current(), movementHistory(counts, events), await AlertContact.load(db));
   }
 
   @override
@@ -277,101 +178,235 @@ class _MovementsScreenState extends State<MovementsScreen> {
     _data ??= _load();
   }
 
+  void _reload() => setState(() {
+    _data = _load();
+  });
+
+  String _typeLabel(MovementType t) {
+    final l10n = context.l10n;
+    return switch (t) {
+      MovementType.kick => l10n.moveKick,
+      MovementType.flutter => l10n.moveFlutter,
+      MovementType.roll => l10n.moveRoll,
+      MovementType.hiccup => l10n.moveHiccup,
+      MovementType.stretch => l10n.moveStretch,
+      MovementType.felt => l10n.moveFelt,
+    };
+  }
+
+  static IconData _typeIcon(MovementType t) => switch (t) {
+    MovementType.kick => Icons.sports_soccer_outlined,
+    MovementType.flutter => Icons.air,
+    MovementType.roll => Icons.autorenew,
+    MovementType.hiccup => Icons.graphic_eq,
+    MovementType.stretch => Icons.open_in_full,
+    MovementType.felt => Icons.favorite_border,
+  };
+
+  String _time(DateTime d) => '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _save(String pregnancyId, MovementType type, DateTime at, {bool quick = false}) async {
+    if (_saving) return;
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _saving = true);
+    await pregnancyRepository(context).addMovement(pregnancyId, at, type);
+    if (!mounted) return;
+    _saving = false;
+    _reload();
+    if (quick) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(l10n.movementQuickAdded(_time(at))), duration: const Duration(seconds: 2)),
+        );
+    }
+  }
+
+  String _stageText(PregnancyCalculator calc, GestationalAge? age) {
+    final l10n = context.l10n;
+    final first = calc.firstMovementsWeeks;
+    if (age == null) return l10n.movementsExplain(first.first, first.last, calc.movementsFromWeeks);
+    return switch (movementStage(calc, age)) {
+      MovementStage.notYet => l10n.movementsStageNotYet(age.weeks, first.first, first.last),
+      MovementStage.early => l10n.movementsStageEarly(age.weeks, calc.movementsFromWeeks),
+      MovementStage.daily => l10n.movementsStageDaily(age.weeks),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final scope = AppScope.of(context);
     final config = scope.services.config.current;
     final calc = PregnancyCalculator(config);
-    final today = dateOnly(scope.services.clock.now());
-    return FutureBuilder<(Pregnancy?, Map<DateTime, int>, AlertContact)>(
+    final now = scope.services.clock.now();
+    final today = dateOnly(now);
+    final text = Theme.of(context).textTheme;
+    return FutureBuilder<_MovementsData>(
       future: _data,
       builder: (context, snap) {
         if (!snap.hasData) return const Scaffold(body: LoadingView());
-        final (p, counts, contact) = snap.data!;
+        final (p, history, contact) = snap.data!;
         if (p == null) return const Scaffold(body: ErrorView());
-        final ga = calc.age(p.dates, today)!;
-        final first = calc.firstMovementsWeeks;
-        final todayCount = counts[today] ?? 0;
+        final todayEntry = history.where((d) => d.date == today).firstOrNull;
+        final age = p.delivered ? null : calc.age(p.dates, today);
         final lessSign = asMapList(config.signesDanger['grossesse'])
             .where((s) => s['code'] == 'bebe_bouge_moins')
             .firstOrNull;
         return AppScreen(
           title: l10n.babyMovements,
+          bottomAction: FilledButton.icon(
+            key: const ValueKey('movements-add'),
+            onPressed: _saving ? null : () => _save(p.id, _type, _at ?? scope.services.clock.now()),
+            icon: const Icon(Icons.check),
+            label: Text(l10n.movementAdd),
+          ),
           children: [
-            NoticeBox(
-              icon: Icons.info_outline,
-              text: l10n.movementsExplain(first.first, first.last, calc.movementsFromWeeks),
-            ),
-            const Gap(Space.l),
-            if (lessSign != null)
-              OutlinedButton.icon(
+            // Alert (red): one tap opens what to do.
+            if (lessSign != null) ...[
+              NoticeBox.alert(
                 key: const ValueKey('movements-less'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.danger,
-                  backgroundColor: AppColors.dangerSoft,
-                  side: const BorderSide(color: AppColors.danger, width: 1.5),
-                ),
-                onPressed: () {
-                  RedAlertScreen.open(
-                    context,
-                    config: config,
-                    signs: [localizedText(lessSign, context.lang)],
-                    contact: contact,
-                  );
+                text: l10n.movementsLess,
+                onTap: () {
+                  RedAlertScreen.open(context, config: config, signs: [lessSign], contact: contact);
                   pregnancyRepository(context).recordDanger(p.id, 'bebe_bouge_moins', 'grossesse');
                 },
-                icon: const Icon(Icons.warning_amber_rounded),
-                label: Text(l10n.movementsLess),
               ),
-            if (calc.movementsLogOpen(ga)) ...[
-              const Gap(Space.l),
-              Text(l10n.movementsToday, style: Theme.of(context).textTheme.titleMedium),
-              const Gap(Space.s),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton.outlined(
-                    tooltip: l10n.decrease,
-                    onPressed: todayCount > 0
-                        ? () async {
-                            await pregnancyRepository(context).setMovements(p.id, today, todayCount - 1);
-                            setState(() {
-                              _data = _load();
-                            });
-                          }
-                        : null,
-                    icon: const Icon(Icons.remove),
-                  ),
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      '$todayCount',
-                      key: const ValueKey('movements-count'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                  ),
-                  IconButton.filled(
-                    key: const ValueKey('movements-add'),
-                    tooltip: l10n.increase,
-                    onPressed: () async {
-                      await pregnancyRepository(context).setMovements(p.id, today, todayCount + 1);
-                      setState(() {
-                        _data = _load();
-                      });
-                    },
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-              const Gap(Space.l),
-              for (final e in counts.entries.where((e) => e.key != today))
-                Text(l10n.movementsDay(formatDate(e.key), e.value)),
+              const Gap(Space.m),
             ],
+            // Today's count and the one-tap "+1 mouvement".
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: Space.m,
+              runSpacing: Space.s,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${todayEntry?.count ?? 0}',
+                      key: const ValueKey('movements-count'),
+                      style: text.headlineMedium?.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: Space.s),
+                    Flexible(child: Text(l10n.movementsToday, style: text.titleSmall)),
+                  ],
+                ),
+                // The label says "+1 mouvement" by itself (no "+1" icon before it).
+                FilledButton.tonal(
+                  key: const ValueKey('movements-quick'),
+                  onPressed: _saving
+                      ? null
+                      : () => _save(p.id, MovementType.felt, scope.services.clock.now(), quick: true),
+                  child: Text(l10n.movementQuickAdd),
+                ),
+              ],
+            ),
+            if ((todayEntry?.hiccups ?? 0) > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: Space.xs),
+                child: Text(
+                  l10n.movementsHiccupsToday(todayEntry!.hiccups),
+                  key: const ValueKey('movements-hiccups'),
+                  style: text.bodySmall?.copyWith(color: AppColors.textMuted),
+                ),
+              ),
+            SectionTitle(l10n.movementType),
+            Wrap(
+              spacing: Space.s,
+              runSpacing: Space.s,
+              children: [
+                for (final t in MovementType.choosable)
+                  ChoiceChip(
+                    key: ValueKey('movement-type-${t.code}'),
+                    showCheckmark: false,
+                    avatar: Icon(_type == t ? Icons.check_circle : _typeIcon(t), size: 18),
+                    label: Text(_typeLabel(t)),
+                    selected: _type == t,
+                    onSelected: (_) => setState(() => _type = t),
+                  ),
+              ],
+            ),
+            const Gap(Space.m),
+            DateField(
+              key: const ValueKey('movement-when'),
+              label: l10n.movementWhen,
+              value: _at,
+              withTime: true,
+              first: addDays(today, -6),
+              last: now,
+              initial: now,
+              emptyText: l10n.now,
+              onChanged: (d) => setState(() => _at = d),
+              onCleared: () => setState(() => _at = null),
+            ),
+            const Gap(Space.l),
+            // Information (blue) for this term, then advice (yellow): short.
+            NoticeBox.info(key: const ValueKey('movements-info'), text: _stageText(calc, age)),
+            const Gap(Space.s),
+            NoticeBox.tip(key: const ValueKey('movements-tip'), text: l10n.movementsTip),
+            SectionTitle(l10n.movementsHistory),
+            if (history.isEmpty)
+              Text(l10n.movementsNoHistory, key: const ValueKey('movements-empty'))
+            else
+              for (final day in history) _historyDay(context, day, today),
           ],
         );
       },
+    );
+  }
+
+  /// One day: its total (hiccups apart), then each movement with its hour.
+  Widget _historyDay(BuildContext context, MovementDay day, DateTime today) {
+    final l10n = context.l10n;
+    final title = day.date == today ? '${l10n.today} · ${formatDate(day.date)}' : formatDate(day.date);
+    final summary = [
+      l10n.movementsDayCount(day.count),
+      if (day.hiccups > 0) l10n.movementsDayHiccups(day.hiccups),
+    ].join(' · ');
+    return ExpansionTile(
+      key: ValueKey('movement-day-${isoDate(day.date)}'),
+      initiallyExpanded: day.date == today,
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(left: Space.s),
+      shape: const Border(),
+      collapsedShape: const Border(),
+      title: Text(title),
+      subtitle: Text(summary),
+      children: [
+        if (day.events.isEmpty)
+          ListTile(contentPadding: EdgeInsets.zero, title: Text(l10n.movementsDayNoHour))
+        else
+          for (final e in day.events)
+            ListTile(
+              key: ValueKey('movement-${e.id}'),
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(_typeIcon(e.type), color: e.type.counts ? AppColors.accent : AppColors.textMuted),
+              title: Text(_typeLabel(e.type)),
+              subtitle: Text(_time(e.at)),
+              trailing: IconButton(
+                tooltip: l10n.delete,
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () async {
+                  final repo = pregnancyRepository(context);
+                  final ok = await confirmAction(
+                    context,
+                    message: l10n.deleteMovement,
+                    confirmLabel: l10n.delete,
+                    destructive: true,
+                  );
+                  if (!ok) return;
+                  await repo.deleteMovement(e.id);
+                  _reload();
+                },
+              ),
+            ),
+      ],
     );
   }
 }
@@ -468,14 +503,17 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
     final diet = WomenDiet(config);
     final eaten = _eaten;
     if (eaten == null) return const Scaffold(body: LoadingView());
-    final ok = diet.met(eaten);
+    // Each food name is shown only once (see WomenDiet.shown).
+    final shown = diet.shown(context.lang);
+    final ok = diet.metShown(eaten, context.lang);
+    final count = diet.eatenShown(eaten, context.lang).length;
     return AppScreen(
       title: l10n.womenDiet,
       bottomAction: Container(
         padding: const EdgeInsets.all(Space.m),
         decoration: BoxDecoration(color: AppColors.accentSoft, borderRadius: BorderRadius.circular(Radii.m)),
         child: LabelWithPill(
-          label: Text(l10n.womenDietScore(eaten.length), style: Theme.of(context).textTheme.titleMedium),
+          label: Text(l10n.womenDietScore(count), style: Theme.of(context).textTheme.titleMedium),
           pill: StatusPill(
             icon: ok ? Icons.check_circle_outline : Icons.error_outline,
             label: ok ? l10n.diversityOk : l10n.diversityLow,
@@ -486,11 +524,11 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
       children: [
         Text(l10n.womenDietHint),
         const Gap(Space.m),
-        for (var i = 0; i < diet.groups.length; i++)
+        for (final (i, label) in shown)
           CheckboxListTile(
             key: ValueKey('women-group-$i'),
             value: eaten.contains(i),
-            title: Text(diet.groups[i]),
+            title: Text(label),
             onChanged: (v) async {
               final next = {...eaten};
               v == true ? next.add(i) : next.remove(i);

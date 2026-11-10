@@ -228,10 +228,3 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
     );
   }
 }
-
-String syncLabel(BuildContext context, SyncStatus s) => switch (s) {
-  SyncStatus.saved => context.l10n.syncSaved,
-  SyncStatus.pending => context.l10n.syncPending,
-  SyncStatus.synced => context.l10n.syncSynced,
-  SyncStatus.conflict => context.l10n.syncConflict,
-};

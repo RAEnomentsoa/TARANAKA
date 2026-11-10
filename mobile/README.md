@@ -23,7 +23,7 @@ backend Django de `Backend_serveur/`).
 | 5. Mon cycle | ✅ | prévisions, confiance, signaux, scénario 2 |
 | APK de release | ❌ **non construit ici** | voir « APK » |
 
-`flutter analyze` : aucun problème. `flutter test` : **139 tests réussis**
+`flutter analyze` : aucun problème. `flutter test` : **157 tests réussis**
 (+ 1 test d'intégration lancé contre le backend, + scripts de captures).
 
 ### Ce qui manque ou reste à faire
@@ -127,8 +127,13 @@ Sur une machine avec le SDK Android :
 
 ```bash
 cd mobile
-flutter build apk --release --split-per-abi
+flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/symbols
 ```
+
+`--obfuscate --split-debug-info` retire les noms des symboles Dart du code
+compilé (−570 Ko par APK). Gardez le dossier `build/symbols` de chaque version
+publiée : il sert à relire une trace d'erreur avec
+`flutter symbolize -i <trace> -d build/symbols/app.android-arm64.symbols`.
 
 Les fichiers sont dans `build/app/outputs/flutter-apk/` :
 
@@ -162,32 +167,35 @@ pour l'application qui l'ouvre. Android 8.0 minimum.
 
 ## Taille de l'APK (cible < 30 Mo)
 
-L'APK n'a pas pu être construit ici. Les trois plus gros éléments ont été
-**mesurés** sur ce code : code de l'application compilé en AOT avec le
-`gen_snapshot` de Flutter 3.47.9 (release, obfusqué), moteur Flutter release
-réduit (`llvm-strip`), SQLCipher 4.10.0 (`net.zetetic:sqlcipher-android`,
-dépendance de `sqflite_sqlcipher`). Le reste (dex, ressources, assets) est
-**estimé** à environ 1,5 Mo.
+**Mesuré** le 07/11/2026 (Flutter 3.47.9, commande ci-dessus) :
 
-| Élément | arm64-v8a | armeabi-v7a |
-|---|---|---|
-| Code de l'application (`libapp.so`) | 7,4 Mo → 2,9 Mo compressé | 8,3 Mo → 3,2 Mo |
-| Moteur Flutter (`libflutter.so`) | 11,8 Mo → 5,2 Mo | 8,6 Mo → 4,5 Mo |
-| SQLCipher (`libsqlcipher.so`) | 5,2 Mo → 2,3 Mo | 3,6 Mo → 1,9 Mo |
-| Reste (estimé) | ~1,5 Mo | ~1,5 Mo |
-| **APK par architecture (estimation)** | **≈ 12 Mo** | **≈ 11 Mo** |
+| APK | Taille |
+|---|---|
+| `app-arm64-v8a-release.apk` | **10,6 Mo** |
+| `app-armeabi-v7a-release.apk` | **9,7 Mo** |
+| `app-x86_64-release.apk` (émulateurs) | 11,0 Mo |
+
+Détail pour arm64 (taille dans l'APK, compressée) :
+
+| Élément | Taille |
+|---|---|
+| Moteur Flutter (`libflutter.so`) | 5,5 Mo |
+| SQLCipher (`libsqlcipher.so`, chiffrement de la base) | 2,3 Mo |
+| Code Dart de l'application et du framework (`libapp.so`) | 2,2 Mo |
+| `classes.dex`, ressources, assets, licences | ≈ 0,6 Mo |
 
 - Les bibliothèques natives sont stockées compressées
   (`useLegacyPackaging = true` dans `android/app/build.gradle.kts`). Sans ce
   réglage, Android 8+ les garde non compressées : ≈ 26 Mo pour arm64.
-- Un APK « universel » (toutes architectures) dépasserait probablement 30 Mo :
-  utiliser `--split-per-abi`.
-- **À confirmer** par un vrai build : `ls -la build/app/outputs/flutter-apk/`.
+- Sans `--split-per-abi`, l'APK « universel » embarque SQLCipher pour les trois
+  architectures : 15,6 Mo pour arm64 seul, davantage avec toutes les
+  architectures. Utiliser `--split-per-abi`.
+- Pour voir le détail : `flutter build apk --release --target-platform android-arm64 --analyze-size`.
 
 ## Tests
 
 ```bash
-flutter test                                   # 139 tests
+flutter test                                   # 157 tests
 TARANAKA_API=http://localhost:8000 flutter test test/integration   # vrai backend
 TARANAKA_SCREENSHOTS=1 flutter test --update-goldens test/screenshots   # captures PNG
 ```
@@ -242,12 +250,12 @@ assets/who/        tables OMS à ajouter
   qu'enveloppée par une clé dérivée du **PIN** et d'un secret gardé dans le
   **Keystore Android**. Sans le téléphone, les 10 000 PIN ne peuvent pas être
   essayés hors ligne. Changer de PIN ne rechiffre pas la base.
-- 5 PIN faux → 30 s, puis 1 min, 5 min, 15 min. Verrouillage après 2 minutes
-  sans activité. Question de secours facultative (mode personnel) ; sinon
+- 5 PIN faux → 30 s, puis 1 min, 5 min, 15 min. Verrouillage quand l'écran
+  s'éteint, sur « Verrouiller » ou à la fermeture (jamais par inactivité). Question de secours facultative (mode personnel) ; sinon
   réinitialisation avec perte des données, clairement annoncée. Agent : PIN
   réinitialisé par le superviseur, profil recréé, données synchronisées
   restaurées.
-- Captures d'écran bloquées (`FLAG_SECURE`), pas de sauvegarde Android.
+- Captures d'écran et enregistrements vidéo autorisés (pas de `FLAG_SECURE`), pas de sauvegarde Android.
 - « Effacer toutes mes données » supprime le profil et son fichier.
 
 ### Synchronisation (spec §9)

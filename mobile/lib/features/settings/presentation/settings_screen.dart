@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../onboarding/presentation/privacy_policy_screen.dart';
 import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/security/profile.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import 'change_pin_screen.dart';
+import 'security_settings.dart';
 import 'settings_sections.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -37,16 +40,29 @@ class SettingsScreen extends StatelessWidget {
       title: l10n.settings,
       children: [
         SectionTitle(l10n.language),
-        SegmentedButton<String>(
-          segments: [
-            ButtonSegment(value: 'mg', label: Text(l10n.languageMalagasy)),
-            ButtonSegment(value: 'fr', label: Text(l10n.languageFrench)),
-          ],
-          selected: {session.languageCode ?? 'fr'},
-          onSelectionChanged: (s) => session.setLanguage(s.first),
+        // Each language is written in itself, so it can be found from any other.
+        Card(
+          child: RadioGroup<String>(
+            groupValue: session.languageCode ?? 'fr',
+            onChanged: (v) {
+              if (v != null) session.setLanguage(v);
+            },
+            child: Column(
+              children: [
+                for (final (code, label) in [('mg', 'Malagasy'), ('fr', 'Français'), ('en', 'English')])
+                  RadioListTile<String>(
+                    key: ValueKey('settings-lang-$code'),
+                    value: code,
+                    title: Text(label),
+                  ),
+              ],
+            ),
+          ),
         ),
-        const Gap(Space.s),
-        Text(l10n.malagasyReviewNote, style: Theme.of(context).textTheme.bodySmall),
+        if (session.languageCode == 'mg') ...[
+          const Gap(Space.s),
+          Text(l10n.malagasyReviewNote, style: Theme.of(context).textTheme.bodySmall),
+        ],
         ...moduleSettingsSections(context),
         SectionTitle(l10n.privacyTitle),
         Card(
@@ -62,6 +78,22 @@ class SettingsScreen extends StatelessWidget {
                         .push(MaterialPageRoute<void>(builder: (_) => const ChangePinScreen())),
               ),
               const Divider(),
+              // Personal profiles: the recovery code to show or download again.
+              if (session.active?.info.mode != ProfileMode.agent) ...[
+                ListTile(
+                  key: const ValueKey('settings-recovery-code'),
+                  leading: const Icon(Icons.vpn_key_outlined),
+                  title: Text(l10n.recoveryCodeTitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.of(context)
+                          .push(MaterialPageRoute<void>(builder: (_) => const RecoveryCodeScreen())),
+                ),
+                const Divider(),
+                const EmailRecoveryTile(),
+                const Divider(),
+              ],
+              const BiometricSettingTile(),
               ListTile(
                 leading: const Icon(Icons.switch_account_outlined),
                 title: Text(l10n.switchProfile),
@@ -70,6 +102,16 @@ class SettingsScreen extends StatelessWidget {
                   await session.lock();
                   navigator.popUntil((r) => r.isFirst);
                 },
+              ),
+              const Divider(),
+              ListTile(
+                key: const ValueKey('settings-privacy-policy'),
+                leading: const Icon(Icons.policy_outlined),
+                title: Text(l10n.privacyPolicyTitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute<void>(builder: (_) => const PrivacyPolicyScreen())),
               ),
               const Divider(),
               ListTile(
