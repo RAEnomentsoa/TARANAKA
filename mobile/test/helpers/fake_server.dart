@@ -36,7 +36,8 @@ class FakeServer {
     final path = request.url.path;
     if (path == '/api/auth/login/') {
       final body = jsonDecode(request.body) as Map;
-      if (body['pin'] != '1234') {
+      // '123456': an account code longer than the 4-digit local PIN.
+      if (body['pin'] != '1234' && body['pin'] != '123456') {
         return http.Response(jsonEncode({'code': 'identifiants_incorrects'}), 401);
       }
       return _json({

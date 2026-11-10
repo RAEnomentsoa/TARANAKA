@@ -11,6 +11,8 @@ class Period {
     this.pain = 0,
     this.mood,
     this.notes = '',
+    this.symptoms = const {},
+    this.irregular = false,
   });
 
   final String id;
@@ -29,9 +31,31 @@ class Period {
   final int? mood;
   final String notes;
 
+  /// Codes of [periodSymptoms] felt during this period.
+  final Set<String> symptoms;
+
+  /// Marked by the user as irregular (early, late, unusual): such a cycle
+  /// makes the prediction an estimate, whatever the lengths say.
+  final bool irregular;
+
   /// Days of bleeding, start and end included.
   int? get length => end == null ? null : daysBetween(start, end!) + 1;
 }
+
+/// Bleeding intensities, lightest first (server enum, 3 pictograms).
+const List<String> periodIntensities = ['faible', 'moyenne', 'forte'];
+
+/// Symptoms that can be noted for a period (stored codes, never translated).
+const List<String> periodSymptoms = [
+  'crampes',
+  'maux_de_tete',
+  'fatigue',
+  'ballonnements',
+  'seins_sensibles',
+  'mal_de_dos',
+  'nausees',
+  'acne',
+];
 
 /// True when [start]–[end] shares a day with another logged period. A period
 /// without end counts as its first day only.
@@ -45,6 +69,30 @@ bool periodOverlaps(List<Period> periods, DateTime start, DateTime? end, {String
     if (!s.isAfter(pe) && !ps.isAfter(e)) return true;
   }
   return false;
+}
+
+/// Usual length of a period chosen by the user: periods generally last 3 to
+/// 8 days. Without a choice, the logged average (or 5 days) is used.
+const int periodDaysMin = 3;
+const int periodDaysMax = 8;
+const int periodDaysDefault = 5;
+
+/// Days a period without end stays "en cours" after its usual length: past
+/// them, the user forgot to note the end, and it is closed at its usual length
+/// instead of running on over the whole month.
+const int periodEndGraceDays = 2;
+
+/// Usual length of a period: the user's setting, else the logged average.
+int usualPeriodDays(int? setting, double? average) => setting != null
+    ? setting.clamp(periodDaysMin, periodDaysMax)
+    : (average?.round() ?? periodDaysDefault).clamp(1, 10);
+
+/// End to assume for a period whose end was never noted, or null while it can
+/// still be going on.
+DateTime? forgottenEnd(Period p, DateTime today, int periodDays) {
+  if (p.end != null) return null;
+  if (daysBetween(p.start, today) < periodDays + periodEndGraceDays) return null;
+  return addDays(p.start, periodDays - 1);
 }
 
 enum Confidence { estimate, reliable }
@@ -80,6 +128,10 @@ class CycleSummary {
     required this.ovulation,
     required this.fertileStart,
     required this.fertileEnd,
+    required this.riskStart,
+    required this.riskEnd,
+    required this.periodDays,
+    required this.predictionCycle,
     required this.confidence,
     required this.signals,
     required this.daysLate,
@@ -95,7 +147,22 @@ class CycleSummary {
   final DateTime? nextPeriod;
   final DateTime? ovulation;
   final DateTime? fertileStart;
+
+  /// Fertile window: the days before ovulation, ovulation and the day after
+  /// (high probability of pregnancy).
   final DateTime? fertileEnd;
+
+  /// Wider period where a pregnancy stays possible: a few days before and
+  /// after the fertile window (cycles vary, ovulation is only estimated).
+  final DateTime? riskStart;
+  final DateTime? riskEnd;
+
+  /// Usual length of a period (setting or average), for the expected days.
+  final int periodDays;
+
+  /// Cycle length used for the predictions: the average of the logged
+  /// cycles, else the standard cycle of 28 days (one period logged only).
+  final int predictionCycle;
   final Confidence confidence;
   final Set<CycleSignal> signals;
   final int daysLate;
@@ -115,12 +182,22 @@ class CycleCalculator {
   int get cyclesForReliable => asInt(_c['cycles_pour_prediction_fiable']) ?? 3;
   int get ovulationBeforePeriod => asInt(_c['ovulation_avant_regles_jours']) ?? 14;
   int get fertileDaysBeforeOvulation => asInt(_c['fenetre_fertile_jours_avant_ovulation']) ?? 5;
+
+  /// Fertile window: the 5 days before ovulation and the day of ovulation
+  /// (sperm live up to 5 days; the egg about one day).
+  int get fertileDaysAfterOvulation => asInt(_c['fenetre_fertile_jours_apres_ovulation']) ?? 0;
+
+  /// Standard cycle used while no complete cycle is logged (first period).
+  int get defaultCycle => asInt(_c['duree_cycle_par_defaut_jours']) ?? 28;
+  int get riskDaysBeforeWindow => asInt(_c['risque_jours_avant_fenetre']) ?? 3;
+  int get riskDaysAfterWindow => asInt(_c['risque_jours_apres_fenetre']) ?? 2;
   int? get shortCycle => asInt(_s['cycle_court_jours']);
   int? get longCycle => asInt(_s['cycle_long_jours']);
   int? get longPeriod => asInt(_s['regles_longues_jours']);
   int? get amenorrhoeaDays => asInt(_s['amenorrhee_jours']);
 
-  CycleSummary summarise(List<Period> periods, DateTime today) {
+  /// [periodDays]: usual length of a period chosen by the user, if any.
+  CycleSummary summarise(List<Period> periods, DateTime today, {int? periodDays}) {
     final sorted = [...periods]..sort((a, b) => a.start.compareTo(b.start));
     final t = dateOnly(today);
     final lengths = <int>[
@@ -143,13 +220,19 @@ class CycleCalculator {
     if (recent.isNotEmpty && shortCycle != null && longCycle != null) {
       regular = recent.every((l) => l >= shortCycle! && l <= longCycle!);
     }
+    // A recent period marked irregular by the user wins over the lengths.
+    if (sorted.reversed.take(cyclesForAverage).any((p) => p.irregular)) regular = false;
 
-    DateTime? next, ovulation, fertileStart, fertileEnd;
-    if (sorted.isNotEmpty && averageCycle != null) {
-      next = addDays(sorted.last.start, averageCycle.round());
+    // From the first period on: the average cycle, else 28 days.
+    final predictionCycle = averageCycle?.round() ?? defaultCycle;
+    DateTime? next, ovulation, fertileStart, fertileEnd, riskStart, riskEnd;
+    if (sorted.isNotEmpty) {
+      next = addDays(sorted.last.start, predictionCycle);
       ovulation = addDays(next, -ovulationBeforePeriod);
       fertileStart = addDays(ovulation, -fertileDaysBeforeOvulation);
-      fertileEnd = ovulation;
+      fertileEnd = addDays(ovulation, fertileDaysAfterOvulation);
+      riskStart = addDays(fertileStart, -riskDaysBeforeWindow);
+      riskEnd = addDays(fertileEnd, riskDaysAfterWindow);
     }
 
     final reliable = sorted.length >= cyclesForReliable && regular == true;
@@ -186,18 +269,22 @@ class CycleCalculator {
       ovulation: ovulation,
       fertileStart: fertileStart,
       fertileEnd: fertileEnd,
+      riskStart: riskStart,
+      riskEnd: riskEnd,
+      periodDays: usualPeriodDays(periodDays, avg(recentPeriods)),
+      predictionCycle: predictionCycle,
       confidence: reliable ? Confidence.reliable : Confidence.estimate,
       signals: signals,
       daysLate: daysLate,
     );
   }
 
-  /// The ongoing period, if the last one has no end yet and could still be
-  /// going on (not longer than the long-period limit plus a margin of 3 days).
-  Period? ongoing(List<Period> periods, DateTime today) {
+  /// The ongoing period: the last one, without end, not older than its usual
+  /// length plus [periodEndGraceDays] (a forgotten end never lasts a month).
+  Period? ongoing(List<Period> periods, DateTime today, {int periodDays = periodDaysDefault}) {
     if (periods.isEmpty) return null;
     final last = ([...periods]..sort((a, b) => a.start.compareTo(b.start))).last;
-    if (last.end != null) return null;
-    return daysBetween(last.start, today) <= (longPeriod ?? 7) + 3 ? last : null;
+    if (last.end != null || last.start.isAfter(dateOnly(today))) return null;
+    return forgottenEnd(last, today, periodDays) == null ? last : null;
   }
 }

@@ -1,8 +1,8 @@
 {
- "version": 1,
- "libelle": "Configuration d'exemple embarquée – À VALIDER",
+ "version": 2,
+ "libelle": "Configuration d'exemple embarquée – À VALIDER (v2 : calendrier PEV Madagascar)",
  "statut_validation": "a_valider",
- "origine": "Copie de Backend_serveur/config_clinique/exemples/config_clinique_exemple.json (même contenu que la version 1 publiée par charger_demo).",
+ "origine": "Copie de Backend_serveur/config_clinique/exemples/config_clinique_exemple.json (version 1), puis v2 dans l'application : calendrier PEV Madagascar (à reporter dans la configuration du serveur).",
  "contenu": {
   "meta": {
    "statut_validation": "À VALIDER",
@@ -366,88 +366,174 @@
   },
   "calendrier_pev": {
    "statut": "À VALIDER",
-   "source": "Calendrier type OMS – à remplacer par le calendrier PEV national de Madagascar",
+   "source": "Calendrier PEV Madagascar 0–24 mois",
+   "references": [
+    "Calendrier du Programme Élargi de Vaccination de Madagascar (0–24 mois), repris par la presse nationale en mars 2026",
+    "OMS – Tableau 3 : vaccination interrompue ou retardée (mars 2023)"
+   ],
    "doses": [
     {
      "code": "bcg",
      "vaccin": "BCG",
-     "age_jours": 0
+     "age_jours": 0,
+     "protege": "Tuberculose",
+     "voie": "Injection",
+     "age_max_jours": 334
     },
     {
      "code": "vpo0",
      "vaccin": "VPO 0",
-     "age_jours": 0
+     "age_jours": 0,
+     "protege": "Poliomyélite",
+     "voie": "Gouttes dans la bouche",
+     "age_max_jours": 13
     },
     {
      "code": "penta1",
-     "vaccin": "Pentavalent 1",
-     "age_jours": 42
+     "vaccin": "Pentavalent 1 (DTC-HepB-Hib)",
+     "age_jours": 42,
+     "protege": "Diphtérie, tétanos, coqueluche, hépatite B, Hib",
+     "voie": "Injection"
     },
     {
      "code": "vpo1",
      "vaccin": "VPO 1",
-     "age_jours": 42
+     "age_jours": 42,
+     "protege": "Poliomyélite",
+     "voie": "Gouttes dans la bouche"
     },
     {
      "code": "pcv1",
-     "vaccin": "PCV 1",
-     "age_jours": 42
+     "vaccin": "PCV10 1",
+     "age_jours": 42,
+     "protege": "Pneumocoque (pneumonie, méningite)",
+     "voie": "Injection"
     },
     {
      "code": "rota1",
      "vaccin": "Rotavirus 1",
-     "age_jours": 42
+     "age_jours": 42,
+     "protege": "Diarrhée à rotavirus",
+     "voie": "Gouttes dans la bouche",
+     "age_max_jours": 730
     },
     {
      "code": "penta2",
-     "vaccin": "Pentavalent 2",
-     "age_jours": 70
+     "vaccin": "Pentavalent 2 (DTC-HepB-Hib)",
+     "age_jours": 70,
+     "protege": "Diphtérie, tétanos, coqueluche, hépatite B, Hib",
+     "voie": "Injection",
+     "apres": "penta1",
+     "intervalle_min_jours": 28
     },
     {
      "code": "vpo2",
      "vaccin": "VPO 2",
-     "age_jours": 70
+     "age_jours": 70,
+     "protege": "Poliomyélite",
+     "voie": "Gouttes dans la bouche",
+     "apres": "vpo1",
+     "intervalle_min_jours": 28
     },
     {
      "code": "pcv2",
-     "vaccin": "PCV 2",
-     "age_jours": 70
+     "vaccin": "PCV10 2",
+     "age_jours": 70,
+     "protege": "Pneumocoque (pneumonie, méningite)",
+     "voie": "Injection",
+     "apres": "pcv1",
+     "intervalle_min_jours": 28
     },
     {
      "code": "rota2",
      "vaccin": "Rotavirus 2",
-     "age_jours": 70
+     "age_jours": 70,
+     "protege": "Diarrhée à rotavirus",
+     "voie": "Gouttes dans la bouche",
+     "apres": "rota1",
+     "intervalle_min_jours": 28,
+     "age_max_jours": 730
     },
     {
      "code": "penta3",
-     "vaccin": "Pentavalent 3",
-     "age_jours": 98
+     "vaccin": "Pentavalent 3 (DTC-HepB-Hib)",
+     "age_jours": 98,
+     "protege": "Diphtérie, tétanos, coqueluche, hépatite B, Hib",
+     "voie": "Injection",
+     "apres": "penta2",
+     "intervalle_min_jours": 28
     },
     {
      "code": "vpo3",
      "vaccin": "VPO 3",
-     "age_jours": 98
+     "age_jours": 98,
+     "protege": "Poliomyélite",
+     "voie": "Gouttes dans la bouche",
+     "apres": "vpo2",
+     "intervalle_min_jours": 28
     },
     {
      "code": "pcv3",
-     "vaccin": "PCV 3",
-     "age_jours": 98
+     "vaccin": "PCV10 3",
+     "age_jours": 98,
+     "protege": "Pneumocoque (pneumonie, méningite)",
+     "voie": "Injection",
+     "apres": "pcv2",
+     "intervalle_min_jours": 28
     },
     {
-     "code": "vpi",
-     "vaccin": "VPI",
-     "age_jours": 98
+     "code": "vpi1",
+     "vaccin": "VPI 1",
+     "age_jours": 98,
+     "protege": "Poliomyélite",
+     "voie": "Injection",
+     "anciens_codes": [
+      "vpi"
+     ]
     },
     {
-     "code": "rr1",
-     "vaccin": "Rougeole-Rubéole 1",
-     "age_jours": 270
+     "code": "vpi2",
+     "vaccin": "VPI 2",
+     "age_jours": 274,
+     "protege": "Poliomyélite",
+     "voie": "Injection",
+     "apres": "vpi1",
+     "intervalle_min_jours": 28
     },
     {
-     "code": "rr2",
-     "vaccin": "Rougeole-Rubéole 2",
-     "age_jours": 450
+     "code": "var1",
+     "vaccin": "VAR 1 (rougeole)",
+     "age_jours": 274,
+     "protege": "Rougeole",
+     "voie": "Injection",
+     "anciens_codes": [
+      "rr1"
+     ]
+    },
+    {
+     "code": "var2",
+     "vaccin": "VAR 2 (rougeole)",
+     "age_jours": 456,
+     "protege": "Rougeole",
+     "voie": "Injection",
+     "apres": "var1",
+     "intervalle_min_jours": 28,
+     "fin_fenetre_jours": 548,
+     "anciens_codes": [
+      "rr2"
+     ]
     }
+   ],
+   "rattrapage": [
+    "Un vaccin en retard se fait dès que possible : allez au centre de santé avec le carnet de vaccination, même si la date est passée.",
+    "On ne recommence jamais une série : on reprend là où elle s'est arrêtée (par exemple Pentavalent 2 si le Pentavalent 1 est déjà fait).",
+    "Entre deux doses d'une même série (Pentavalent, VPO, PCV10, Rotavirus, VPI, VAR), il faut au moins 4 semaines.",
+    "Plusieurs vaccins peuvent être faits le même jour, à des endroits différents.",
+    "VPO 0 : seulement avant 14 jours. Après, l'enfant reçoit VPO 1, 2 et 3 comme prévu.",
+    "BCG : peut être fait jusqu'à 11 mois. Après, demandez conseil au centre de santé.",
+    "Rotavirus : ne se donne plus après 24 mois.",
+    "VAR (rougeole) : deux doses, à au moins 4 semaines d'intervalle ; un enfant de plus de 18 mois sans VAR 2 doit être rattrapé.",
+    "Un rhume, une petite fièvre ou une diarrhée ne sont en général pas une raison pour reporter : l'agent de santé décide."
    ]
   },
   "calendrier_cpn": {

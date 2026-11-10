@@ -1,8 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taranaka/core/auth/auth_service.dart';
+import 'package:taranaka/core/security/pin_crypto.dart';
 import 'package:taranaka/core/security/profile.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
 import 'package:taranaka/core/security/secret_store.dart';
 import 'package:taranaka/core/util/clock.dart';
+
+import '../../helpers/fake_auth.dart';
 
 void main() {
   late MemorySecretStore store;
@@ -100,5 +104,259 @@ void main() {
       () => registry.create(displayName: 'X', pin: '12', mode: ProfileMode.personal),
       throwsArgumentError,
     );
+  });
+
+  group('recovery codes', () {
+    String newCodes() => PinCrypto.joinRecoveryCodes(PinCrypto().newRecoveryCodes());
+
+    test('format: 6 distinct codes of exactly 4 letters or digits', () {
+      for (var n = 0; n < 50; n++) {
+        final codes = PinCrypto().newRecoveryCodes();
+        expect(codes, hasLength(6));
+        expect(codes.toSet(), hasLength(6));
+        for (final c in codes) {
+          expect(c, matches(RegExp(r'^[A-Z0-9]{4}$')));
+        }
+      }
+      expect(PinCrypto.normaliseRecoveryCode(' ab-cd '), 'ABCD');
+      expect(PinCrypto.splitRecoveryCodes('ABCD EFGH JKMN'), ['ABCD', 'EFGH', 'JKMN']);
+      // An older single 16-character code stays one code.
+      expect(PinCrypto.splitRecoveryCodes('ABCD-EFGH-JKMN-PQRS'), ['ABCDEFGHJKMNPQRS']);
+    });
+
+    test('each of the 6 codes sets a new PIN and keeps the key; typed loosely too', () async {
+      final text = newCodes();
+      final codes = PinCrypto.splitRecoveryCodes(text);
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        recoveryCode: text,
+        email: 'hery@exemple.mg',
+      );
+      expect(a.profile.hasRecoveryCode, isTrue);
+      expect(a.profile.codeVerifiers, hasLength(6));
+      expect(a.profile.email, 'hery@exemple.mg');
+      for (final c in codes) {
+        expect(store.values['profiles_v1']!.contains(c), isFalse);
+      }
+      var pin = '1111';
+      for (final (i, c) in codes.indexed) {
+        final next = '${4000 + i}';
+        final typed = i.isEven ? ' ${c.toLowerCase()} ' : '${c.substring(0, 2)}-${c.substring(2)}';
+        final r = await registry.recoverWithCode(a.profile.id, typed, next) as Unlocked;
+        expect(r.masterKey, a.masterKey);
+        expect(await registry.unlock(a.profile.id, pin), isA<WrongPin>());
+        pin = next;
+        expect(await registry.unlock(a.profile.id, pin), isA<Unlocked>());
+      }
+    });
+
+    test('the 6 codes pasted together also work', () async {
+      final text = newCodes();
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        recoveryCode: text,
+      );
+      expect(
+        await registry.recoverWithCode(a.profile.id, text.replaceAll(' ', '\n'), '2222'),
+        isA<Unlocked>(),
+      );
+    });
+
+    test('a profile with an older 16-character code still recovers', () async {
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        recoveryCode: 'ABCD-EFGH-JKMN-PQRS',
+      );
+      expect(a.profile.codeVerifiers, hasLength(1));
+      expect(await registry.recoverWithCode(a.profile.id, 'abcd efgh jkmn pqrs', '2222'), isA<Unlocked>());
+    });
+
+    test('older saved profiles (one code_verifier) are read as one code', () {
+      final json =
+          ProfileInfo(
+              id: 'p',
+              displayName: 'Hery',
+              mode: ProfileMode.personal,
+              salt: const [1],
+              pinVerifier: const [2],
+              wrappedKeyByPin: const [3],
+              createdAt: DateTime(2026),
+            ).toJson()
+            ..remove('code_verifiers')
+            ..remove('wrapped_keys_code')
+            ..['code_verifier'] = 'BAU='
+            ..['wrapped_key_code'] = 'Bgc=';
+      final p = ProfileInfo.fromJson(json);
+      expect(p.hasRecoveryCode, isTrue);
+      expect(p.codeVerifiers, [
+        [4, 5],
+      ]);
+    });
+
+    test('wrong codes count like wrong PINs', () async {
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        recoveryCode: newCodes(),
+      );
+      // "0" is never in a code: always wrong.
+      for (var i = 1; i <= 4; i++) {
+        final r = await registry.recoverWithCode(a.profile.id, '0000', '4321') as WrongPin;
+        expect(r.lockedUntil, isNull);
+      }
+      final fifth = await registry.recoverWithCode(a.profile.id, '0000', '4321') as WrongPin;
+      expect(fifth.lockedUntil, isNotNull);
+      expect(await registry.unlock(a.profile.id, '1111'), isA<LockedOut>());
+    });
+
+    test('renewed codes replace all the old ones', () async {
+      final old = newCodes();
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        recoveryCode: old,
+      );
+      final fresh = newCodes();
+      await registry.setRecoveryCode(a.profile.id, a.masterKey, fresh);
+      for (final c in PinCrypto.splitRecoveryCodes(old).take(3)) {
+        expect(await registry.recoverWithCode(a.profile.id, c, '2222'), isA<WrongPin>());
+      }
+      expect(
+        await registry.recoverWithCode(a.profile.id, PinCrypto.splitRecoveryCodes(fresh)[3], '2222'),
+        isA<Unlocked>(),
+      );
+    });
+  });
+
+  group('fingerprint', () {
+    test('off by default; on gives the key back; off removes it', () async {
+      final a = await registry.create(displayName: 'Hery', pin: '1111', mode: ProfileMode.personal);
+      expect(await registry.unlockWithBiometric(a.profile.id), isNull);
+
+      await registry.enableBiometric(a.profile.id, a.masterKey);
+      expect((await registry.find(a.profile.id))!.biometric, isTrue);
+      final r = await registry.unlockWithBiometric(a.profile.id) as Unlocked;
+      expect(r.masterKey, a.masterKey);
+
+      await registry.disableBiometric(a.profile.id);
+      expect(await registry.unlockWithBiometric(a.profile.id), isNull);
+      expect(store.values.keys.any((k) => k.startsWith('bio_key_')), isFalse);
+    });
+
+    test('the fingerprint clears the failures', () async {
+      final a = await registry.create(displayName: 'Hery', pin: '1111', mode: ProfileMode.personal);
+      await registry.enableBiometric(a.profile.id, a.masterKey);
+      await registry.unlock(a.profile.id, '0000');
+      await registry.unlockWithBiometric(a.profile.id);
+      expect((await registry.find(a.profile.id))!.failedAttempts, 0);
+    });
+
+    test('deleting the profile removes the stored key', () async {
+      final a = await registry.create(displayName: 'Hery', pin: '1111', mode: ProfileMode.personal);
+      await registry.enableBiometric(a.profile.id, a.masterKey);
+      await registry.remove(a.profile.id);
+      expect(store.values.keys.any((k) => k.startsWith('bio_key_')), isFalse);
+    });
+  });
+
+  group('recovery by e-mail', () {
+    test('set up offline, sent later, then the reset gives the key back', () async {
+      final auth = FakeAuthService();
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        email: 'hery@exemple.mg',
+      );
+      await registry.prepareEmailRecovery(a.profile.id, a.masterKey);
+      expect((await registry.find(a.profile.id))!.emailRecovery, EmailRecovery.pending);
+
+      // Offline: the secret waits on the phone.
+      auth.online = false;
+      final secret = (await registry.pendingEmailSecret(a.profile.id))!;
+      final offline = await auth.register(email: 'hery@exemple.mg', profileId: a.profile.id, secret: secret);
+      expect(offline.error, AuthError.offline);
+
+      // Online: account created, secret sent, nothing left on the phone.
+      auth.online = true;
+      expect(
+        (await auth.register(email: 'hery@exemple.mg', profileId: a.profile.id, secret: secret)).isOk,
+        isTrue,
+      );
+      await registry.markEmailActive(a.profile.id);
+      expect(await registry.pendingEmailSecret(a.profile.id), isNull);
+      expect((await registry.find(a.profile.id))!.emailRecovery, EmailRecovery.active);
+
+      // Forgotten PIN: reset link, new password, secret read, new PIN.
+      expect((await auth.sendPasswordReset('hery@exemple.mg')).isOk, isTrue);
+      auth.chooseNewPassword('hery@exemple.mg', 'nouveau-mdp');
+      expect(
+        (await auth.readSecret(email: 'hery@exemple.mg', password: 'mauvais', profileId: a.profile.id)).error,
+        AuthError.wrongPassword,
+      );
+      final read = await auth.readSecret(
+        email: 'hery@exemple.mg',
+        password: 'nouveau-mdp',
+        profileId: a.profile.id,
+      );
+      final r = await registry.recoverWithEmailSecret(a.profile.id, read.value!, '7777') as Unlocked;
+      expect(r.masterKey, a.masterKey);
+      expect(await registry.unlock(a.profile.id, '7777'), isA<Unlocked>());
+    });
+
+    test('a wrong secret counts like a wrong PIN', () async {
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        email: 'h@e.mg',
+      );
+      await registry.prepareEmailRecovery(a.profile.id, a.masterKey);
+      expect(
+        await registry.recoverWithEmailSecret(a.profile.id, List.filled(32, 1), '7777'),
+        isA<WrongPin>(),
+      );
+      expect((await registry.find(a.profile.id))!.failedAttempts, 1);
+    });
+
+    test('an address already used is to confirm; the secret is kept until then', () async {
+      final auth = FakeAuthService()..passwords['h@e.mg'] = 'x';
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        email: 'h@e.mg',
+      );
+      await registry.prepareEmailRecovery(a.profile.id, a.masterKey);
+      final secret = (await registry.pendingEmailSecret(a.profile.id))!;
+      final result = await auth.register(email: 'h@e.mg', profileId: a.profile.id, secret: secret);
+      expect(result.error, AuthError.emailInUse);
+      await registry.markEmailToConfirm(a.profile.id);
+      expect((await registry.find(a.profile.id))!.emailRecovery, EmailRecovery.toConfirm);
+      expect(await registry.pendingEmailSecret(a.profile.id), secret);
+    });
+
+    test('the state survives a restart; deleting the profile removes the secret', () async {
+      final a = await registry.create(
+        displayName: 'Hery',
+        pin: '1111',
+        mode: ProfileMode.personal,
+        email: 'h@e.mg',
+      );
+      await registry.prepareEmailRecovery(a.profile.id, a.masterKey);
+      final again = await ProfileRegistry(store, clock: clock).find(a.profile.id);
+      expect(again!.emailRecovery, EmailRecovery.pending);
+      expect(again.hasEmailRecovery, isTrue);
+      await registry.remove(a.profile.id);
+      expect(store.values.keys.any((k) => k.startsWith('email_secret_')), isFalse);
+    });
   });
 }

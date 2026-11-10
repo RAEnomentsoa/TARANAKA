@@ -22,17 +22,19 @@ void main() {
 
   test('offline: the bundled sample loads, marked À VALIDER', () async {
     final config = await repo.load();
-    expect(config.version, 1);
+    expect(config.version, 2);
     expect(config.toValidate, isTrue);
     expect(config.meta['statut_validation'], 'À VALIDER');
     expect(config.malnutrition['age_max_mois'], 59);
   });
 
-  test('the bundled file is the backend sample, unchanged', () async {
-    final backend = jsonDecode(
+  test('the bundled file is the backend sample, except the PEV Madagascar schedule (v2)', () async {
+    final backend = (jsonDecode(
       File('../Backend_serveur/config_clinique/exemples/config_clinique_exemple.json').readAsStringSync(),
-    );
-    expect((await bundled())['contenu'], backend);
+    ) as Map).cast<String, Object?>();
+    final contenu = ((await bundled())['contenu']! as Map).cast<String, Object?>();
+    // calendrier_pev v2 (PEV Madagascar) is still to be copied to the server.
+    expect({...contenu}..remove('calendrier_pev'), {...backend}..remove('calendrier_pev'));
   });
 
   test('every section and every rule of the sample says À VALIDER', () async {
@@ -52,13 +54,13 @@ void main() {
   test('a newer version from the server replaces it and is kept offline', () async {
     await repo.load();
     final update = await bundled();
-    update['version'] = 2;
+    update['version'] = 3;
     update['statut_validation'] = 'validee';
     expect(await repo.applyUpdate(update), isTrue);
-    expect(repo.current.version, 2);
+    expect(repo.current.version, 3);
 
     final reloaded = ConfigRepository(directory: () async => dir);
-    expect((await reloaded.load()).version, 2);
+    expect((await reloaded.load()).version, 3);
   });
 
   test('older, same or broken versions are refused', () async {
@@ -66,17 +68,17 @@ void main() {
     final same = await bundled();
     expect(await repo.applyUpdate(same), isFalse);
     final broken = await bundled();
-    broken['version'] = 3;
+    broken['version'] = 4;
     (broken['contenu']! as Map).remove('signes_danger');
     expect(ClinicalConfig.problems(broken), contains('signes_danger'));
     expect(await repo.applyUpdate(broken), isFalse);
     expect(await repo.applyUpdate(null), isFalse);
-    expect(repo.current.version, 1);
+    expect(repo.current.version, 2);
   });
 
   test('a damaged saved file falls back to the bundled version', () async {
     File('${dir.path}/${ConfigRepository.fileName}').writeAsStringSync('{not json');
-    expect((await repo.load()).version, 1);
+    expect((await repo.load()).version, 2);
   });
 
   test('localized texts fall back to French when no translation exists', () {

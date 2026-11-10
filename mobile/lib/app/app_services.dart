@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
+import '../core/auth/auth_service.dart';
 import '../core/config/config_repository.dart';
 import '../core/db/db_opener.dart';
 import '../core/growth/who_lms.dart';
 import '../core/growth/who_tables_loader.dart';
+import '../core/security/biometric_auth.dart';
 import '../core/security/profile_registry.dart';
 import '../core/security/secret_store.dart';
 import '../core/sync/network_status.dart';
@@ -44,12 +46,16 @@ class AppServices {
     required this.clock,
     required this.network,
     this.httpClient,
+    BiometricAuth? biometrics,
+    AuthService? auth,
     WhoTables? whoTables,
     this.defaultApiBaseUrl = const String.fromEnvironment(
       'TARANAKA_API',
       defaultValue: 'https://api.taranaka.example',
     ),
-  }) : _whoTablesOverride = whoTables;
+  }) : biometrics = biometrics ?? LocalBiometricAuth(),
+       auth = auth ?? FirebaseAuthService(),
+       _whoTablesOverride = whoTables;
 
   final SecretStore secrets;
   final ProfileRegistry registry;
@@ -61,6 +67,12 @@ class AppServices {
   final DeviceIdentity device;
   final Clock clock;
   final NetworkStatus network;
+
+  /// Fingerprint unlock (local_auth on the phone, a fake in tests).
+  final BiometricAuth biometrics;
+
+  /// Recovery by e-mail (Firebase Auth on the phone, a fake in tests).
+  final AuthService auth;
 
   /// Null on the phone (default client); a fake one in tests.
   final http.Client? httpClient;

@@ -50,7 +50,7 @@ void main() {
     expect(r.alerte, 'rouge');
     expect(r.needsReferral, isTrue);
     expect(r.nextCheck, DateTime(2026, 11, 11));
-    expect(r.configVersion, 1);
+    expect(r.configVersion, 2);
     expect(ScreeningCalculator.motif(input(muac: 112), r), 'MAS – PB 112 mm');
   });
 

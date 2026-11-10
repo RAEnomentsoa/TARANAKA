@@ -27,21 +27,23 @@ class LanguageScreen extends StatelessWidget {
         const Gap(Space.xl),
         // First launch: the app's logo welcomes the user. From the settings,
         // the screen is only a language choice, so it keeps its plain icon.
-        if (onChosen == null) ...[
-          Image.asset(
-            'assets/images/logo.png',
-            width: 72,
-            height: 72,
-            excludeFromSemantics: true,
-          ),
-          const Gap(Space.s),
-          Text(
-            context.l10n.appName,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(letterSpacing: 1.5),
-          ),
-        ] else
+        // The logo image already carries the app's name.
+        if (onChosen == null)
+          Image.asset('assets/images/logo_v1.png', width: 180, height: 180, excludeFromSemantics: true)
+        else
           const Icon(Icons.translate, size: 48, color: AppColors.accent),
+        if (onChosen == null) ...[
+          const Gap(Space.m),
+          // What the app is for, before any choice: in the three languages.
+          Text(
+            'Fanaraha-maso ny fahasalaman’ny reny sy ny zaza\n'
+            'Le suivi santé de la mère et de l’enfant\n'
+            'Health follow-up for mother and child',
+            key: const ValueKey('app-intro-short'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+          ),
+        ],
         const Gap(Space.l),
         Text(
           'Safidio ny fiteny\nChoisissez votre langue\nChoose your language',

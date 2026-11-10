@@ -58,9 +58,11 @@ void main() {
   testWidgets('one tap: "mes règles ont commencé aujourd\'hui", then "terminées"', (tester) async {
     final (env, session) = await start(tester, const []);
     await tapKey(tester, 'tile-cycle');
-    expect(find.text('Notez au moins deux débuts de règles pour voir une prévision.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('next-period')), findsNothing);
     await tapKey(tester, 'period-start-today');
     expect(find.text('Règles en cours depuis le 04/11/2026'), findsOneWidget);
+    // First day logged: next period at +28 days.
+    expect(find.text('Vers le 02/12/2026'), findsOneWidget);
     await tapKey(tester, 'intensity-forte');
     await tapKey(tester, 'mood-4');
     await tapKey(tester, 'period-end-today');

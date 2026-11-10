@@ -17,6 +17,9 @@ import 'package:crypto/crypto.dart';
 ///   tells a wrong PIN without opening the database.
 /// - Changing the PIN re-wraps the master key: the database is not re-encrypted.
 /// - The optional recovery answer wraps the same master key a second time.
+/// - The recovery codes (6 codes of 4 characters, given at the profile
+///   creation, to download or write down) wrap it once each: any one of them
+///   resets a forgotten PIN.
 class PinCrypto {
   PinCrypto({Random? random}) : _random = random ?? Random.secure();
 
@@ -63,6 +66,58 @@ class PinCrypto {
     assert(a.length == b.length);
     return Uint8List.fromList(List<int>.generate(a.length, (i) => a[i] ^ b[i]));
   }
+
+  /// Characters of a recovery code: no 0/O nor 1/I/L, so it is read and typed
+  /// back without confusion.
+  static const _codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+  /// Number of recovery codes and length of each one.
+  static const recoveryCodeCount = 6;
+  static const recoveryCodeLength = 4;
+
+  /// New recovery codes: 6 distinct codes of 4 letters and digits, each one
+  /// valid. Short to write down; guessing is stopped by the attempt limit
+  /// (5 tries, then a wait) and needs the device secret of the Keystore.
+  List<String> newRecoveryCodes() {
+    final codes = <String>{};
+    while (codes.length < recoveryCodeCount) {
+      codes.add(
+        [for (var i = 0; i < recoveryCodeLength; i++) _codeAlphabet[_random.nextInt(_codeAlphabet.length)]]
+            .join(),
+      );
+    }
+    return codes.toList();
+  }
+
+  /// The codes kept together as one text ("ABCD EFGH …"), as stored in the
+  /// profile database and shown in Paramètres.
+  static String joinRecoveryCodes(List<String> codes) => codes.join(' ');
+
+  /// The codes of a stored text: 4-character groups, or an older
+  /// 16-character code as one.
+  static List<String> splitRecoveryCodes(String text) {
+    final parts = text.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    return parts.length > 1
+        ? [for (final p in parts) normaliseRecoveryCode(p)]
+        : [normaliseRecoveryCode(text)];
+  }
+
+  /// What a typed code may be: the code itself or, when several codes were
+  /// pasted together, each group of 4.
+  static List<String> typedRecoveryCodes(String typed) {
+    final n = normaliseRecoveryCode(typed);
+    return {
+      n,
+      if (n.length > recoveryCodeLength && n.length % recoveryCodeLength == 0)
+        for (var i = 0; i < n.length; i += recoveryCodeLength) n.substring(i, i + recoveryCodeLength),
+    }.toList();
+  }
+
+  /// A typed code compared without case, spaces, dashes nor other signs.
+  static String normaliseRecoveryCode(String code) => code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+
+  /// A plausible e-mail address (the account itself is checked by the server).
+  static bool isValidEmail(String email) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]{2,}$').hasMatch(email.trim());
 
   /// A PIN is exactly 4 digits (spec §3).
   static bool isValidPin(String pin) => RegExp(r'^\d{4}$').hasMatch(pin);

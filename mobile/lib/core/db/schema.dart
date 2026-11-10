@@ -240,4 +240,46 @@ const List<List<String>> migrations = [
     )''',
     'CREATE INDEX mouvement_evenement_g ON mouvement_evenement(grossesse_id, horodatage)',
   ],
+  // v7 – "Mon cycle": symptoms (JSON list of codes) and periods marked
+  // irregular by the user.
+  [
+    "ALTER TABLE cycle ADD COLUMN symptomes TEXT NOT NULL DEFAULT '[]'",
+    'ALTER TABLE cycle ADD COLUMN irreguliere INTEGER NOT NULL DEFAULT 0',
+  ],
+  // v8 – "Allaitement": what else the baby received (water, infant formula,
+  // food, other), and each feed with its time, duration or quantity of
+  // expressed breast milk. Kept on the phone only.
+  [
+    "ALTER TABLE journal_alimentaire ADD COLUMN autres_recus TEXT NOT NULL DEFAULT '[]'",
+    '''CREATE TABLE tetee (
+      id TEXT PRIMARY KEY,
+      enfant_id TEXT NOT NULL REFERENCES enfant(id) ON DELETE CASCADE,
+      horodatage TEXT NOT NULL,
+      type TEXT NOT NULL,
+      duree_min INTEGER,
+      quantite_ml INTEGER,
+      created_at TEXT NOT NULL
+    )''',
+    'CREATE INDEX tetee_enfant ON tetee(enfant_id, horodatage)',
+  ],
+  // v9 – "Mon suivi de grossesse": where the measurement was taken (at home
+  // or by a health professional), whether the blood sugar was taken fasting,
+  // and when an entry was corrected.
+  [
+    "ALTER TABLE suivi_grossesse ADD COLUMN source TEXT NOT NULL DEFAULT 'domicile'",
+    'ALTER TABLE suivi_grossesse ADD COLUMN glycemie_a_jeun INTEGER',
+    'ALTER TABLE suivi_grossesse ADD COLUMN updated_at TEXT',
+  ],
+  // v10 – "Vaccins" (PEV Madagascar): where and by whom each dose was given,
+  // whether it was checked on the vaccination card, when it was corrected;
+  // codes of the former schedule renamed (VPI → VPI 1, RR → VAR).
+  [
+    'ALTER TABLE vaccin_fait ADD COLUMN centre TEXT',
+    'ALTER TABLE vaccin_fait ADD COLUMN professionnel TEXT',
+    'ALTER TABLE vaccin_fait ADD COLUMN confirme_carnet INTEGER',
+    'ALTER TABLE vaccin_fait ADD COLUMN updated_at TEXT',
+    "UPDATE OR IGNORE vaccin_fait SET code = 'vpi1' WHERE code = 'vpi'",
+    "UPDATE OR IGNORE vaccin_fait SET code = 'var1' WHERE code = 'rr1'",
+    "UPDATE OR IGNORE vaccin_fait SET code = 'var2' WHERE code = 'rr2'",
+  ],
 ];

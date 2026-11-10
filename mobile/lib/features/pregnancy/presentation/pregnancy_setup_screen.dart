@@ -7,6 +7,7 @@ import '../../../core/util/clock.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../cycle/data/cycle_repository.dart';
 import '../domain/pregnancy.dart';
 
 enum _DatingMode { lmp, confirmed, due }
@@ -41,6 +42,36 @@ class _PregnancySetupFormState extends State<PregnancySetupForm> {
   );
   String? _error;
   bool _busy = false;
+
+  /// Start of the last period logged in "Mon cycle", used as DDR when the
+  /// pregnancy has no date yet (no need to type it again).
+  DateTime? _fromCycle;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initial?.lmp == null && widget.initial?.dueOn == null) _prefillFromCycle();
+  }
+
+  Future<void> _prefillFromCycle() async {
+    final scope = AppScope.read(context);
+    final today = dateOnly(scope.services.clock.now());
+    final db = scope.session.active?.db;
+    if (db == null) return;
+    final DateTime? start;
+    try {
+      start = await CycleRepository(db).lastPeriodStart();
+    } on Object {
+      return; // No cycle data: the DDR is typed as before.
+    }
+    // Only a date the field accepts (up to 300 days back, not in the future).
+    if (start == null || start.isAfter(today) || start.isBefore(addDays(today, -300))) return;
+    if (!mounted || _lmp != null) return;
+    setState(() {
+      _lmp = start;
+      _fromCycle = start;
+    });
+  }
 
   @override
   void dispose() {
@@ -138,7 +169,7 @@ class _PregnancySetupFormState extends State<PregnancySetupForm> {
           NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
           const Gap(Space.m),
         ],
-        if (_mode == _DatingMode.lmp)
+        if (_mode == _DatingMode.lmp) ...[
           DateField(
             key: const ValueKey('lmp-field'),
             label: l10n.byLmp,
@@ -147,8 +178,15 @@ class _PregnancySetupFormState extends State<PregnancySetupForm> {
             last: today,
             initial: addDays(today, -60),
             onChanged: (d) => setState(() => _lmp = d),
-          )
-        else if (_mode == _DatingMode.due) ...[
+          ),
+          if (_fromCycle != null && _lmp == _fromCycle) ...[
+            const Gap(Space.s),
+            NoticeBox.info(
+              key: const ValueKey('lmp-from-cycle'),
+              text: l10n.lmpFromCycle(formatDate(_fromCycle!)),
+            ),
+          ],
+        ] else if (_mode == _DatingMode.due) ...[
           DateField(
             key: const ValueKey('due-field'),
             label: l10n.byDueDate,

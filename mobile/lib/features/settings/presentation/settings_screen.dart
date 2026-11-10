@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../onboarding/presentation/privacy_policy_screen.dart';
 import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
+import '../../../core/security/profile.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import 'change_pin_screen.dart';
+import 'security_settings.dart';
 import 'settings_sections.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -75,6 +78,22 @@ class SettingsScreen extends StatelessWidget {
                         .push(MaterialPageRoute<void>(builder: (_) => const ChangePinScreen())),
               ),
               const Divider(),
+              // Personal profiles: the recovery code to show or download again.
+              if (session.active?.info.mode != ProfileMode.agent) ...[
+                ListTile(
+                  key: const ValueKey('settings-recovery-code'),
+                  leading: const Icon(Icons.vpn_key_outlined),
+                  title: Text(l10n.recoveryCodeTitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.of(context)
+                          .push(MaterialPageRoute<void>(builder: (_) => const RecoveryCodeScreen())),
+                ),
+                const Divider(),
+                const EmailRecoveryTile(),
+                const Divider(),
+              ],
+              const BiometricSettingTile(),
               ListTile(
                 leading: const Icon(Icons.switch_account_outlined),
                 title: Text(l10n.switchProfile),
@@ -83,6 +102,16 @@ class SettingsScreen extends StatelessWidget {
                   await session.lock();
                   navigator.popUntil((r) => r.isFirst);
                 },
+              ),
+              const Divider(),
+              ListTile(
+                key: const ValueKey('settings-privacy-policy'),
+                leading: const Icon(Icons.policy_outlined),
+                title: Text(l10n.privacyPolicyTitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute<void>(builder: (_) => const PrivacyPolicyScreen())),
               ),
               const Divider(),
               ListTile(
