@@ -1,31 +1,71 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from comptes.models import CodeProfile
+from comptes.services import beneficiaires_suivies
 from referencement.models import Referencement
 from referencement.services import referencer_danger
 from referentiel.models import CSB
 from synchro.exceptions import LigneProtegee
 from synchro.services import creer_ligne, lignes, supprimer_ligne, verrouiller
 
-from .models import Cycle, DangerGrossesse, Grossesse
+from .models import (
+    AlimentationFemme,
+    ContactSoin,
+    Cycle,
+    CycleJour,
+    DangerGrossesse,
+    Grossesse,
+    MouvementBebe,
+    MouvementEvenement,
+    SuiviGrossesse,
+)
+
+PROFILS_SOIGNANTS = (CodeProfile.ASC, CodeProfile.AGENT_CSB)
 
 AVERTISSEMENT_CSB_MANQUANT = "Référencement non créé : CSB manquant"
 AVERTISSEMENT_CSB_INCONNU = "Référencement non créé : CSB inconnu"
 AVERTISSEMENT_ERREUR = "Référencement non créé : erreur d'enregistrement"
 
 
-def cycles_visibles(user, inclure_supprimes=False):
-    cycles = lignes(Cycle, inclure_supprimes)
+def _du_cycle(modele, user, inclure_supprimes):
+    """D16 option (a): a health worker sees the cycle only of the women they
+    follow who chose to share it."""
+    lignes_cycle = lignes(modele, inclure_supprimes)
     code = user.profile.code
     if code == CodeProfile.ADMIN:
-        return cycles
+        return lignes_cycle
     if code == CodeProfile.BENEFICIAIRE:
-        return cycles.filter(user=user)
-    return cycles.none()
+        return lignes_cycle.filter(user=user)
+    if code in PROFILS_SOIGNANTS:
+        return lignes_cycle.filter(
+            user__in=beneficiaires_suivies(user),
+            user__partage_cycle=True,
+        )
+    return lignes_cycle.none()
+
+
+def cycles_visibles(user, inclure_supprimes=False):
+    return _du_cycle(Cycle, user, inclure_supprimes)
+
+
+def cycle_jours_visibles(user, inclure_supprimes=False):
+    return _du_cycle(CycleJour, user, inclure_supprimes)
+
+
+def alimentations_visibles(user, inclure_supprimes=False):
+    alimentations = lignes(AlimentationFemme, inclure_supprimes)
+    code = user.profile.code
+    if code == CodeProfile.ADMIN:
+        return alimentations
+    if code == CodeProfile.BENEFICIAIRE:
+        return alimentations.filter(user=user)
+    if code in PROFILS_SOIGNANTS:
+        return alimentations.filter(user__in=beneficiaires_suivies(user))
+    return alimentations.none()
 
 
 def grossesses_visibles(user, inclure_supprimes=False):
@@ -35,26 +75,40 @@ def grossesses_visibles(user, inclure_supprimes=False):
         return grossesses
     if code == CodeProfile.BENEFICIAIRE:
         return grossesses.filter(user=user)
-    # Guard against filter(region_id=None), which would match every empty region.
-    if code == CodeProfile.ASC and user.region_id is not None:
+    # D16: a health worker sees the pregnancies of the women they follow.
+    suivies = Q(user__in=beneficiaires_suivies(user))
+    if code == CodeProfile.ASC:
+        return grossesses.filter(suivies)
+    # Guard against filter(csb_id=None), which would match rows without a CSB.
+    if code == CodeProfile.AGENT_CSB:
+        if user.csb_id is None:
+            return grossesses.filter(suivies)
         return grossesses.filter(
-            user__region_id=user.region_id,
-            user__profile__code=CodeProfile.BENEFICIAIRE,
-        )
-    if code == CodeProfile.AGENT_CSB and user.csb_id is not None:
-        return grossesses.filter(
-            pk__in=Referencement.objects.filter(
-                csb_id=user.csb_id,
-                grossesse__isnull=False,
-            ).values("grossesse_id")
+            suivies
+            | Q(
+                pk__in=Referencement.objects.filter(
+                    csb_id=user.csb_id,
+                    grossesse__isnull=False,
+                ).values("grossesse_id")
+            )
         )
     return grossesses.none()
 
 
-def dangers_visibles(user, inclure_supprimes=False):
-    return lignes(DangerGrossesse, inclure_supprimes).filter(
-        grossesse__in=grossesses_visibles(user, inclure_supprimes)
-    )
+def _de_grossesse(modele):
+    def visibles(user, inclure_supprimes=False):
+        return lignes(modele, inclure_supprimes).filter(
+            grossesse__in=grossesses_visibles(user, inclure_supprimes)
+        )
+
+    return visibles
+
+
+dangers_visibles = _de_grossesse(DangerGrossesse)
+contacts_visibles = _de_grossesse(ContactSoin)
+suivis_grossesse_visibles = _de_grossesse(SuiviGrossesse)
+mouvements_visibles = _de_grossesse(MouvementBebe)
+mouvements_evenements_visibles = _de_grossesse(MouvementEvenement)
 
 
 def filtrer_dangers_sans_referencement(grossesses, valeur):
@@ -101,9 +155,16 @@ def supprimer_grossesse(grossesse, contexte):
             raise LigneProtegee(
                 "Cette grossesse a un référencement et ne peut pas être supprimée."
             )
-        dangers = DangerGrossesse.objects.select_for_update(of=("self",))
-        for danger in dangers.filter(grossesse=courante):
-            supprimer_ligne(danger, contexte)
+        for modele in (
+            DangerGrossesse,
+            ContactSoin,
+            SuiviGrossesse,
+            MouvementBebe,
+            MouvementEvenement,
+        ):
+            lignes_liees = modele.objects.select_for_update(of=("self",))
+            for ligne in lignes_liees.filter(grossesse=courante):
+                supprimer_ligne(ligne, contexte)
         return supprimer_ligne(courante, contexte)
 
 

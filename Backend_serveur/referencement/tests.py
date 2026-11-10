@@ -199,8 +199,9 @@ class AccesTest(BaseApiTest):
         )
         self.assertEqual(self.client.get(url(self.vers_autre_csb)).status_code, 404)
 
-    def test_asc_voit_les_siens_et_les_grossesses_de_sa_region(self):
+    def test_asc_voit_les_siens_et_les_grossesses_des_femmes_suivies(self):
         grossesse = self.grossesse()
+        self.suivre(self.asc)
         par_collegue = self.referencement(
             code="R-3",
             grossesse=grossesse,

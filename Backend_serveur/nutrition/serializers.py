@@ -23,6 +23,8 @@ from .models import (
     Enfant,
     JournalAlimentaire,
     Mesure,
+    Tetee,
+    VaccinFait,
 )
 from .services import enfants_visibles, mesures_visibles
 
@@ -34,16 +36,18 @@ class EnfantSerializer(SyncSerializer):
         required=False,
         allow_null=True,
     )
-    asc_id = LienVisible(asc_visibles, source="asc", required=False)
+    asc_id = LienVisible(asc_visibles, source="asc", required=False, allow_null=True)
     grossesse_id = LienVisible(
         grossesses_visibles,
         source="grossesse",
         required=False,
         allow_null=True,
     )
+    # By default the mother's region, or the ASC's.
     region_id = serializers.PrimaryKeyRelatedField(
         source="region",
         queryset=Region.objects.all(),
+        required=False,
     )
 
     class Meta:
@@ -57,6 +61,7 @@ class EnfantSerializer(SyncSerializer):
             "region_id",
             "date_naissance",
             "sexe",
+            "poids_naissance_kg",
             "statut_prise_en_charge",
             *CHAMPS_SYNC,
         )
@@ -64,9 +69,20 @@ class EnfantSerializer(SyncSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        code = self.utilisateur.profile.code
+        if self.instance is None and code == CodeProfile.BENEFICIAIRE:
+            # M1 (D16): a mother registers her own child, without an ASC.
+            attrs["mere"] = self.utilisateur
+            attrs.setdefault("asc", None)
 
         def valeur(champ):
             return attrs.get(champ, getattr(self.instance, champ, None))
+
+        if self.instance is None and "region" not in attrs:
+            region = getattr(valeur("mere"), "region", None) or self.utilisateur.region
+            if region is None:
+                raise serializers.ValidationError({"region_id": [MESSAGE_OBLIGATOIRE]})
+            attrs["region"] = region
 
         grossesse, mere = valeur("grossesse"), valeur("mere")
         if grossesse is not None and (mere is None or grossesse.user_id != mere.pk):
@@ -74,7 +90,7 @@ class EnfantSerializer(SyncSerializer):
                 {"grossesse_id": ["Cette grossesse n'est pas celle de la mère indiquée."]}
             )
         if self.instance is None and "asc" not in attrs:
-            if self.utilisateur.profile.code != CodeProfile.ASC:
+            if code != CodeProfile.ASC:
                 raise serializers.ValidationError({"asc_id": [MESSAGE_OBLIGATOIRE]})
             attrs["asc"] = self.utilisateur
         return attrs
@@ -92,7 +108,7 @@ MAX_SIGNES_DANGER = 20
 
 class MesureSerializer(SyncSerializer):
     enfant_id = LienVisible(enfants_visibles, source="enfant")
-    asc_id = LienVisible(asc_visibles, source="asc", required=False)
+    asc_id = LienVisible(asc_visibles, source="asc", required=False, allow_null=True)
     signes_danger = serializers.ListField(
         child=serializers.CharField(max_length=50),
         required=False,
@@ -163,10 +179,28 @@ class MesureSerializer(SyncSerializer):
             )
         return valeur
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if self.instance is None and "asc" not in attrs:
+            code = self.utilisateur.profile.code
+            # The measurement is the measuring ASC's. A weighing at home by
+            # the mother (M1) has no ASC: it is not a screening.
+            if code == CodeProfile.ASC:
+                attrs["asc"] = self.utilisateur
+            elif code == CodeProfile.BENEFICIAIRE:
+                attrs["asc"] = None
+        return attrs
+
 
 class JournalAlimentaireSerializer(SyncSerializer):
     enfant_id = LienVisible(enfants_visibles, source="enfant")
     diversite_minimale_atteinte = serializers.SerializerMethodField()
+    aliments = serializers.ListField(
+        child=serializers.CharField(max_length=50), required=False, max_length=100
+    )
+    autres_recus = serializers.ListField(
+        child=serializers.CharField(max_length=50), required=False, max_length=20
+    )
 
     champs_fixes = ("enfant",)
 
@@ -180,6 +214,11 @@ class JournalAlimentaireSerializer(SyncSerializer):
             *GROUPES_ALIMENTAIRES,
             "score_diversite",
             "diversite_minimale_atteinte",
+            "aliments",
+            "repas",
+            "laits",
+            "tetees",
+            "autres_recus",
             "notes",
             *CHAMPS_SYNC,
         )
@@ -268,3 +307,52 @@ class ConsultationSerializer(SyncSerializer):
                 if champ not in attrs:
                     raise serializers.ValidationError({nom: [MESSAGE_OBLIGATOIRE]})
         return attrs
+
+
+class VaccinFaitSerializer(SyncSerializer):
+    enfant_id = LienVisible(enfants_visibles, source="enfant")
+
+    champs_fixes = ("enfant",)
+
+    class Meta:
+        model = VaccinFait
+        fields = (
+            "id",
+            "enfant_id",
+            "code",
+            "date_faite",
+            "centre",
+            "professionnel",
+            "confirme_carnet",
+            *CHAMPS_SYNC,
+        )
+        read_only_fields = CHAMPS_SYNC_LECTURE
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        enfant = attrs.get("enfant", getattr(self.instance, "enfant", None))
+        date_faite = attrs.get("date_faite", getattr(self.instance, "date_faite", None))
+        if enfant and date_faite and date_faite < enfant.date_naissance:
+            raise serializers.ValidationError(
+                {"date_faite": ["La date est avant la naissance de l'enfant."]}
+            )
+        return attrs
+
+
+class TeteeSerializer(SyncSerializer):
+    enfant_id = LienVisible(enfants_visibles, source="enfant")
+
+    champs_fixes = ("enfant",)
+
+    class Meta:
+        model = Tetee
+        fields = (
+            "id",
+            "enfant_id",
+            "horodatage",
+            "type",
+            "duree_min",
+            "quantite_ml",
+            *CHAMPS_SYNC,
+        )
+        read_only_fields = CHAMPS_SYNC_LECTURE

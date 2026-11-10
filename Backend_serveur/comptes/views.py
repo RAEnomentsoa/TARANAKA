@@ -1,21 +1,30 @@
 from django.conf import settings
-from drf_spectacular.utils import extend_schema
+from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 
 from referentiel.models import CSB, Region
 from synchro.services import LONGUEUR_DEVICE_ID, Contexte, contexte_depuis
 
-from . import demandes, donnees_personnelles, services
+from . import beneficiaires, demandes, donnees_personnelles, services
 from .exceptions import TotpNonDisponible
-from .models import CodeProfile, DemandeAcces, Profile
+from .models import CodeProfile, DemandeAcces, Profile, User
 from .permissions import AccesParAction, IsBeneficiaire, acces
 from .serializers import (
+    BeneficiaireListeSerializer,
+    DossierBeneficiaireSerializer,
+    InscriptionBeneficiaireSerializer,
+    InscriptionReponseSerializer,
+    MePatchSerializer,
+    PartageCycleReponseSerializer,
+    RechercheCodeSerializer,
     ApprobationSerializer,
     DemandeAccesAdminSerializer,
     DemandeAccesSerializer,
@@ -40,7 +49,11 @@ from .serializers import (
     TotpPreparationSerializer,
     UtilisateurSerializer,
 )
-from .throttles import DemandeAccesRateThrottle, LoginRateThrottle
+from .throttles import (
+    DemandeAccesRateThrottle,
+    InscriptionRateThrottle,
+    LoginRateThrottle,
+)
 
 
 def _adresse_ip(request):
@@ -96,6 +109,54 @@ class MeView(APIView):
     def get(self, request):
         return Response(UtilisateurSerializer(request.user).data)
 
+    @extend_schema(request=MePatchSerializer, responses=PartageCycleReponseSerializer)
+    def patch(self, request):
+        """Beneficiary: share her cycle or stop (D16 option a). Stopping
+        deletes her cycle rows from the server."""
+        if request.user.profile.code != CodeProfile.BENEFICIAIRE:
+            raise PermissionDenied("Seule une bénéficiaire partage son cycle.")
+        serializer = MePatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user, supprimees = services.changer_partage_cycle(
+            request.user,
+            serializer.validated_data["partage_cycle"],
+            contexte_depuis(request),
+        )
+        return Response(
+            {"utilisateur": UtilisateurSerializer(user).data, "lignes_supprimees": supprimees}
+        )
+
+
+class InscriptionBeneficiaireView(APIView):
+    """POST /api/auth/register-beneficiary/: public (D16). The account is
+    created at once (no admin approval) and the person is logged in."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [InscriptionRateThrottle]
+
+    @extend_schema(
+        request=InscriptionBeneficiaireSerializer,
+        responses={201: InscriptionReponseSerializer},
+    )
+    def post(self, request):
+        serializer = InscriptionBeneficiaireSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        contexte = Contexte(
+            user=None,
+            ip=_adresse_ip(request),
+            device_id=request.headers.get("X-Device-Id", "")[:LONGUEUR_DEVICE_ID],
+        )
+        user, refresh = services.inscrire_beneficiaire(serializer.validated_data, contexte)
+        return Response(
+            {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "utilisateur": UtilisateurSerializer(user).data,
+            },
+            status=201,
+        )
+
 
 class ChangerPinView(APIView):
     autorise_sans_totp = True
@@ -138,7 +199,13 @@ class CompteViewSet(
         ),
         ecriture=(CodeProfile.ADMIN,),
         create=(CodeProfile.ASC, CodeProfile.SUPERVISEUR, CodeProfile.ADMIN),
-        reinitialiser_pin=(CodeProfile.SUPERVISEUR, CodeProfile.ADMIN),
+        # D16: the ASC or the centre sets a new PIN for a woman in front of them.
+        reinitialiser_pin=(
+            CodeProfile.ASC,
+            CodeProfile.AGENT_CSB,
+            CodeProfile.SUPERVISEUR,
+            CodeProfile.ADMIN,
+        ),
         reinitialiser_totp=(CodeProfile.ADMIN,),
         donnees=(CodeProfile.ADMIN,),
         effacer=(CodeProfile.ADMIN,),
@@ -404,3 +471,78 @@ class DemandeAccesViewSet(
             self.get_object(), serializer.validated_data["motif"], contexte_depuis(request)
         )
         return Response(DemandeAccesAdminSerializer(demande).data)
+
+
+# ---------- Beneficiaries for health workers (D16) ----------
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            "q",
+            OpenApiTypes.STR,
+            description="Prénom, nom, téléphone, identifiant ou code.",
+        )
+    ]
+)
+class BeneficiaireViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """/beneficiaries/: the list of the zone, and her whole file.
+
+    Opening a file (retrieve or lookup) makes the worker follow her: their
+    next /sync/pull/ carries her data.
+    """
+
+    serializer_class = BeneficiaireListeSerializer
+    permission_classes = [AccesParAction]
+    profils_par_action = acces(
+        lecture=(CodeProfile.ASC, CodeProfile.AGENT_CSB, CodeProfile.ADMIN),
+        par_code=(CodeProfile.ASC, CodeProfile.AGENT_CSB, CodeProfile.ADMIN),
+        ne_plus_suivre=(CodeProfile.ASC, CodeProfile.AGENT_CSB),
+    )
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return User.objects.none()
+        user = self.request.user
+        lignes = beneficiaires.accessibles(user)
+        if self.action == "list":
+            lignes = beneficiaires.rechercher(lignes, self.request.query_params.get("q"))
+        return beneficiaires.annoter(lignes, user).order_by("prenom", "nom", "id")
+
+    @extend_schema(responses=DossierBeneficiaireSerializer)
+    def retrieve(self, request, *args, **kwargs):
+        femme = self.get_object()
+        return Response(
+            beneficiaires.ouvrir(
+                femme, request.user, contexte_depuis(request), request, "dossier"
+            )
+        )
+
+    @extend_schema(request=RechercheCodeSerializer, responses=DossierBeneficiaireSerializer)
+    @action(detail=False, methods=["post"], url_path="lookup")
+    def par_code(self, request):
+        """The code she shows (typed or scanned), from any region."""
+        serializer = RechercheCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        femme = beneficiaires.par_code(serializer.validated_data["code"])
+        if femme is None:
+            raise NotFound("Aucune bénéficiaire avec ce code.")
+        return Response(
+            beneficiaires.ouvrir(
+                femme, request.user, contexte_depuis(request), request, "code"
+            )
+        )
+
+    @extend_schema(request=None, responses=MessageSerializer)
+    @action(detail=True, methods=["post"], url_path="unfollow")
+    def ne_plus_suivre(self, request, pk=None):
+        femme = get_object_or_404(
+            User.objects.filter(pk__in=services.beneficiaires_suivies(request.user)),
+            pk=pk,
+        )
+        services.ne_plus_suivre(request.user, femme, contexte_depuis(request))
+        return Response({"detail": "Vous ne suivez plus cette bénéficiaire."})

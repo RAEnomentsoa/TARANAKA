@@ -15,29 +15,66 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from nutrition.models import ConsultationNutritionnelle, Enfant, JournalAlimentaire, Mesure
+from nutrition.models import (
+    ConsultationNutritionnelle,
+    Enfant,
+    JournalAlimentaire,
+    Mesure,
+    Tetee,
+    VaccinFait,
+)
 from nutrition.serializers import (
     ConsultationSerializer,
     EnfantSerializer,
     JournalAlimentaireSerializer,
     MesureSerializer,
+    TeteeSerializer,
+    VaccinFaitSerializer,
 )
 from nutrition.services import (
     consultations_visibles,
     enfants_visibles,
     journaux_visibles,
     mesures_visibles,
+    tetees_visibles,
+    vaccins_visibles,
 )
 from referencement.models import Referencement, RendezVous
 from referencement.serializers import ReferencementSerializer, RendezVousSerializer
 from referencement.services import referencements_visibles, rendez_vous_visibles
-from sante_femme.models import Cycle, DangerGrossesse, Grossesse
+from sante_femme.models import (
+    AlimentationFemme,
+    ContactSoin,
+    Cycle,
+    CycleJour,
+    DangerGrossesse,
+    Grossesse,
+    MouvementBebe,
+    MouvementEvenement,
+    SuiviGrossesse,
+)
 from sante_femme.serializers import (
+    AlimentationFemmeSerializer,
+    ContactSoinSerializer,
+    CycleJourSerializer,
     CycleSerializer,
     DangerGrossesseSerializer,
     GrossesseSerializer,
+    MouvementBebeSerializer,
+    MouvementEvenementSerializer,
+    SuiviGrossesseSerializer,
 )
-from sante_femme.services import cycles_visibles, dangers_visibles, grossesses_visibles
+from sante_femme.services import (
+    alimentations_visibles,
+    contacts_visibles,
+    cycle_jours_visibles,
+    cycles_visibles,
+    dangers_visibles,
+    grossesses_visibles,
+    mouvements_evenements_visibles,
+    mouvements_visibles,
+    suivis_grossesse_visibles,
+)
 from synchro.models import ConflitSync, HistoriqueVersion, JournalAudit, OperationSync
 from synchro.services import enregistrer_modification, supprimer_ligne
 
@@ -50,11 +87,19 @@ NOM_ENFANT_EFFACE = "Enfant effacé"
 
 SECTIONS_SANTE = (
     ("cycles", cycles_visibles, CycleSerializer),
+    ("cycle_jours", cycle_jours_visibles, CycleJourSerializer),
+    ("alimentations", alimentations_visibles, AlimentationFemmeSerializer),
     ("grossesses", grossesses_visibles, GrossesseSerializer),
     ("signes_danger", dangers_visibles, DangerGrossesseSerializer),
+    ("contacts_soin", contacts_visibles, ContactSoinSerializer),
+    ("suivis_grossesse", suivis_grossesse_visibles, SuiviGrossesseSerializer),
+    ("mouvements_bebe", mouvements_visibles, MouvementBebeSerializer),
+    ("mouvements_evenements", mouvements_evenements_visibles, MouvementEvenementSerializer),
     ("enfants", enfants_visibles, EnfantSerializer),
     ("mesures", mesures_visibles, MesureSerializer),
     ("journaux_alimentaires", journaux_visibles, JournalAlimentaireSerializer),
+    ("vaccins", vaccins_visibles, VaccinFaitSerializer),
+    ("tetees", tetees_visibles, TeteeSerializer),
     ("referencements", referencements_visibles, ReferencementSerializer),
     ("rendez_vous", rendez_vous_visibles, RendezVousSerializer),
     ("consultations", consultations_visibles, ConsultationSerializer),
@@ -79,6 +124,8 @@ def exporter(cible, requete):
             "email": cible.email,
             "phone": cible.phone,
             "consentement": cible.consentement,
+            "code_beneficiaire": cible.code_beneficiaire,
+            "partage_cycle": cible.partage_cycle,
             "profile": cible.profile.code,
             "region_id": cible.region_id,
             "csb_id": cible.csb_id,
@@ -136,18 +183,27 @@ def effacer(cible, contexte, inclure_enfants=False):
     lignes_effacees = []
 
     # Intimate data, only ever on her phone and here: deleted for good.
-    cycles = list(Cycle.all_objects.filter(user=cible).values_list("pk", flat=True))
-    Cycle.all_objects.filter(pk__in=cycles).delete()
-    lignes_effacees += cycles
-    resume["cycles_supprimes"] = len(cycles)
+    for modele in (Cycle, CycleJour, AlimentationFemme):
+        ids = list(modele.all_objects.filter(user=cible).values_list("pk", flat=True))
+        modele.all_objects.filter(pk__in=ids).delete()
+        lignes_effacees += ids
+        if modele is Cycle:
+            resume["cycles_supprimes"] = len(ids)
 
     for grossesse in Grossesse.objects.filter(user=cible):
         if Referencement.all_objects.filter(grossesse=grossesse).exists():
             resume["grossesses_conservees_anonymes"] += 1
             continue
-        for danger in DangerGrossesse.objects.filter(grossesse=grossesse):
-            supprimer_ligne(danger, contexte)
-            lignes_effacees.append(danger.pk)
+        for modele in (
+            DangerGrossesse,
+            ContactSoin,
+            SuiviGrossesse,
+            MouvementBebe,
+            MouvementEvenement,
+        ):
+            for ligne in modele.objects.filter(grossesse=grossesse):
+                supprimer_ligne(ligne, contexte)
+                lignes_effacees.append(ligne.pk)
         supprimer_ligne(grossesse, contexte)
         lignes_effacees.append(grossesse.pk)
         resume["grossesses_supprimees"] += 1
@@ -163,7 +219,14 @@ def effacer(cible, contexte, inclure_enfants=False):
         if Referencement.all_objects.filter(enfant=enfant).exists():
             resume["enfants_conserves_anonymes"] += 1
             continue
-        for modele in (Mesure, JournalAlimentaire, RendezVous, ConsultationNutritionnelle):
+        for modele in (
+            Mesure,
+            JournalAlimentaire,
+            VaccinFait,
+            Tetee,
+            RendezVous,
+            ConsultationNutritionnelle,
+        ):
             for ligne in modele.objects.filter(enfant=enfant):
                 supprimer_ligne(ligne, contexte)
                 lignes_effacees.append(ligne.pk)
@@ -176,6 +239,7 @@ def effacer(cible, contexte, inclure_enfants=False):
     HistoriqueVersion.objects.filter(ligne_id__in=lignes_effacees).delete()
     ConflitSync.objects.filter(Q(user=cible) | Q(ligne_id__in=lignes_effacees)).delete()
 
+    # The follow-ups (D16) stay: the workers' phones must receive the deletions.
     _anonymiser(cible)
     JournalAudit.objects.create(
         user=contexte.user,
@@ -200,6 +264,8 @@ def _anonymiser(user):
     user.email = ""
     user.phone = ""
     user.consentement = False
+    user.code_beneficiaire = None
+    user.partage_cycle = False
     user.is_active = False
     # The region stays: alone it identifies nobody, and the ASCs of the region
     # see her rows through it, so their phones receive the deletions.

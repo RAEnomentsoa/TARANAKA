@@ -92,6 +92,7 @@ class LoginTests(BaseAuthTest):
             reponse.json()["utilisateur"],
             {
                 "id": str(self.user.id),
+                "identifiant": self.user.identifiant,
                 "nom": "Rabe",
                 "prenom": "Soa",
                 "profile": {
@@ -100,6 +101,8 @@ class LoginTests(BaseAuthTest):
                 },
                 "region_id": None,
                 "csb_id": None,
+                "code_beneficiaire": None,
+                "partage_cycle": False,
             },
         )
         ligne = JournalAudit.objects.get(action="login_succes")

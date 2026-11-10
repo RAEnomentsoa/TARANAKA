@@ -44,12 +44,16 @@ python manage.py test demo
 | `inf.creni` | agent_csb – CRENI | 3334 | |
 | `inf.crenam` | agent_csb – CRENAM | 3335 | |
 | `inf.csb` | agent_csb – CSB2 | 3336 | |
-| `mere.voahangy` | beneficiaire | 4444 | Scenario 2 |
-| `mere.lalao` | beneficiaire | 4445 | Scenario 3 |
-| `mere.fara` | beneficiaire | 4446 | Scenario 4 |
+| `mere.voahangy` | beneficiaire, code `VHG444` | 4444 | Scenario 2 |
+| `mere.lalao` | beneficiaire, code `RZM445` | 4445 | Scenario 3 |
+| `mere.fara` | beneficiaire, code `FAR446` | 4446 | Scenario 4 |
 
 Log in with `POST /api/auth/login/` `{"identifiant": "...", "pin": "..."}`, then
 send `Authorization: Bearer <access>` and `X-Device-Id: <phone id>`.
+
+The beneficiary code (D16) is what a mother shows her ASC: an ASC or a nurse
+opens her file with `POST /api/beneficiaries/lookup/` `{"code": "VHG444"}`, and
+then follows her (their next `/api/sync/pull/` carries her data).
 
 ## What is loaded
 

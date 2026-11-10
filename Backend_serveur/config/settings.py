@@ -74,6 +74,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'login': '10/minute',
         'demande_acces': '5/hour',
+        'inscription_beneficiaire': '30/hour',
     },
     'EXCEPTION_HANDLER': 'comptes.exceptions.gestionnaire_exceptions',
     'DEFAULT_PAGINATION_CLASS': 'synchro.pagination.Pagination',

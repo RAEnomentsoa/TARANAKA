@@ -40,7 +40,10 @@ def seuil():
 
 def calculer(date_debut, date_fin, regions=None):
     """Raw indicators for the period and the regions (None = everywhere)."""
-    mesures = Mesure.objects.filter(date_mesure__range=(date_debut, date_fin))
+    # A weighing at home by the mother (no ASC) is not a screening (D16).
+    mesures = Mesure.objects.filter(
+        date_mesure__range=(date_debut, date_fin), asc__isnull=False
+    )
     referencements = Referencement.objects.filter(
         date_referencement__date__range=(date_debut, date_fin)
     )

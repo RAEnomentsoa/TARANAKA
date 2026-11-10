@@ -316,7 +316,7 @@ the login page, and an admin approves it first.
 - **Who can ask:** `agent_csb` (nurse or doctor of a CSB, CRENAS, CRENI,
   CRENAM) and `superviseur` only. An ASC is still created by their supervisor
   (spec §2, §8): they work in the field, often without email, and the
-  supervisor knows them. A beneficiary needs no account. An admin is never
+  supervisor knows them. A beneficiary registers from the phone (D16). An admin is never
   self-declared.
 - **Nothing opens before approval.** A request lives in its own table
   (`demande_acces`), not as an inactive user: no account, no token, nothing
@@ -348,3 +348,55 @@ the login page, and an admin approves it first.
   an existing database already has some, so they can be renamed first. The
   web forms turn off auto-capitalisation on the username fields. No change on
   the phone: the server does the comparison.
+
+## D16. Connected beneficiary: her own account, her data synced, files opened by health workers
+
+Decided with the team and the mobile developer (plan:
+`docs/PLAN_BENEFICIAIRE_CONNECTEE.md`). It replaces "Personnel : sans compte"
+(spec §2) and "données du mode personnel uniquement si l'utilisatrice
+l'active" (spec §9). It follows the original cahier des charges, where the
+beneficiary has her own login and her records reach the server.
+
+- **Account from the phone, no approval.** `POST /api/auth/register-beneficiary/`
+  (public, 30 per hour per address) takes a first name, the region, a PIN and
+  the consent (required, `true`). The server generates a readable username
+  (`voahangy.4821`) and a 6-character code (`K7QM4Z`, no 0/O/1/I/L), and logs
+  her in at once. The phone stays offline-first: it creates the account the
+  first time it has a network, and sends the history then.
+- **Everything syncs, except the cycle by default (option a).** Pregnancy,
+  CPN contacts, pregnancy checks, baby movements, danger signs, her food
+  groups, children, weighings, food logs, vaccines and feeds all go through
+  `/sync/push/` and `/sync/pull/`. The cycle (`cycle`, `cycle_jour`) is
+  refused unless she turns on `partage_cycle` (`PATCH /api/auth/me/`).
+  Turning it off deletes her cycle rows from the server for good.
+- **The health worker follows the woman.** An ASC or an agent of CSB finds a
+  beneficiary in the list of their zone (`GET /api/beneficiaries/`, the ASC's
+  region or the region of the agent's centre), or by the code she shows
+  (`POST /api/beneficiaries/lookup/`, any region). Opening her file follows
+  her (`suivi_beneficiaire`): from then on, their pulls carry her whole file.
+  Recording a pregnancy or a child for her, or registering her (an ASC for a
+  woman without a phone, cahier §3.2.A), also follows her. Each opening is
+  logged (`consultation_dossier`). `POST /api/beneficiaries/{id}/unfollow/`
+  stops it.
+- **Narrower than before for the ASC.** An ASC no longer sees every pregnancy
+  of their region: only those of the women they follow. The list shows names,
+  phone and code only; health data needs the file to be opened.
+- **Who writes what.** She writes all her own data. The ASC also writes the
+  pregnancy and its follow-up, children, measurements, vaccines (as before
+  for pregnancies and children). Nobody but her writes her cycle, her food
+  groups, baby movements and feeds. The agent of CSB reads.
+- **M1 fixed.** A mother creates her own children (`asc_id` empty, region
+  from her account) and their measurements. A measurement without an ASC is
+  a weighing at home: it is not counted as a screening in the statistics.
+- **Tables aligned on the phone.** New synced tables: `cycle_jour`,
+  `alimentation_femme`, `contact_soin`, `suivi_grossesse`, `mouvement_bebe`,
+  `mouvement_evenement`, `vaccin_fait`, `tetee`. New columns as on the phone
+  in `cycle`, `grossesse` (`ddr`/`dpa` now optional, at least one date is
+  required), `danger_grossesse` (`code` of the config and `periode`; the type
+  is found from the code), `enfant` (`poids_naissance_kg`) and
+  `journal_alimentaire`.
+- **PIN forgotten.** The ASC (women of their region) or the agent of CSB
+  (women of their zone or followed) sets a new PIN with
+  `POST /api/profiles/{id}/reset-pin/`, the woman being in front of them.
+- **Erasure.** Also deletes the new tables. The follow-up rows stay, so the
+  workers' phones receive the deletions; an erased file can't be opened.

@@ -18,8 +18,12 @@ def dangers_url(grossesse):
 
 
 class CyclesTest(BaseApiTest):
+    """D16 option (a): the cycle reaches the server only if she shares it."""
+
     def setUp(self):
         super().setUp()
+        self.femme.partage_cycle = True
+        self.femme.save()
         self.le_sien = Cycle.objects.create(
             user=self.femme,
             date_debut=date(2026, 1, 1),
@@ -29,22 +33,49 @@ class CyclesTest(BaseApiTest):
     def donnees(self, **extra):
         return {"date_debut": "2026-02-01", "intensite": "forte", **extra}
 
-    def test_asc_n_a_aucun_acces_aux_cycles(self):
+    def test_asc_ne_voit_que_le_cycle_partage_des_femmes_suivies(self):
         self.comme(self.asc)
-        self.assertEqual(self.client.get(CYCLES).status_code, 403)
-        self.assertEqual(self.client.get(f"{CYCLES}{self.le_sien.pk}/").status_code, 403)
-        self.assertEqual(
-            self.client.post(
-                CYCLES,
-                self.donnees(user_id=str(self.femme.pk)),
-                format="json",
-            ).status_code,
-            403,
-        )
+        self.assertEqual(self.client.get(CYCLES).data["results"], [])
+        self.suivre(self.asc)
+        self.assertEqual(self.ids(self.client.get(CYCLES)), {str(self.le_sien.pk)})
+        self.femme.partage_cycle = False
+        self.femme.save()
+        self.assertEqual(self.client.get(CYCLES).data["results"], [])
 
-    def test_agent_n_a_aucun_acces_aux_cycles(self):
+    def test_soignant_n_ecrit_jamais_le_cycle(self):
+        for agent in (self.asc, self.agent):
+            with self.subTest(agent=agent.identifiant):
+                self.suivre(agent)
+                self.comme(agent)
+                reponse = self.client.post(
+                    CYCLES,
+                    self.donnees(user_id=str(self.femme.pk)),
+                    format="json",
+                )
+                self.assertEqual(reponse.status_code, 403)
+
+    def test_agent_ne_voit_rien_sans_suivre(self):
         self.comme(self.agent)
-        self.assertEqual(self.client.get(CYCLES).status_code, 403)
+        self.assertEqual(self.client.get(CYCLES).data["results"], [])
+
+    def test_sans_partage_rien_n_arrive_au_serveur(self):
+        self.comme(self.autre_femme)
+        reponse = self.client.post(CYCLES, self.donnees(), format="json")
+        self.assertEqual(reponse.status_code, 403)
+        self.assertIn("partage", reponse.data["detail"])
+        self.assertFalse(Cycle.objects.filter(user=self.autre_femme).exists())
+
+    def test_nouveaux_champs_du_telephone(self):
+        self.comme(self.femme)
+        reponse = self.client.post(
+            CYCLES,
+            self.donnees(douleur=2, humeur=4, symptomes=["crampes"], irreguliere=True),
+            format="json",
+        )
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(reponse.data["symptomes"], ["crampes"])
+        reponse = self.client.post(CYCLES, self.donnees(douleur=5), format="json")
+        self.assertEqual(reponse.status_code, 400)
 
     def test_beneficiaire_cree_et_lit_les_siens(self):
         self.comme(self.femme)
@@ -91,8 +122,14 @@ class AccesGrossessesTest(BaseApiTest):
         super().setUp()
         self.dans_region = self.grossesse(self.femme)
         self.hors_region = self.grossesse(self.autre_femme)
+        self.suivre(self.asc)
 
-    def test_asc_voit_les_grossesses_de_sa_region(self):
+    def test_asc_ne_voit_que_les_femmes_suivies(self):
+        self.comme(self.asc_meme_region)
+        self.assertEqual(self.client.get(GROSSESSES).data["results"], [])
+
+    def test_asc_voit_les_grossesses_des_femmes_suivies(self):
+        self.suivre(self.asc_meme_region)
         for user in (self.asc, self.asc_meme_region):
             with self.subTest(user=user.identifiant):
                 self.comme(user)
@@ -111,7 +148,7 @@ class AccesGrossessesTest(BaseApiTest):
         self.assertEqual(self.client.get(GROSSESSES).data["results"], [])
 
     def test_asc_cree_pour_une_femme_de_sa_region_seulement(self):
-        self.comme(self.asc)
+        self.comme(self.asc_meme_region)
         donnees = {"ddr": "2026-01-01", "dpa": "2026-10-08"}
         reponse = self.client.post(
             GROSSESSES,
@@ -119,6 +156,10 @@ class AccesGrossessesTest(BaseApiTest):
             format="json",
         )
         self.assertEqual(reponse.status_code, 201, reponse.data)
+        # Recording her pregnancy makes the ASC follow her (D16).
+        self.assertEqual(
+            self.client.get(f"{GROSSESSES}{reponse.data['id']}/").status_code, 200
+        )
         reponse = self.client.post(
             GROSSESSES,
             {**donnees, "user_id": str(self.autre_femme.pk)},
@@ -234,6 +275,7 @@ class DangersTest(BaseApiTest):
     def setUp(self):
         super().setUp()
         self.ligne = self.grossesse()
+        self.suivre(self.asc)
 
     def signaler(self, grossesse=None, **extra):
         return self.client.post(
@@ -392,6 +434,27 @@ class DangersTest(BaseApiTest):
         )
         self.assertEqual(reponse.status_code, 400)
         self.assertIn("type_danger_grossesse_id", reponse.data)
+
+    def test_le_telephone_envoie_le_code_du_signe(self):
+        self.type_danger.code = "saignement_vaginal"
+        self.type_danger.save()
+        self.comme(self.femme)
+        reponse = self.client.post(
+            dangers_url(self.ligne),
+            {"code": "saignement_vaginal", "periode": "grossesse"},
+            format="json",
+        )
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(reponse.data["type_danger_grossesse_id"], self.type_danger.pk)
+        # A code unknown to the server is kept as is.
+        reponse = self.client.post(
+            dangers_url(self.ligne), {"code": "nouveau_signe"}, format="json"
+        )
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertIsNone(reponse.data["type_danger_grossesse_id"])
+        reponse = self.client.post(dangers_url(self.ligne), {}, format="json")
+        self.assertEqual(reponse.status_code, 400)
+        self.assertIn("code", reponse.data)
 
     def test_mise_a_jour_avec_version_sans_nouveau_referencement(self):
         self.comme(self.asc)

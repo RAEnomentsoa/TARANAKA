@@ -1,7 +1,8 @@
 # Bénéficiaire connectée : liste des tâches
 
 > Choix validé avec l'équipe mobile. Il remplace « sans compte » (SPEC v2 §2).
-> Rien n'est encore codé.
+> **Backend fait** (décision D16 dans `docs/DECISIONS.md`). Mobile et web : à faire.
+> Cycle : **option (a) retenue** — le cycle reste privé, avec une option pour le partager.
 
 ## Décisions prises
 
@@ -16,43 +17,61 @@
 Ce sont des points juridiques et de confiance, à faire confirmer par le responsable.
 
 - [ ] **Consentement explicite** (loi 2014-038) : l'écran de consentement doit dire clairement que *tout* est envoyé au serveur et que le personnel de santé de sa zone peut le voir. C'est une case à cocher, pas seulement un bouton « Continuer ».
-- [ ] **Cycle menstruel** : SPEC v2 §9 et le cahier (§2, §4.2.B) disent « jamais par défaut », surtout pour les **adolescentes**. Choisir entre deux options :
+- [x] **Cycle menstruel** — option (a) choisie : SPEC v2 §9 et le cahier (§2, §4.2.B) disent « jamais par défaut », surtout pour les **adolescentes**. Choisir entre deux options :
   - **(a)** le cycle reste privé, avec une option pour le partager ;
   - **(b)** le cycle est envoyé mais **invisible pour l'ASC**, et visible seulement par le CSB.
 
   Recommandation : **(a)** ou **(b)**, pas « tout visible par tous ».
-- [ ] **Hors ligne d'abord** : un profil créé sans réseau fonctionne tout de suite. Le compte serveur est créé à la première connexion.
-- [ ] **Mettre à jour `docs/SPEC.md` et `docs/DECISIONS.md`** : ce choix remplace « sans compte » (SPEC v2 §2).
+- [x] **Hors ligne d'abord** : un profil créé sans réseau fonctionne tout de suite. Le compte serveur est créé à la première connexion. (Côté serveur : l'inscription est un simple appel public, faisable à tout moment.)
+- [x] **Mettre à jour `docs/SPEC.md` et `docs/DECISIONS.md`** : ce choix remplace « sans compte » (SPEC v2 §2). (D16, et SPEC §2 et §9 annotés.)
 
 ## 1. Backend (Django)
 
 ### Comptes
 
-- [ ] Créer un endpoint public **`POST /api/auth/register-beneficiary/`**. Il reçoit le prénom ou surnom, la région (obligatoire), le téléphone (facultatif), un PIN et l'identifiant de l'appareil. Il crée le compte `beneficiaire` **sans validation admin**, contrairement aux demandes d'accès du personnel. Il faut une limite d'appels (throttle) et un journal d'audit.
-- [ ] Générer un **identifiant lisible** (ex. `voahangy.4821`) que la bénéficiaire peut montrer à l'ASC. Utiliser aussi un **code court ou un QR** pour la retrouver facilement.
-- [ ] Prévoir la connexion depuis un 2e téléphone et le PIN oublié : réinitialisation par l'ASC ou le CSB, comme pour un ASC avec son superviseur.
+- [x] Créer un endpoint public **`POST /api/auth/register-beneficiary/`**. Il reçoit le prénom ou surnom, la région (obligatoire), le téléphone (facultatif), un PIN et l'identifiant de l'appareil. Il crée le compte `beneficiaire` **sans validation admin**, contrairement aux demandes d'accès du personnel. Il faut une limite d'appels (throttle) et un journal d'audit.
+- [x] Générer un **identifiant lisible** (ex. `voahangy.4821`) que la bénéficiaire peut montrer à l'ASC. Utiliser aussi un **code court ou un QR** pour la retrouver facilement.
+- [x] Prévoir la connexion depuis un 2e téléphone et le PIN oublié : réinitialisation par l'ASC ou le CSB, comme pour un ASC avec son superviseur.
 
 ### Données
 
-- [ ] **Corriger M1** : une bénéficiaire peut créer et modifier ses enfants, mesures et journaux alimentaires (voir `docs/API_ISSUES.md`, M1).
-- [ ] **Créer les tables qui n'existent que sur le téléphone** (modèle `SyncModel`, avec serializer, sync push/pull et migrations) :
+- [x] **Corriger M1** : une bénéficiaire peut créer et modifier ses enfants, mesures et journaux alimentaires (voir `docs/API_ISSUES.md`, M1).
+- [x] **Créer les tables qui n'existent que sur le téléphone** (modèle `SyncModel`, avec serializer, sync push/pull et migrations) :
   - `vaccin_fait`
   - `suivi_grossesse` (CPN)
   - `contact_soin`
   - `mouvement_bebe` et `mouvement_evenement`
   - `alimentation_femme`
   - `tetee`
-- [ ] Vérifier que les champs de `cycle`, `grossesse`, `danger_grossesse`, `enfant`, `mesure` et `journal_alimentaire` correspondent exactement aux colonnes du téléphone, comme on l'a fait pour la config PEV.
-- [ ] **Push et pull pour la bénéficiaire** : elle reçoit uniquement *ses* données, et ce que le CSB met à jour (rendez-vous, statut des référencements).
+- [x] Vérifier que les champs de `cycle`, `grossesse`, `danger_grossesse`, `enfant`, `mesure` et `journal_alimentaire` correspondent exactement aux colonnes du téléphone, comme on l'a fait pour la config PEV.
+- [x] **Push et pull pour la bénéficiaire** : elle reçoit uniquement *ses* données, et ce que le CSB met à jour (rendez-vous, statut des référencements).
 
 ### Accès du personnel
 
-- [ ] **`GET /api/beneficiaries/`** (ASC, agent CSB) : liste des bénéficiaires de sa zone. Recherche par nom, téléphone ou code, avec un minimum d'informations dans la liste.
-- [ ] **`GET /api/beneficiaries/{id}/`** : dossier complet (grossesse, enfants, mesures, vaccins…), en appliquant la règle choisie pour le cycle.
-- [ ] **Pull de l'ASC** : il reçoit les données des bénéficiaires **qu'il suit** (celles qu'il a ouvertes ou rattachées), pas toute la région. Cela limite le volume et l'exposition.
-- [ ] Mettre à jour les **permissions** (matrice `comptes/tests_permissions.py`), le **journal d'audit** (« X a consulté le dossier de Y ») et **`my-data`** (export et effacement de toutes les nouvelles tables).
-- [ ] **Référencement grossesse** : l'ASC peut référer une **femme enceinte** (`origine: grossesse`). Le backend le permet déjà.
-- [ ] Régénérer `docs/openapi.yaml` et mettre à jour `Backend_serveur/docs/endpoint.md`.
+- [x] **`GET /api/beneficiaries/`** (ASC, agent CSB) : liste des bénéficiaires de sa zone. Recherche par nom, téléphone ou code, avec un minimum d'informations dans la liste.
+- [x] **`GET /api/beneficiaries/{id}/`** : dossier complet (grossesse, enfants, mesures, vaccins…), en appliquant la règle choisie pour le cycle.
+- [x] **Pull de l'ASC** : il reçoit les données des bénéficiaires **qu'il suit** (celles qu'il a ouvertes ou rattachées), pas toute la région. Cela limite le volume et l'exposition.
+- [x] Mettre à jour les **permissions** (matrice `comptes/tests_permissions.py`), le **journal d'audit** (« X a consulté le dossier de Y ») et **`my-data`** (export et effacement de toutes les nouvelles tables).
+- [x] **Référencement grossesse** : l'ASC peut référer une **femme enceinte** (`origine: grossesse`). Le backend le permet déjà.
+- [x] Régénérer `docs/openapi.yaml` et mettre à jour `Backend_serveur/docs/endpoint.md`.
+
+### Fait en plus
+
+- [x] `POST /api/beneficiaries/lookup/` (ouvrir le dossier avec le code, toute région) et `POST /api/beneficiaries/{id}/unfollow/`.
+- [x] `PATCH /api/auth/me/` `{"partage_cycle": true|false}` ; l'arrêt efface son cycle du serveur.
+- [x] Un ASC inscrit une femme sans téléphone avec `POST /api/profiles/` (identifiant et code générés) et la suit.
+- [x] Les pesées faites par la mère (sans ASC) ne comptent pas comme dépistages dans les statistiques.
+- [x] Codes de démo : `mere.voahangy` `VHG444`, `mere.lalao` `RZM445`, `mere.fara` `FAR446`.
+
+### Ce que le mobile doit savoir (écarts trouvés en alignant les tables)
+
+- **Ajouter une colonne `id` (UUID)** aux tables locales qui n'en ont pas : `vaccin_fait`, `contact_soin`, `mouvement_bebe`, `alimentation_femme`, `cycle_jour`. Le serveur garde la règle « une ligne par jour / par dose » ; l'`id` sert à la synchro.
+- **Ajouter `version`, `sync_status` et `updated_at`** aux tables qui n'en ont pas (`suivi_grossesse`, `mouvement_evenement`, `tetee`, `vaccin_fait`…), comme pour `enfant`.
+- **Journal alimentaire** : envoyer aussi les groupes `g1_lait_maternel` … `g8_autres_fruits_legumes` (le téléphone connaît le groupe de chaque aliment), en plus de `aliments`, `repas`, `laits`, `tetees`, `autres_recus`.
+- **Signe de danger** : envoyer `code` (code de la config) et `periode` ; le serveur retrouve le type.
+- **Cycle et suivi du jour** : ne pas les envoyer tant que `partage_cycle` est faux (le serveur répond `refuse`). Proposer l'option dans Paramètres.
+- **Inscription** : la réponse donne `identifiant` et `code_beneficiaire` à garder et afficher (« Mon code »).
+- **ASC** : avant d'enregistrer pour une femme, ouvrir son dossier (`/api/beneficiaries/{id}/` ou `lookup/`) pour la suivre ; sinon ses données ne descendent pas au pull.
 
 ## 2. Mobile (Flutter)
 

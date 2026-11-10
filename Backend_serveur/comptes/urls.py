@@ -5,6 +5,7 @@ from .views import (
     ChangerPinView,
     DemandeAccesView,
     EffacerMesDonneesView,
+    InscriptionBeneficiaireView,
     LoginView,
     LogoutView,
     MesDonneesView,
@@ -18,6 +19,11 @@ from .views import (
 
 urlpatterns = [
     path("login/", LoginView.as_view(), name="auth-login"),
+    path(
+        "register-beneficiary/",
+        InscriptionBeneficiaireView.as_view(),
+        name="auth-register-beneficiary",
+    ),
     path("refresh/", TokenRefreshView.as_view(), name="auth-refresh"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", MeView.as_view(), name="auth-me"),

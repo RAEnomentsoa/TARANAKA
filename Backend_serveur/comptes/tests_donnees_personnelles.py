@@ -175,6 +175,7 @@ class EffacementTest(BaseApiTest):
         self.assertIsNone(garde.mere)
 
     def test_l_asc_apprend_l_effacement_a_la_synchronisation(self):
+        self.suivre(self.asc)
         self.comme(self.asc)
         depuis = self.client.get("/api/sync/pull/").data["horodatage_serveur"]
         self.effacer(inclure_enfants=True)

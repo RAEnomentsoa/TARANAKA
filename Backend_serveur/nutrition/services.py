@@ -1,9 +1,11 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
 from comptes.models import CodeProfile
+from comptes.services import beneficiaires_suivies
 from referencement.models import Referencement
 from synchro.exceptions import LigneProtegee
 from synchro.services import (
@@ -22,6 +24,8 @@ from .models import (
     JournalAlimentaire,
     Mesure,
     Position,
+    Tetee,
+    VaccinFait,
 )
 from .zscores import calculer_zscores
 
@@ -46,15 +50,22 @@ def enfants_visibles(user, inclure_supprimes=False):
         return enfants
     if code == CodeProfile.BENEFICIAIRE:
         return enfants.filter(mere=user)
+    # D16: also the children of the women the health worker follows.
+    suivies = Q(mere__in=beneficiaires_suivies(user))
     if code == CodeProfile.ASC:
-        return enfants.filter(asc=user)
+        return enfants.filter(Q(asc=user) | suivies)
     # Guard against filter(csb_id=None), which would match rows without a CSB.
-    if code == CodeProfile.AGENT_CSB and user.csb_id is not None:
+    if code == CodeProfile.AGENT_CSB:
+        if user.csb_id is None:
+            return enfants.filter(suivies)
         return enfants.filter(
-            pk__in=Referencement.objects.filter(
-                csb_id=user.csb_id,
-                enfant__isnull=False,
-            ).values("enfant_id")
+            suivies
+            | Q(
+                pk__in=Referencement.objects.filter(
+                    csb_id=user.csb_id,
+                    enfant__isnull=False,
+                ).values("enfant_id")
+            )
         )
     return enfants.none()
 
@@ -73,6 +84,18 @@ def journaux_visibles(user, inclure_supprimes=False):
 
 def consultations_visibles(user, inclure_supprimes=False):
     return lignes(ConsultationNutritionnelle, inclure_supprimes).filter(
+        enfant__in=enfants_visibles(user, inclure_supprimes)
+    )
+
+
+def vaccins_visibles(user, inclure_supprimes=False):
+    return lignes(VaccinFait, inclure_supprimes).filter(
+        enfant__in=enfants_visibles(user, inclure_supprimes)
+    )
+
+
+def tetees_visibles(user, inclure_supprimes=False):
+    return lignes(Tetee, inclure_supprimes).filter(
         enfant__in=enfants_visibles(user, inclure_supprimes)
     )
 
@@ -182,9 +205,10 @@ def supprimer_enfant(enfant, contexte):
             raise LigneProtegee(
                 "Cet enfant a un référencement et ne peut pas être supprimé."
             )
-        mesures = Mesure.objects.select_for_update(of=("self",))
-        for mesure in mesures.filter(enfant=courant):
-            supprimer_ligne(mesure, contexte)
+        for modele in (Mesure, VaccinFait, Tetee):
+            lignes_liees = modele.objects.select_for_update(of=("self",))
+            for ligne in lignes_liees.filter(enfant=courant):
+                supprimer_ligne(ligne, contexte)
         return supprimer_ligne(courant, contexte)
 
 

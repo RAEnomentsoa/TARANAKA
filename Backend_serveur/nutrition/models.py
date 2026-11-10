@@ -29,9 +29,12 @@ class Enfant(SyncModel):
         blank=True,
         related_name="enfants",
     )
+    # Empty for a child the mother registered herself in "Mon enfant".
     asc = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="enfants_suivis",
     )
     grossesse = models.ForeignKey(
@@ -48,6 +51,9 @@ class Enfant(SyncModel):
     )
     date_naissance = models.DateField()
     sexe = models.CharField(max_length=1, choices=Sexe.choices)
+    poids_naissance_kg = models.DecimalField(
+        max_digits=4, decimal_places=2, null=True, blank=True
+    )
     statut_prise_en_charge = models.CharField(
         max_length=20,
         choices=StatutPriseEnCharge.choices,
@@ -109,9 +115,12 @@ class Mesure(SyncModel):
         on_delete=models.PROTECT,
         related_name="mesures",
     )
+    # Empty for a weighing done at home by the mother: not a screening.
     asc = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="mesures_realisees",
     )
     date_mesure = models.DateField()
@@ -239,6 +248,13 @@ class JournalAlimentaire(SyncModel):
     g8_autres_fruits_legumes = models.BooleanField(default=False)
     score_diversite = models.PositiveSmallIntegerField(default=0, editable=False)
     notes = models.TextField(blank=True)
+    # As on the phone ("Mon enfant"): foods given (codes), meals, milk feeds,
+    # breastfeeds, and what else the baby received (water, formula...).
+    aliments = models.JSONField(default=list, blank=True)
+    repas = models.PositiveSmallIntegerField(default=0)
+    laits = models.PositiveSmallIntegerField(default=0)
+    tetees = models.PositiveSmallIntegerField(null=True, blank=True)
+    autres_recus = models.JSONField(default=list, blank=True)
 
     class Meta:
         db_table = "journal_alimentaire"
@@ -319,3 +335,58 @@ class ConsultationNutritionnelle(SyncModel):
 
     def __str__(self):
         return f"Consultation du {self.date}"
+
+
+class VaccinFait(SyncModel):
+    """A dose of the PEV schedule given to the child ("Vaccins", spec §6)."""
+
+    enfant = models.ForeignKey(
+        Enfant,
+        on_delete=models.PROTECT,
+        related_name="vaccins",
+    )
+    code = models.CharField(max_length=30)
+    date_faite = models.DateField()
+    centre = models.CharField(max_length=150, blank=True)
+    professionnel = models.CharField(max_length=150, blank=True)
+    confirme_carnet = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        db_table = "vaccin_fait"
+        verbose_name = "Vaccin fait"
+        verbose_name_plural = "Vaccins faits"
+        ordering = ["date_faite"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["enfant", "code"],
+                condition=Q(deleted_at__isnull=True),
+                name="vaccin_un_par_dose",
+                violation_error_message="Cette dose est déjà enregistrée pour cet enfant.",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.code} le {self.date_faite}"
+
+
+class Tetee(SyncModel):
+    """One feed: at the breast (duration) or expressed milk (quantity)."""
+
+    enfant = models.ForeignKey(
+        Enfant,
+        on_delete=models.PROTECT,
+        related_name="tetees_detail",
+    )
+    horodatage = models.DateTimeField()
+    type = models.CharField(max_length=20)
+    duree_min = models.PositiveSmallIntegerField(null=True, blank=True)
+    quantite_ml = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = "tetee"
+        verbose_name = "Tétée"
+        verbose_name_plural = "Tétées"
+        ordering = ["-horodatage"]
+
+    def __str__(self):
+        return f"Tétée du {self.horodatage:%Y-%m-%d %H:%M}"
