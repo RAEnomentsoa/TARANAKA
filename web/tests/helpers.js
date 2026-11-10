@@ -91,6 +91,8 @@ export function mountWithApp(component, options = {}) {
         { path: '/r/:id', name: 'referral', component: { template: '<div />' } },
         { path: '/c/:id', name: 'child', component: { template: '<div />' } },
         { path: '/s', name: 'search', component: { template: '<div />' } },
+        { path: '/b', name: 'beneficiaries', component: { template: '<div />' } },
+        { path: '/b/:id', name: 'beneficiary', component: { template: '<div />' } },
       ],
     })
   const i18n = createAppI18n(options.locale ?? 'fr')

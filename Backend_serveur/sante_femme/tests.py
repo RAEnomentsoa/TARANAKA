@@ -214,7 +214,7 @@ class AccesGrossessesTest(BaseApiTest):
         self.assertEqual(self.ids(reponse), {str(self.dans_region.pk)})
         self.assertEqual(
             reponse.data["results"][0]["femme"],
-            {"nom": "Femme", "prenom": "Test"},
+            {"id": str(self.dans_region.user_id), "nom": "Femme", "prenom": "Test"},
         )
         self.assertEqual(
             self.client.get(f"{GROSSESSES}{self.hors_region.pk}/").status_code,

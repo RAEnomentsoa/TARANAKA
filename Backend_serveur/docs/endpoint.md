@@ -763,7 +763,7 @@ Chaque liste a le même format paginé. Voici le contenu de `results`.
 
 ### GET `/api/beneficiaries/`
 
-**ASC, agent de CSB, admin.** Les bénéficiaires de la zone (ASC : sa région ; agent : la région de son centre) et celles déjà suivies. `?q=` cherche dans le prénom, le nom, le téléphone, l'identifiant et le code (tirets et casse ignorés). Pas de donnée de santé dans la liste :
+**ASC, agent de CSB, admin.** Les bénéficiaires de la zone (ASC : sa région ; agent : la région de son centre), celles déjà suivies et, pour un agent de CSB, celles dont la grossesse ou l'enfant a été **référé à son centre** (quelle que soit leur région). `?q=` cherche dans le prénom, le nom, le téléphone, l'identifiant et le code (tirets et casse ignorés). Pas de donnée de santé dans la liste :
 
 ```json
 {
@@ -852,7 +852,7 @@ Champs du téléphone : `ddr`, `dpa`, `dpa_saisie`, `terme_confirme_date`, `term
 {
   "id": "9662e08c-651e-4e35-88bb-2a895ac4de65",
   "user_id": "016db879-1264-425f-873d-1ef748463800",
-  "femme": { "nom": "Rasoa", "prenom": "Vola" },
+  "femme": { "id": "016db879-1264-425f-873d-1ef748463800", "nom": "Rasoa", "prenom": "Vola" },
   "ddr": "2026-06-01",
   "dpa": "2027-03-08",
   "version": 1,
@@ -964,6 +964,7 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
   "id": "4c09f399-823d-4c4d-9209-21464f87cc2d",
   "nom": "Hery",
   "mere_id": "016db879-1264-425f-873d-1ef748463800",
+  "mere": { "id": "016db879-1264-425f-873d-1ef748463800", "nom": "Rasoa", "prenom": "Vola" },
   "asc_id": "712da08f-311e-437d-84e4-020c47329ef4",
   "grossesse_id": null,
   "region_id": 1,
@@ -1423,7 +1424,11 @@ Le fichier d'exemple, marqué « À VALIDER », est `config_clinique/exemples/co
     "indicateurs": {
       "depistages": 17, "enfants_depistes": 17, "cas_mas": 7, "cas_mam": null, "nourrissons_a_risque": 0,
       "referencements": 9, "referencements_arrives": 6, "rendez_vous_manques": null,
-      "taux_arrivee_pct": 66.7, "delai_moyen_arrivee_heures": 27.5,
+      "beneficiaires_actives": 12, "grossesses_suivies": 8, "signes_danger": 6,
+      "referencements_grossesse": 5, "referencements_grossesse_arrives": 5,
+      "enfants_vaccines": 9,
+      "taux_arrivee_pct": 66.7, "taux_arrivee_grossesse_pct": 100.0,
+      "couverture_vaccinale_pct": null, "delai_moyen_arrivee_heures": 27.5,
       "sorties_gueri": null, "sorties_transfere": 0, "sorties_non_repondant": 0, "sorties_abandon": null, "sorties_decede": 0
     },
     "masques": ["cas_mam", "rendez_vous_manques", "sorties_gueri", "sorties_abandon"]
@@ -1438,7 +1443,8 @@ Règles de masquage, identiques à l'écran et dans le CSV :
 
 - Un effectif de 1 à 4 est remplacé par `null` et cité dans `masques` (`<5` dans le CSV). 0 reste affiché.
 - Un taux ou un délai moyen calculé sur moins de 5 cas est masqué.
-- Si 1 à 4 référencements ne sont pas arrivés, `referencements_arrives` et `taux_arrivee_pct` sont masqués (sinon la différence le révélerait).
+- Si 1 à 4 référencements ne sont pas arrivés, `referencements_arrives` et `taux_arrivee_pct` sont masqués (sinon la différence le révélerait). Même règle pour les référencements grossesse, et pour la couverture vaccinale quand 1 à 4 enfants de la tranche d'âge ne sont pas vaccinés.
+- Les indicateurs « bénéficiaires connectées » (D16) suivent les mêmes règles : `beneficiaires_actives` (son dossier a bougé dans la période), `grossesses_suivies` (ouvertes à un moment de la période), `signes_danger`, `referencements_grossesse(_arrives)` et `taux_arrivee_grossesse_pct`, `enfants_vaccines`, `couverture_vaccinale_pct` (Penta 3 chez les enfants suivis de 12 à 23 mois).
 - **Suppression complémentaire :** avec des groupes, si une seule valeur d'un indicateur est masquée alors que le total est visible, la plus petite autre valeur est masquée aussi, pour qu'on ne puisse pas la retrouver par soustraction.
 
 ## GET `/api/who-reference/`

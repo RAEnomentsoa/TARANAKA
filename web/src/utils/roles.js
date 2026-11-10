@@ -9,6 +9,7 @@
  *   | 'referrals:read'
  *   | 'referrals:update'
  *   | 'children:read'
+ *   | 'beneficiaries:read'
  *   | 'care:write'
  *   | 'discharge:write'
  *   | 'conflicts:resolve'
@@ -20,8 +21,10 @@
 
 /** @typedef {'staff' | 'supervisor'} WebRole */
 
+// The server allows /beneficiaries/ to the ASC, the CSB agent and the
+// admin (D16); on the web that is the CSB agent and the admin.
 /** @type {Permission[]} */
-const STAFF_READ = ['referrals:read', 'children:read']
+const STAFF_READ = ['referrals:read', 'children:read', 'beneficiaries:read']
 /** @type {Permission[]} */
 const STAFF_WRITE = ['referrals:update', 'care:write', 'conflicts:resolve']
 

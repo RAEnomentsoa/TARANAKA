@@ -155,7 +155,7 @@
  * @property {IsoDateTime | null} date_sortie
  * @property {DischargeOutcome | ''} issue_sortie "" until the discharge.
  * @property {boolean} en_retard Still "envoye" after the delay of the clinical config.
- * @property {{ nom: string, prenom: string } | null} femme
+ * @property {{ id: Uuid, nom: string, prenom: string } | null} femme
  */
 
 /**
@@ -191,7 +191,8 @@
  * @typedef {Object} ChildFields
  * @property {string} nom
  * @property {Uuid | null} mere_id
- * @property {Uuid} asc_id
+ * @property {{ id: Uuid, nom: string, prenom: string } | null} mere
+ * @property {Uuid | null} asc_id
  * @property {Uuid | null} grossesse_id
  * @property {number} region_id
  * @property {IsoDate} date_naissance
@@ -387,7 +388,15 @@
  *   | 'referencements'
  *   | 'referencements_arrives'
  *   | 'rendez_vous_manques'
+ *   | 'beneficiaires_actives'
+ *   | 'grossesses_suivies'
+ *   | 'signes_danger'
+ *   | 'referencements_grossesse'
+ *   | 'referencements_grossesse_arrives'
+ *   | 'enfants_vaccines'
  *   | 'taux_arrivee_pct'
+ *   | 'taux_arrivee_grossesse_pct'
+ *   | 'couverture_vaccinale_pct'
  *   | 'delai_moyen_arrivee_heures'
  *   | `sorties_${DischargeOutcome}`
  * )} Indicator
@@ -500,4 +509,114 @@
  * @property {string} prenom
  * @property {string} phone
  * @property {string} pin
+ */
+
+// ---------- Connected beneficiaries (D16) ----------
+
+/**
+ * One line of /api/beneficiaries/: enough to recognise her, no health data.
+ * @typedef {Object} BeneficiaryRow
+ * @property {Uuid} id
+ * @property {string} prenom
+ * @property {string} nom
+ * @property {string} phone
+ * @property {number | null} region_id
+ * @property {string | null} code_beneficiaire
+ * @property {boolean} suivie
+ * @property {boolean} grossesse_en_cours
+ * @property {number} nb_enfants
+ */
+
+/**
+ * @typedef {SyncFields & PregnancyFields} Pregnancy
+ */
+/**
+ * @typedef {Object} PregnancyFields
+ * @property {Uuid} user_id
+ * @property {IsoDate | null} ddr Last period.
+ * @property {IsoDate | null} dpa Due date (computed).
+ * @property {IsoDate | null} dpa_saisie Due date typed directly.
+ * @property {IsoDate | null} terme_confirme_date Ultrasound date…
+ * @property {number | null} terme_confirme_jours …and the term, in days, on that date.
+ * @property {IsoDate | null} date_accouchement
+ * @property {string} mode_allaitement
+ * @property {boolean} terminee
+ */
+
+/**
+ * @typedef {SyncFields & {
+ *   grossesse_id: Uuid,
+ *   code: string,
+ *   periode: 'grossesse' | 'post_partum' | '',
+ *   date_signalement: IsoDateTime,
+ * }} DangerSign
+ */
+
+/**
+ * A pregnancy contact attended: type 'cpn' (prenatal) or 'pn' (postnatal).
+ * @typedef {SyncFields & {
+ *   grossesse_id: Uuid,
+ *   type: string,
+ *   numero: number,
+ *   date_faite: IsoDate,
+ * }} CareContact
+ */
+
+/**
+ * @typedef {SyncFields & {
+ *   enfant_id: Uuid,
+ *   code: string,
+ *   date_faite: IsoDate,
+ *   centre: string,
+ *   professionnel: string,
+ *   confirme_carnet: boolean,
+ * }} Vaccination
+ */
+
+/** @typedef {'exclusif' | 'mixte' | 'aucun'} Allaitement */
+
+/**
+ * The mother's daily food log for a child ("Mon enfant").
+ * @typedef {SyncFields & {
+ *   enfant_id: Uuid,
+ *   date_jour: IsoDate,
+ *   type_allaitement: Allaitement,
+ *   score_diversite: number,
+ *   diversite_minimale_atteinte: boolean,
+ *   repas: number,
+ *   laits: number,
+ *   tetees: number | null,
+ * }} FoodLog
+ */
+
+/**
+ * Her whole file, as /api/beneficiaries/{id}/ and /lookup/ return it.
+ * Cycle rows stay empty unless she shares her cycle (option a).
+ * @typedef {Object} BeneficiaryDossier
+ * @property {{
+ *   id: Uuid,
+ *   identifiant: string,
+ *   prenom: string,
+ *   nom: string,
+ *   phone: string,
+ *   region_id: number | null,
+ *   code_beneficiaire: string | null,
+ *   partage_cycle: boolean,
+ * }} beneficiaire
+ * @property {Pregnancy[]} grossesses
+ * @property {DangerSign[]} signes_danger
+ * @property {CareContact[]} contacts_soin
+ * @property {Record<string, unknown>[]} suivis_grossesse
+ * @property {Record<string, unknown>[]} mouvements_bebe
+ * @property {Record<string, unknown>[]} mouvements_evenements
+ * @property {Record<string, unknown>[]} alimentations
+ * @property {Record<string, unknown>[]} cycles
+ * @property {Record<string, unknown>[]} cycle_jours
+ * @property {Child[]} enfants
+ * @property {Measurement[]} mesures
+ * @property {FoodLog[]} journaux_alimentaires
+ * @property {Vaccination[]} vaccins
+ * @property {Record<string, unknown>[]} tetees
+ * @property {Appointment[]} rendez_vous
+ * @property {Referral[]} referencements
  */

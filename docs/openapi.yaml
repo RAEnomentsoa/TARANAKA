@@ -6881,6 +6881,11 @@ components:
           type: string
           format: uuid
           nullable: true
+        mere:
+          allOf:
+          - $ref: '#/components/schemas/Femme'
+          readOnly: true
+          nullable: true
         asc_id:
           type: string
           format: uuid
@@ -6927,6 +6932,7 @@ components:
       - date_naissance
       - deleted_at
       - device_id
+      - mere
       - nom
       - sexe
       - updated_at
@@ -7004,8 +7010,14 @@ components:
       - sexe
     Femme:
       type: object
-      description: 'Only the name: this is what an agent of CSB may see of the woman.'
+      description: |-
+        Her name, and her id to open her file (D16): what a referral or a
+        child shows of the woman.
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
         nom:
           type: string
           readOnly: true
@@ -7013,6 +7025,7 @@ components:
           type: string
           readOnly: true
       required:
+      - id
       - nom
       - prenom
     Grossesse:

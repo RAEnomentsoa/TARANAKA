@@ -21,7 +21,8 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "agents": "My agents",
-    "accessRequests": "Access requests"
+    "accessRequests": "Access requests",
+    "beneficiaries": "Beneficiaries"
   },
   "user": {
     "signedInAs": "Signed in: {name}",
@@ -217,7 +218,8 @@
     "late": "Not arrived within the expected time",
     "lateShort": "Late",
     "facilityType": "{name} ({type})",
-    "stepSkipped": "skipped"
+    "stepSkipped": "skipped",
+    "openBeneficiary": "Open the beneficiary's record"
   },
   "care": {
     "title": "Care and follow-up",
@@ -290,7 +292,26 @@
       "decede": "Died"
     },
     "referrals": "Child's referrals",
-    "noReferrals": "No referrals visible to your centre."
+    "noReferrals": "No referrals visible to your centre.",
+    "mother": "Mother",
+    "vaccines": "Vaccines",
+    "noVaccines": "No vaccine recorded.",
+    "vaccineCode": "Vaccine",
+    "vaccineCentre": "Centre",
+    "vaccineSource": "Source",
+    "vaccineConfirmed": "Confirmed in the booklet",
+    "vaccineDeclared": "Reported by the mother",
+    "meals": "Feeding (mother's log)",
+    "noMeals": "No food log.",
+    "breastfeeding": "Breastfeeding",
+    "breastfeedingTypes": {
+      "exclusif": "Exclusive",
+      "mixte": "Mixed",
+      "aucun": "None"
+    },
+    "mealsCount": "Meals",
+    "diversityScore": "Diversity",
+    "diversityValue": "{n}/8"
   },
   "measurements": {
     "title": "Measurement history",
@@ -428,7 +449,15 @@
       "nourrissons_a_risque": "At-risk infants",
       "rendez_vous_manques": "Missed appointments",
       "taux_arrivee_pct": "Arrival rate",
-      "delai_moyen_arrivee_heures": "Average time to arrival"
+      "delai_moyen_arrivee_heures": "Average time to arrival",
+      "beneficiaires_actives": "Active beneficiaries",
+      "grossesses_suivies": "Pregnancies followed",
+      "signes_danger": "Danger signs reported",
+      "referencements_grossesse": "Pregnancy referrals",
+      "referencements_grossesse_arrives": "Pregnancy referrals arrived",
+      "enfants_vaccines": "Children vaccinated",
+      "taux_arrivee_grossesse_pct": "Arrival rate (pregnancies)",
+      "couverture_vaccinale_pct": "Vaccine coverage (Penta 3, 12–23 months)"
     },
     "hoursValue": "{n} h",
     "byZone": "By region",
@@ -465,7 +494,9 @@
         "ofTotal": "{arrived} of {sent}",
         "none": "No referrals"
       }
-    }
+    },
+    "beneficiariesTitle": "Connected beneficiaries",
+    "beneficiariesIntro": "Women who use the app on their own phone."
   },
   "validation": {
     "required": "This field is required."
@@ -594,5 +625,63 @@
     "actions": "Actions",
     "active": "Active",
     "inactive": "Deactivated"
+  },
+  "beneficiaries": {
+    "title": "Beneficiaries",
+    "intro": "The women in your zone who use the TARANAKA app.",
+    "searchLabel": "Search for a beneficiary",
+    "searchHint": "Name, phone, or the code shown in her app. An exact code finds her even outside your zone.",
+    "searchPlaceholder": "Voahangy, 034… or K7Q-M4Z",
+    "submit": "Search",
+    "count": "No beneficiaries | 1 beneficiary | {n} beneficiaries",
+    "empty": "No beneficiary found.",
+    "emptyHint": "Try the name, the phone number, or the exact code shown in her app.",
+    "followed": "Followed",
+    "pregnant": "Pregnant",
+    "children": "No children | 1 child | {n} children",
+    "codeColumn": "Beneficiary code"
+  },
+  "beneficiary": {
+    "title": "Beneficiary record",
+    "code": "Beneficiary code",
+    "phone": "Phone",
+    "notProvided": "Not provided",
+    "childrenCount": "Children",
+    "pregnancy": "Current pregnancy",
+    "noPregnancy": "No current pregnancy.",
+    "gestationalAge": "Gestational age",
+    "weeks": "{n} week | {n} weeks",
+    "dpa": "Expected delivery",
+    "ddr": "Last period",
+    "cpn": "Antenatal visits (ANC)",
+    "cpnItem": "ANC {n}",
+    "noCpn": "No antenatal visit recorded.",
+    "finishedPregnancies": "No finished pregnancies | 1 finished pregnancy on file | {n} finished pregnancies on file",
+    "dangers": "Danger signs",
+    "noDangers": "No danger sign reported.",
+    "periods": {
+      "grossesse": "during pregnancy",
+      "post_partum": "after delivery"
+    },
+    "children": "Children",
+    "noChildren": "No child recorded.",
+    "referrals": "Referrals",
+    "noReferrals": "No referrals.",
+    "auditNote": "Every time this record is opened, it is written to the audit log."
+  },
+  "dangers": {
+    "codes": {
+      "saignement_vaginal": "Vaginal bleeding",
+      "convulsions": "Convulsions",
+      "maux_de_tete_vision": "Severe headache or blurred vision",
+      "fievre_elevee": "High fever",
+      "difficulte_respirer": "Difficulty breathing",
+      "douleur_abdominale": "Severe abdominal pain",
+      "perte_des_eaux": "Waters breaking",
+      "bebe_bouge_moins": "The baby moves less or not at all",
+      "gonflement_visage_mains": "Sudden swelling of the face or hands",
+      "saignement_abondant": "Heavy bleeding",
+      "fievre": "Fever"
+    }
   }
 }

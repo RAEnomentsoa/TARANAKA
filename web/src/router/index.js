@@ -54,6 +54,20 @@ export const routes = [
         meta: { permission: 'referrals:read', titleKey: 'search.title' },
       },
       {
+        path: 'beneficiaires',
+        name: 'beneficiaries',
+        component: () => import('@/views/staff/BeneficiariesView.vue'),
+        props: (route) => ({ q: typeof route.query.q === 'string' ? route.query.q : '' }),
+        meta: { permission: 'beneficiaries:read', titleKey: 'beneficiaries.title' },
+      },
+      {
+        path: 'beneficiaires/:id',
+        name: 'beneficiary',
+        component: () => import('@/views/staff/BeneficiaryRecordView.vue'),
+        props: true,
+        meta: { permission: 'beneficiaries:read', titleKey: 'beneficiary.title' },
+      },
+      {
         path: 'enfants/:id',
         name: 'child',
         component: () => import('@/views/staff/ChildRecordView.vue'),

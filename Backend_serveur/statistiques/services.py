@@ -11,9 +11,11 @@ from django.conf import settings
 from django.db.models import Avg, Count, F, Q
 from django.utils import timezone
 
-from nutrition.models import Classification, Mesure
+from comptes.models import CodeProfile, User
+from nutrition.models import Classification, Enfant, JournalAlimentaire, Mesure, VaccinFait
 from referencement.models import IssueSortie, Referencement, RendezVous, StatutRendezVous
 from referentiel.models import Region
+from sante_femme.models import AlimentationFemme, DangerGrossesse, Grossesse, SuiviGrossesse
 
 INDICATEURS_COMPTES = (
     "depistages",
@@ -24,13 +26,37 @@ INDICATEURS_COMPTES = (
     "referencements",
     "referencements_arrives",
     "rendez_vous_manques",
+    # Connected beneficiaries (D16).
+    "beneficiaires_actives",
+    "grossesses_suivies",
+    "signes_danger",
+    "referencements_grossesse",
+    "referencements_grossesse_arrives",
+    "enfants_vaccines",
 )
 INDICATEURS = (
     *INDICATEURS_COMPTES,
     "taux_arrivee_pct",
+    "taux_arrivee_grossesse_pct",
+    "couverture_vaccinale_pct",
     "delai_moyen_arrivee_heures",
     *(f"sorties_{issue}" for issue in IssueSortie.values),
 )
+# rate: (numerator, denominator). A rate is hidden when its denominator is
+# small, and so is a numerator or a difference of 1 to 4: the rate would
+# give it back.
+TAUX = {
+    "taux_arrivee_pct": ("referencements_arrives", "referencements"),
+    "taux_arrivee_grossesse_pct": (
+        "referencements_grossesse_arrives",
+        "referencements_grossesse",
+    ),
+    "couverture_vaccinale_pct": ("_enfants_vaccin_couverture", "_enfants_age_couverture"),
+}
+# Vaccine coverage, as the WHO counts it: the third dose of pentavalent
+# among the children aged 12 to 23 months.
+VACCIN_COUVERTURE = "penta3"
+AGE_COUVERTURE_JOURS = (365, 729)
 MOIS_MAX = 24
 
 
@@ -83,46 +109,120 @@ def calculer(date_debut, date_fin, regions=None):
         .annotate(n=Count("id"))
         .values_list("issue_sortie", "n")
     )
+    grossesse = referencements.filter(grossesse__isnull=False).aggregate(
+        total=Count("id"),
+        arrives=Count("id", filter=Q(date_reception__isnull=False)),
+    )
     total = arrivees["referencements"]
     arrives = arrivees["referencements_arrives"]
-    return {
+    brut = {
         **enfants,
+        **beneficiaires(date_debut, date_fin, regions),
         "referencements": total,
         "referencements_arrives": arrives,
+        "referencements_grossesse": grossesse["total"],
+        "referencements_grossesse_arrives": grossesse["arrives"],
         "rendez_vous_manques": rendez_vous.count(),
-        "taux_arrivee_pct": round(100 * arrives / total, 1) if total else None,
         "delai_moyen_arrivee_heures": (
             round(arrivees["delai"].total_seconds() / 3600, 1) if arrivees["delai"] else None
         ),
         **{f"sorties_{issue}": issues.get(issue, 0) for issue in IssueSortie.values},
-        # Denominators, used for masking only, never shown.
-        "_denominateur_taux": total,
+        # Denominator, used for masking only, never shown.
         "_denominateur_delai": arrives,
+    }
+    for nom, (numerateur, denominateur) in TAUX.items():
+        n, d = brut[numerateur], brut[denominateur]
+        brut[nom] = round(100 * n / d, 1) if d else None
+    return brut
+
+
+def beneficiaires(date_debut, date_fin, regions):
+    """The connected beneficiaries' indicators (D16), by the woman's region."""
+    femmes = User.objects.filter(profile__code=CodeProfile.BENEFICIAIRE)
+    enfants = Enfant.objects.all()
+    if regions is not None:
+        femmes = femmes.filter(region__in=regions)
+        enfants = enfants.filter(region__in=regions)
+    periode = {"updated_at__date__range": (date_debut, date_fin)}
+
+    # Active: her file was written to during the period (by her or a worker).
+    actives = set()
+    for lignes, lien in (
+        (Grossesse.objects.filter(**periode), "user_id"),
+        (SuiviGrossesse.objects.filter(**periode), "grossesse__user_id"),
+        (AlimentationFemme.objects.filter(**periode), "user_id"),
+        (Enfant.objects.filter(**periode, mere__isnull=False), "mere_id"),
+        (JournalAlimentaire.objects.filter(**periode), "enfant__mere_id"),
+        (VaccinFait.objects.filter(**periode), "enfant__mere_id"),
+    ):
+        actives.update(lignes.values_list(lien, flat=True))
+    actives.discard(None)
+
+    # Open at some point of the period: begun before its end, not closed before it.
+    grossesses = Grossesse.objects.filter(
+        user__in=femmes, created_at__date__lte=date_fin
+    ).exclude(terminee=True, updated_at__date__lt=date_debut)
+    dangers = DangerGrossesse.objects.filter(
+        grossesse__user__in=femmes,
+        date_signalement__date__range=(date_debut, date_fin),
+    )
+    vaccinations = VaccinFait.objects.filter(
+        enfant__in=enfants, date_faite__range=(date_debut, date_fin)
+    )
+
+    # Coverage on the children followed in the app (a mother with an account):
+    # the only ones whose vaccines are recorded.
+    plus_jeune, plus_age = AGE_COUVERTURE_JOURS
+    age_couverture = enfants.filter(
+        mere__isnull=False,
+        date_naissance__range=(
+            date_fin - timedelta(days=plus_age),
+            date_fin - timedelta(days=plus_jeune),
+        ),
+    )
+    vaccines = VaccinFait.objects.filter(
+        enfant__in=age_couverture, code=VACCIN_COUVERTURE, date_faite__lte=date_fin
+    )
+    return {
+        "beneficiaires_actives": femmes.filter(pk__in=actives).count(),
+        "grossesses_suivies": grossesses.count(),
+        "signes_danger": dangers.count(),
+        "enfants_vaccines": vaccinations.values("enfant").distinct().count(),
+        "_enfants_age_couverture": age_couverture.count(),
+        "_enfants_vaccin_couverture": vaccines.values("enfant").distinct().count(),
     }
 
 
 def masquer(brut):
     """Hide small counts and the rates/averages built on them."""
     limite = seuil()
+
+    def petit(valeur):
+        return 0 < valeur < limite
+
+    caches = {nom for nom in INDICATEURS_COMPTES if petit(brut[nom])}
+    caches.update(f"sorties_{i}" for i in IssueSortie.values if petit(brut[f"sorties_{i}"]))
+    if brut["_denominateur_delai"] < limite:
+        caches.add("delai_moyen_arrivee_heures")
+    for nom, (numerateur, denominateur) in TAUX.items():
+        n, d = brut[numerateur], brut[denominateur]
+        # "Not arrived" = total - arrived: a difference of 1 to 4 is a small
+        # count too, so the arrivals (and the rate, which gives them back)
+        # are hidden.
+        if petit(d - n):
+            caches.update((nom, numerateur))
+        if d < limite or petit(n):
+            caches.add(nom)
+    # The children's referrals are the others: total - pregnancy.
+    if petit(brut["referencements"] - brut["referencements_grossesse"]):
+        caches.update(("referencements_grossesse", "taux_arrivee_grossesse_pct"))
+    if petit(brut["referencements_arrives"] - brut["referencements_grossesse_arrives"]):
+        caches.update(("referencements_grossesse_arrives", "taux_arrivee_grossesse_pct"))
+
     indicateurs, masques = {}, []
-    # Referrals that didn't arrive = referencements − arrives: a difference of
-    # 1 to 4 is a small count too, so the arrivals (and the rate, which gives
-    # them back) are hidden.
-    non_arrives = brut["referencements"] - brut["referencements_arrives"]
-    cacher_arrivees = 0 < non_arrives < limite
     for nom in INDICATEURS:
         valeur = brut[nom]
-        if nom == "taux_arrivee_pct":
-            cache = brut["_denominateur_taux"] < limite
-        elif nom == "delai_moyen_arrivee_heures":
-            cache = brut["_denominateur_delai"] < limite
-        else:
-            cache = 0 < valeur < limite
-        if nom in ("referencements_arrives", "taux_arrivee_pct") and cacher_arrivees:
-            cache = True
-        if nom == "taux_arrivee_pct" and 0 < brut["referencements_arrives"] < limite:
-            cache = True
-        if cache and valeur is not None:
+        if nom in caches and valeur is not None:
             masques.append(nom)
             valeur = None
         indicateurs[nom] = valeur
@@ -156,14 +256,11 @@ def _cacher(bloc, nom):
     bloc["indicateurs"][nom] = None
     if nom not in bloc["masques"]:
         bloc["masques"].append(nom)
-    if nom == "referencements_arrives":
-        _cacher_taux(bloc)
-
-
-def _cacher_taux(bloc):
-    if "taux_arrivee_pct" not in bloc["masques"]:
-        bloc["indicateurs"]["taux_arrivee_pct"] = None
-        bloc["masques"].append("taux_arrivee_pct")
+    # A rate gives its numerator or its denominator back.
+    for taux, (numerateur, denominateur) in TAUX.items():
+        if nom in (numerateur, denominateur) and taux not in bloc["masques"]:
+            bloc["indicateurs"][taux] = None
+            bloc["masques"].append(taux)
 
 
 def mois_de(date_debut, date_fin):

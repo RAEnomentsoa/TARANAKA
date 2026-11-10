@@ -106,6 +106,14 @@ watch(() => props.id, load)
               {{ t('referral.openChild') }}
             </RouterLink>
           </p>
+          <p v-if="referral.femme?.id && auth.can('beneficiaries:read')">
+            <RouterLink
+              :to="{ name: 'beneficiary', params: { id: referral.femme.id } }"
+              class="detail__child-link"
+            >
+              {{ t('referral.openBeneficiary') }}
+            </RouterLink>
+          </p>
         </SectionPanel>
 
         <SectionPanel v-if="referral.mesure_id" :title="t('referral.measurement')">
