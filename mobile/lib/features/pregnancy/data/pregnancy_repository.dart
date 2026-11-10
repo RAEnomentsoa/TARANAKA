@@ -358,6 +358,22 @@ class PregnancyRepository {
         : (jsonDecode(rows.first['groupes']! as String) as List).cast<int>().toSet();
   }
 
+  /// Days noted from [from] (included), most recent first, with their groups.
+  Future<List<(DateTime, Set<int>)>> dietSince(DateTime from) async => [
+    for (final r in await _db.query(
+      'alimentation_femme',
+      where: 'date_jour >= ?',
+      whereArgs: [isoDate(from)],
+      orderBy: 'date_jour DESC',
+    ))
+      (
+        parseIsoDate(r['date_jour']! as String),
+        (jsonDecode(r['groupes']! as String) as List).cast<int>().toSet(),
+      ),
+  ];
+
+  /// One set per day: a group is ticked once a day, whatever the number of
+  /// its foods eaten.
   Future<void> setDiet(DateTime day, Set<int> groups) => _db.insert('alimentation_femme', {
     'date_jour': isoDate(day),
     'groupes': jsonEncode(groups.toList()..sort()),

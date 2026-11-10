@@ -475,7 +475,11 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 
 // ---------------------------------------------------------------- women diet
 
-/// Optional women's dietary diversity (MDD-W, 10 groups from the config).
+/// "Mes repas" (optional; MDD-W, 10 groups from the config). The groups
+/// eaten today, each ticked once whatever the number of its foods, with
+/// common Malagasy examples; "5 groupes sur 10 consommés" (indicative, never
+/// called sufficient); one kind piece of advice on what is missing; and the
+/// previous days, to follow the diversity over time.
 class WomenDietScreen extends StatefulWidget {
   const WomenDietScreen({super.key});
 
@@ -486,49 +490,113 @@ class WomenDietScreen extends StatefulWidget {
 class _WomenDietScreenState extends State<WomenDietScreen> {
   Set<int>? _eaten;
 
+  /// The 7 days before today, most recent first, with their groups (empty
+  /// when nothing was noted).
+  List<(DateTime, Set<int>)> _history = const [];
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_eaten != null) return;
-    pregnancyRepository(context).dietOn(AppScope.read(context).services.clock.now()).then((g) {
-      if (mounted) setState(() => _eaten = g);
+    _load();
+  }
+
+  Future<void> _load() async {
+    final repo = pregnancyRepository(context);
+    final today = dateOnly(AppScope.read(context).services.clock.now());
+    final eaten = await repo.dietOn(today);
+    final noted = {for (final (d, g) in await repo.dietSince(addDays(today, -7))) d: g};
+    if (!mounted) return;
+    setState(() {
+      _eaten = eaten;
+      _history = [
+        for (var i = 1; i <= 7; i++) (addDays(today, -i), noted[addDays(today, -i)] ?? const <int>{}),
+      ];
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final lang = context.lang;
+    final text = Theme.of(context).textTheme;
     final scope = AppScope.of(context);
     final config = scope.services.config.current;
     final diet = WomenDiet(config);
     final eaten = _eaten;
     if (eaten == null) return const Scaffold(body: LoadingView());
     // Each food name is shown only once (see WomenDiet.shown).
-    final shown = diet.shown(context.lang);
-    final ok = diet.metShown(eaten, context.lang);
-    final count = diet.eatenShown(eaten, context.lang).length;
-    return AppScreen(
-      title: l10n.womenDiet,
-      bottomAction: Container(
+    final shown = diet.shown(lang);
+    final total = shown.length;
+    final count = diet.eatenShown(eaten, lang).length;
+    final advice = diet.advice(diet.eatenShown(eaten, lang));
+    final noted = [
+      for (final (_, g) in _history)
+        if (g.isNotEmpty) diet.eatenShown(g, lang).length,
+    ];
+    final score = Semantics(
+      liveRegion: true,
+      child: Container(
         padding: const EdgeInsets.all(Space.m),
         decoration: BoxDecoration(color: AppColors.accentSoft, borderRadius: BorderRadius.circular(Radii.m)),
-        child: LabelWithPill(
-          label: Text(l10n.womenDietScore(count), style: Theme.of(context).textTheme.titleMedium),
-          pill: StatusPill(
-            icon: ok ? Icons.check_circle_outline : Icons.error_outline,
-            label: ok ? l10n.diversityOk : l10n.diversityLow,
-            tone: ok ? Tone.success : Tone.warning,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.restaurant, color: AppColors.accent),
+                const SizedBox(width: Space.s),
+                Expanded(
+                  child: Text(
+                    l10n.womenDietScore(count, total),
+                    key: const ValueKey('women-diet-score'),
+                    style: text.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(Space.s),
+            ExcludeSemantics(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.s),
+                child: LinearProgressIndicator(
+                  value: total == 0 ? 0 : count / total,
+                  minHeight: 8,
+                  color: AppColors.accent,
+                  backgroundColor: AppColors.surface,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+    // Pinned at the bottom while ticking (the count changes at each tap);
+    // with very large text it would hide most of the list, so it then
+    // comes first in the list instead.
+    final pinned = MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+    return AppScreen(
+      title: l10n.womenDiet,
+      bottomAction: pinned ? score : null,
       children: [
-        Text(l10n.womenDietHint),
+        Text(l10n.womenDietHint, key: const ValueKey('women-diet-hint'), style: text.bodyLarge),
+        const Gap(Space.m),
+        if (!pinned) ...[score, const Gap(Space.m)],
+        NoticeBox(key: const ValueKey('women-diet-rule'), icon: Icons.info_outline, text: l10n.womenDietRule),
         const Gap(Space.m),
         for (final (i, label) in shown)
           CheckboxListTile(
             key: ValueKey('women-group-$i'),
+            contentPadding: EdgeInsets.zero,
             value: eaten.contains(i),
             title: Text(label),
+            subtitle: diet.examples(i, lang) == null
+                ? null
+                : Text(
+                    l10n.womenDietExamples(diet.examples(i, lang)!),
+                    style: text.bodySmall?.copyWith(color: AppColors.textMuted),
+                  ),
             onChanged: (v) async {
               final next = {...eaten};
               v == true ? next.add(i) : next.remove(i);
@@ -536,9 +604,140 @@ class _WomenDietScreenState extends State<WomenDietScreen> {
               await pregnancyRepository(context).setDiet(scope.services.clock.now(), next);
             },
           ),
+        if (advice != null) ...[
+          const Gap(Space.m),
+          Semantics(
+            liveRegion: true,
+            child: Container(
+              key: ValueKey('women-diet-advice-${advice.name}'),
+              padding: const EdgeInsets.all(Space.m),
+              decoration: BoxDecoration(
+                color: AppColors.cautionSoft,
+                borderRadius: BorderRadius.circular(Radii.m),
+                border: Border.all(color: AppColors.cautionBorder),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    advice == DietAdvice.varied ? Icons.thumb_up_alt_outlined : Icons.lightbulb_outline,
+                    color: AppColors.caution,
+                  ),
+                  const SizedBox(width: Space.m),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.dietAdviceTitle, style: text.titleSmall),
+                        const Gap(Space.xs),
+                        Text(_adviceText(l10n, advice), style: text.bodyMedium),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        SectionTitle(l10n.womenDietHistory),
+        if (noted.isNotEmpty) ...[
+          Text(
+            l10n.womenDietAverage(
+              formatDecimal(noted.reduce((a, b) => a + b) / noted.length, digits: 1),
+              total,
+            ),
+            key: const ValueKey('women-diet-average'),
+            style: text.bodyMedium,
+          ),
+          const Gap(Space.s),
+        ],
+        for (final (day, groups) in _history)
+          _DietDayTile(day: day, groups: groups, shown: shown, eaten: diet.eatenShown(groups, lang)),
         const Gap(Space.m),
-        Text(config.sourceLabel('alimentation_femme'), style: Theme.of(context).textTheme.bodySmall),
+        Text(config.sourceLabel('alimentation_femme'), style: text.bodySmall),
       ],
+    );
+  }
+
+  static String _adviceText(AppLocalizations l10n, DietAdvice a) => switch (a) {
+    DietAdvice.fruitVegetable => l10n.dietAdviceFruitVegetable,
+    DietAdvice.animal => l10n.dietAdviceAnimal,
+    DietAdvice.protein => l10n.dietAdviceProtein,
+    DietAdvice.leaves => l10n.dietAdviceLeaves,
+    DietAdvice.varied => l10n.dietAdviceVaried,
+  };
+}
+
+/// A previous day: its date, "N groupes sur 10", a bar of 10 small boxes
+/// (one per group, filled when eaten); unfolds the groups eaten.
+class _DietDayTile extends StatelessWidget {
+  const _DietDayTile({required this.day, required this.groups, required this.shown, required this.eaten});
+
+  final DateTime day;
+  final Set<int> groups;
+  final List<(int, String)> shown;
+  final Set<int> eaten;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final weekdays = l10n.weekdayShort.split('|');
+    final noted = groups.isNotEmpty;
+    return Card(
+      child: ExpansionTile(
+        key: ValueKey('women-day-${isoDate(day)}'),
+        shape: const Border(),
+        collapsedShape: const Border(),
+        enabled: noted,
+        title: Text('${weekdays[day.weekday - 1]} ${formatDate(day)}', style: text.titleSmall),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              noted ? l10n.womenDietScore(eaten.length, shown.length) : l10n.bfDayNotNoted,
+              style: text.bodyMedium?.copyWith(color: noted ? AppColors.text : AppColors.textMuted),
+            ),
+            if (noted) ...[
+              const Gap(Space.xs),
+              ExcludeSemantics(
+                child: Row(
+                  children: [
+                    for (final (i, _) in shown)
+                      Expanded(
+                        child: Container(
+                          height: 8,
+                          margin: const EdgeInsets.only(right: 2),
+                          decoration: BoxDecoration(
+                            color: eaten.contains(i) ? AppColors.accent : AppColors.neutralSoft,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.m),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (i, label) in shown)
+            if (eaten.contains(i))
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.xs),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.check_circle, size: 18, color: AppColors.success),
+                    const SizedBox(width: Space.s),
+                    Expanded(child: Text(label, style: text.bodyMedium)),
+                  ],
+                ),
+              ),
+        ],
+      ),
     );
   }
 }

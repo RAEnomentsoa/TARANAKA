@@ -25,7 +25,6 @@ void main() {
     await tapKey(tester, 'name-continue');
     await enterPin(tester, '2580');
     await enterPin(tester, '2580');
-    await tapKey(tester, 'recovery-skip');
     expect(session.stage, SessionStage.consent);
     expect(find.text('Comment vos données sont-elles protégées ?'), findsOneWidget);
     expect(
@@ -113,14 +112,12 @@ void main() {
     expect(find.text('Manokana'), findsOneWidget);
     expect(find.text("Mpiasan'ny fahasalamana"), findsOneWidget);
     await tapKey(tester, 'type-personal');
-    // 3. Profile + PIN (the mode is already chosen), then the optional
-    // recovery question (skipped)
+    // 3. Profile + PIN (the mode is already chosen): created once confirmed
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Voahangy');
     await tapKey(tester, 'name-continue');
     await enterPin(tester, '2580');
     await enterPin(tester, '2580');
     expect(find.byKey(const ValueKey('mode-personal')), findsNothing);
-    await tapKey(tester, 'recovery-skip');
     // 4. Consent, in Malagasy, right after the profile
     expect(session.stage, SessionStage.consent);
     expect(find.text('Ny angon-drakitrao, ny safidinao'), findsOneWidget);
@@ -367,7 +364,7 @@ void main() {
     env.dir.deleteSync(recursive: true);
   });
 
-  testWidgets('"Créer le profil" stays reachable on a small phone with large text', (tester) async {
+  testWidgets('profile creation and consent stay reachable on a small phone with large text', (tester) async {
     tester.view.physicalSize = const Size(320, 480);
     tester.view.devicePixelRatio = 1;
     tester.platformDispatcher.textScaleFactorTestValue = 2.0;
@@ -386,14 +383,10 @@ void main() {
     for (final d in '25802580'.split('')) {
       await tapKey(tester, 'pin-$d');
     }
-    // The recovery code must be kept (or put off) before creating.
-    expect(find.text('Mon code de récupération'), findsOneWidget);
-    await revealKey(tester, 'recovery-code-kept');
-    await tapKey(tester, 'recovery-code-kept');
-    await revealKey(tester, 'recovery-save');
-    expect(find.text('Créer le profil'), findsOneWidget);
-    await tapKey(tester, 'recovery-save');
-    // The consent follows; its buttons stay reachable too.
+    // No recovery codes any more: the profile is created once the PIN is
+    // confirmed (recovery by e-mail only). The consent follows; its buttons
+    // stay reachable too.
+    expect(find.textContaining('codes de récupération'), findsNothing);
     expect(session.stage, SessionStage.consent);
     await revealKey(tester, 'consent-accept');
     await tapKey(tester, 'consent-accept');

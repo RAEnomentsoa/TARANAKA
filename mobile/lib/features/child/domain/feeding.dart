@@ -384,17 +384,20 @@ enum BreastfeedingDay {
   notNoted,
 }
 
-/// The 7 days ending on [end] (oldest first), never before [birth], with the
-/// answer noted for each: exclusive, mixed or not noted.
-List<(DateTime, BreastfeedingDay)> breastfeedingWeek({
+/// The 7 days ending on [end] (oldest first), always 7, with the answer
+/// noted for each: exclusive, mixed or not noted. A day before [birth] has no
+/// status (null): it is shown, but neither counted nor tappable.
+List<(DateTime, BreastfeedingDay?)> breastfeedingWeek({
   required Map<DateTime, String> answers,
   required DateTime end,
   required DateTime birth,
-}) => [
-  for (var i = 6; i >= 0; i--)
-    if (!DateTime(end.year, end.month, end.day - i).isBefore(DateTime(birth.year, birth.month, birth.day)))
+}) {
+  final born = DateTime(birth.year, birth.month, birth.day);
+  return [
+    for (var i = 6; i >= 0; i--)
       () {
         final d = DateTime(end.year, end.month, end.day - i);
+        if (d.isBefore(born)) return (d, null);
         final status = switch (answers[d]) {
           'exclusif' => BreastfeedingDay.exclusive,
           'mixte' => BreastfeedingDay.mixed,
@@ -402,4 +405,89 @@ List<(DateTime, BreastfeedingDay)> breastfeedingWeek({
         };
         return (d, status);
       }(),
+  ];
+}
+
+/// "5 jours d'allaitement exclusif sur 7": the counts of a week, over the
+/// days since birth only.
+class WeekBalance {
+  const WeekBalance({required this.exclusive, required this.mixed, required this.notNoted});
+
+  factory WeekBalance.of(Iterable<(DateTime, BreastfeedingDay?)> days) {
+    int count(BreastfeedingDay d) => days.where((e) => e.$2 == d).length;
+    return WeekBalance(
+      exclusive: count(BreastfeedingDay.exclusive),
+      mixed: count(BreastfeedingDay.mixed),
+      notNoted: count(BreastfeedingDay.notNoted),
+    );
+  }
+
+  final int exclusive;
+  final int mixed;
+  final int notNoted;
+
+  int get total => exclusive + mixed + notNoted;
+
+  /// Share of exclusive days, 0 to 1.
+  double get exclusiveShare => total == 0 ? 0 : exclusive / total;
+
+  int count(BreastfeedingDay d) => switch (d) {
+    BreastfeedingDay.exclusive => exclusive,
+    BreastfeedingDay.mixed => mixed,
+    BreastfeedingDay.notNoted => notNoted,
+  };
+}
+
+/// Difficulties the mother can report (stored codes, never translated).
+const List<String> breastfeedingDifficulties = [
+  'douleur', // sore or cracked nipples
+  'engorgement', // hard, swollen breasts
+  'peu_de_lait', // fear of not having enough milk
+  'prise_du_sein', // the baby latches badly or falls asleep at the breast
+  'reprise_travail', // away from the baby (work, travel)
 ];
+
+/// Stage of breastfeeding by the baby's age, for the personalised advice.
+enum BreastfeedingStage {
+  /// First week: colostrum, very frequent feeds, skin to skin.
+  firstWeek,
+
+  /// 1 to 6 weeks: feeds on demand, growth spurts.
+  firstWeeks,
+
+  /// 6 weeks to 4 months: a rhythm settles, night feeds go on.
+  settled,
+
+  /// 4 to 6 months: still breast milk only, prepare the foods of 6 months.
+  beforeFoods,
+
+  /// From 6 months: breastfeeding goes on with other foods.
+  withFoods;
+
+  static BreastfeedingStage of(int ageDays) => ageDays < 7
+      ? firstWeek
+      : ageDays < 42
+      ? firstWeeks
+      : ageDays < 120
+      ? settled
+      : ageDays < 183
+      ? beforeFoods
+      : withFoods;
+}
+
+/// The advice to show, most useful first: each difficulty reported, then
+/// the way back to exclusive breastfeeding (a mixed day before 6 months),
+/// then the advice of the baby's age. Codes, translated by the screen.
+List<String> personalBreastfeedingTips({
+  required int ageDays,
+  required Set<String> difficulties,
+  required bool mixedRecently,
+}) {
+  final stage = BreastfeedingStage.of(ageDays);
+  return [
+    for (final d in breastfeedingDifficulties)
+      if (difficulties.contains(d)) 'difficulty_$d',
+    if (mixedRecently && stage != BreastfeedingStage.withFoods) 'back_to_exclusive',
+    'stage_${stage.name}',
+  ];
+}

@@ -29,6 +29,9 @@ abstract final class AppColors {
   static const Color warningSoft = Color(0xFFFEF0C7);
   static const Color caution = Color(0xFF854D0E);
   static const Color cautionSoft = Color(0xFFFEF9C3);
+
+  /// Border of the pale yellow advice boxes.
+  static const Color cautionBorder = Color(0xFFFDE68A);
   static const Color success = Color(0xFF067647);
   static const Color successSoft = Color(0xFFDCFAE6);
   static const Color neutral = Color(0xFF475569);

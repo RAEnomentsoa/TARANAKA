@@ -282,4 +282,19 @@ const List<List<String>> migrations = [
     "UPDATE OR IGNORE vaccin_fait SET code = 'var1' WHERE code = 'rr1'",
     "UPDATE OR IGNORE vaccin_fait SET code = 'var2' WHERE code = 'rr2'",
   ],
+  // v11 – "Mon cycle": the daily follow-up ("Mon suivi du jour"), one row per
+  // day: flow (or spotting), pain 0–3, mood 1–5, symptoms. Kept apart from
+  // the periods so each day can be reviewed and corrected, even after the
+  // end of the period. Kept on the phone only.
+  [
+    '''CREATE TABLE cycle_jour (
+      date_jour TEXT PRIMARY KEY,
+      flux TEXT,
+      douleur INTEGER,
+      humeur INTEGER,
+      symptomes TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )''',
+  ],
 ];

@@ -317,8 +317,45 @@ void main() {
       expect(week.where((d) => d.$2 == BreastfeedingDay.mixed), hasLength(1));
       expect(week.where((d) => d.$2 == BreastfeedingDay.notNoted), hasLength(4));
 
+      // A newborn: always 7 days; those before birth have no status.
       final newborn = breastfeedingWeek(answers: const {}, end: end, birth: DateTime(2026, 11, 7));
-      expect(newborn.map((d) => d.$1), [DateTime(2026, 11, 7), DateTime(2026, 11, 8), DateTime(2026, 11, 9)]);
+      expect(newborn, hasLength(7));
+      expect(newborn.where((d) => d.$2 == null), hasLength(4));
+      expect(newborn.where((d) => d.$2 != null).map((d) => d.$1), [
+        DateTime(2026, 11, 7),
+        DateTime(2026, 11, 8),
+        DateTime(2026, 11, 9),
+      ]);
+
+      // "2 jours d'allaitement exclusif sur 7", then over the days since birth.
+      final balance = WeekBalance.of(week);
+      expect((balance.exclusive, balance.mixed, balance.notNoted, balance.total), (2, 1, 4, 7));
+      expect(balance.exclusiveShare, closeTo(2 / 7, 1e-9));
+      expect(WeekBalance.of(newborn).total, 3);
+    });
+
+    test('personal advice: difficulties first, then a mixed day, then the age', () {
+      expect(personalBreastfeedingTips(ageDays: 3, difficulties: const {}, mixedRecently: false), [
+        'stage_firstWeek',
+      ]);
+      expect(personalBreastfeedingTips(ageDays: 20, difficulties: const {}, mixedRecently: false), [
+        'stage_firstWeeks',
+      ]);
+      expect(personalBreastfeedingTips(ageDays: 150, difficulties: const {}, mixedRecently: false), [
+        'stage_beforeFoods',
+      ]);
+      expect(
+        personalBreastfeedingTips(
+          ageDays: 60,
+          difficulties: const {'engorgement', 'douleur'},
+          mixedRecently: true,
+        ),
+        ['difficulty_douleur', 'difficulty_engorgement', 'back_to_exclusive', 'stage_settled'],
+      );
+      // From 6 months, a mixed day is normal: no "back to exclusive".
+      expect(personalBreastfeedingTips(ageDays: 200, difficulties: const {}, mixedRecently: true), [
+        'stage_withFoods',
+      ]);
     });
 
     test('feeds of a day: count, minutes at the breast, millilitres of expressed milk', () {

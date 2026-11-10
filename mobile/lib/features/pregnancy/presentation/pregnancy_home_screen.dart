@@ -155,12 +155,22 @@ class _PregnancyHomeScreenState extends State<PregnancyHomeScreen> {
               ),
             ],
             const Gap(Space.l),
-            DangerSignsPanel(
-              kind: p.delivered ? 'post_partum' : 'grossesse',
+            // One entry instead of the whole list; the signs and their
+            // "Alerte" buttons are on the page it opens.
+            DangerSignsEntry(
+              key: const ValueKey('pregnancy-danger-signs'),
               title: p.delivered ? l10n.postpartumDangerHeader : l10n.pregnancyDangerHeader,
-              onSignal: (code) =>
-                  pregnancyRepository(context)
-                      .recordDanger(p.id, code, p.delivered ? 'post_partum' : 'grossesse'),
+              onTap: () {
+                final kind = p.delivered ? 'post_partum' : 'grossesse';
+                final repo = pregnancyRepository(context);
+                _open(
+                  DangerSignsPanelScreen(
+                    kind: kind,
+                    title: p.delivered ? l10n.postpartumDangerHeader : l10n.pregnancyDangerHeader,
+                    onSignal: (code) => repo.recordDanger(p.id, code, kind),
+                  ),
+                );
+              },
             ),
             const Gap(Space.l),
             BigTile(

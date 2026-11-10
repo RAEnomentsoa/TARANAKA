@@ -6,6 +6,7 @@ import 'package:taranaka/core/security/profile.dart';
 import 'package:taranaka/core/sync/outbox.dart';
 import 'package:taranaka/core/sync/sync_status.dart';
 import 'package:taranaka/features/cycle/data/cycle_repository.dart';
+import 'package:taranaka/features/cycle/domain/cycle.dart';
 import 'package:taranaka/features/pregnancy/presentation/pregnancy_home_screen.dart';
 
 import '../../helpers/test_env.dart';
@@ -79,6 +80,92 @@ void main() {
     await finish(tester, env, session);
   });
 
+  testWidgets('"Enregistrer mon suivi du jour" saves the day; the period goes on', (tester) async {
+    final (env, session) = await start(tester, [(DateTime(2026, 11, 3), null)]);
+    await tapKey(tester, 'tile-cycle');
+    // The three choices of an ongoing period.
+    expect(find.text('Enregistrer mon suivi du jour'), findsOneWidget);
+    expect(find.text('Mes règles sont terminées aujourd\'hui'), findsOneWidget);
+    expect(find.text('Choisir une autre date de fin'), findsOneWidget);
+    // Every choice is explained.
+    expect(find.text('Beaucoup de sang, protection remplie rapidement.'), findsOneWidget);
+    expect(find.text('Petites pertes de sang (spotting)'), findsOneWidget);
+    expect(find.text('0 · Aucune'), findsOneWidget);
+    expect(find.text('3 · Forte'), findsOneWidget);
+    expect(find.text('Très triste, stressée ou irritable'), findsOneWidget);
+    expect(find.text('Heureuse, joyeuse et pleine d\'énergie'), findsOneWidget);
+
+    await tapKey(tester, 'intensity-moyenne');
+    await tapKey(tester, 'symptom-crampes');
+    await tapKey(tester, 'pain-2');
+    await tapKey(tester, 'mood-2');
+    await tapKey(tester, 'day-save');
+    expect(find.text('Suivi du jour enregistré.'), findsOneWidget);
+    // Still ongoing: no start button.
+    expect(find.byKey(const ValueKey('period-start-today')), findsNothing);
+
+    final repo = CycleRepository(session.active!.db);
+    final day = await tester.runAsync(() => repo.dayLog(DateTime(2026, 11, 4)));
+    expect(day!.flow, 'moyenne');
+    expect(day.pain, 2);
+    expect(day.mood, 2);
+    expect(day.symptoms, {'crampes'});
+    final p = (await tester.runAsync(repo.periods))!.single;
+    expect(p.end, isNull);
+    expect(p.pain, 2);
+    expect(p.symptoms, {'crampes'});
+
+    // Last day: "Mes règles sont terminées aujourd'hui" closes the period.
+    await tapKey(tester, 'period-end-today');
+    expect(find.byKey(const ValueKey('period-start-today')), findsOneWidget);
+    final ended = (await tester.runAsync(repo.periods))!.single;
+    expect(ended.end, DateTime(2026, 11, 4));
+    expect(ended.length, 2);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('spotting outside a period is noted without starting a period', (tester) async {
+    final (env, session) = await start(tester, const []);
+    await tapKey(tester, 'tile-cycle');
+    await tapKey(tester, 'day-follow-up');
+    // Outside a period, no real flow is offered: spotting only.
+    expect(find.byKey(const ValueKey('intensity-forte')), findsNothing);
+    await tapKey(tester, 'flow-spotting');
+    await tapKey(tester, 'day-save');
+    final repo = CycleRepository(session.active!.db);
+    expect(await tester.runAsync(repo.periods), isEmpty);
+    expect((await tester.runAsync(() => repo.dayLog(DateTime(2026, 11, 4))))!.isSpotting, isTrue);
+    await revealKey(tester, 'day-2026-11-04');
+    expect(find.text('Jours notés hors règles'), findsOneWidget);
+    await finish(tester, env, session);
+  });
+
+  testWidgets('history: a day of an ended period is reviewed and corrected', (tester) async {
+    final (env, session) = await start(tester, [(DateTime(2026, 10, 30), DateTime(2026, 11, 2))]);
+    final repo = CycleRepository(session.active!.db, clock: env.clock);
+    await tester.runAsync(() => repo.saveDay(DayLog(day: DateTime(2026, 10, 31), flow: 'faible', mood: 5)));
+    await tapKey(tester, 'tile-cycle');
+    await tapKey(tester, 'period-2026-10-30');
+    // Every day of the period is listed, noted or not.
+    for (final d in ['2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02']) {
+      await revealKey(tester, 'day-$d');
+    }
+    expect(find.text('Faible · Humeur : Très bien'), findsOneWidget);
+    await tapKey(tester, 'day-2026-10-31');
+    expect(find.text('Suivi du 31/10/2026'), findsOneWidget);
+    await tapKey(tester, 'intensity-forte');
+    await tapKey(tester, 'mood-1');
+    await tapKey(tester, 'day-sheet-save');
+    expect(find.text('Abondant · Humeur : Très mal'), findsOneWidget);
+
+    final day = await tester.runAsync(() => repo.dayLog(DateTime(2026, 10, 31)));
+    expect(day!.flow, 'forte');
+    expect(day.mood, 1);
+    // The period takes the heaviest flow of its days.
+    expect((await tester.runAsync(repo.periods))!.single.intensity, 'forte');
+    await finish(tester, env, session);
+  });
+
   testWidgets('late period: suggests a pregnancy test and links to "Ma grossesse"', (tester) async {
     final (env, session) = await start(tester, [
       (DateTime(2026, 8, 1), DateTime(2026, 8, 5)),
@@ -136,7 +223,7 @@ void main() {
     final (env, session) = await start(tester, [(DateTime(2026, 11, 1), null)]);
     await tapKey(tester, 'tile-cycle');
     await tapKey(tester, 'period-end-other-day');
-    await scrollWheel(tester, 0, -1); // 4 → 3 November
+    // The wheel opens on yesterday (3 November).
     await tapKey(tester, 'date-wheel-ok');
     final periods = await tester.runAsync(() => CycleRepository(session.active!.db).periods());
     expect(periods!.single.end, DateTime(2026, 11, 3));
@@ -179,8 +266,12 @@ void main() {
       expect(find.text('Octobre 2026'), findsOneWidget);
       await tapKey(tester, 'cal-day-2026-10-16');
       expect(find.text('Modifier'), findsWidgets);
-      expect(find.text('14/10/2026'), findsOneWidget);
-      expect(find.text('18/10/2026'), findsOneWidget);
+      // The dates in their fields (the days are also listed day by day).
+      Finder inField(String key, String text) =>
+          find.descendant(of: find.byKey(ValueKey(key)), matching: find.text(text));
+      expect(inField('period-start-field', '14/10/2026'), findsOneWidget);
+      expect(inField('period-end-field', '18/10/2026'), findsOneWidget);
+      expect(find.byKey(const ValueKey('day-2026-10-16')), findsOneWidget);
       await finish(tester, env, session);
     });
 

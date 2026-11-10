@@ -90,7 +90,6 @@ class ProfileRegistry {
     required ProfileMode mode,
     String? recoveryQuestion,
     String? recoveryAnswer,
-    String? recoveryCode,
     String? email,
   }) async {
     if (!PinCrypto.isValidPin(pin)) {
@@ -102,7 +101,6 @@ class ProfileRegistry {
     final withRecovery =
         (recoveryQuestion?.trim().isNotEmpty ?? false) && (recoveryAnswer?.trim().isNotEmpty ?? false);
     final answer = withRecovery ? PinCrypto.normaliseAnswer(recoveryAnswer!) : null;
-    final codes = recoveryCode == null ? const <String>[] : _codeSecrets(recoveryCode);
     final mail = email?.trim();
     final profile = ProfileInfo(
       id: newUuid(),
@@ -116,8 +114,6 @@ class ProfileRegistry {
       recoveryVerifier: withRecovery ? _crypto.verifier(secret, salt, 'answer:$answer') : null,
       wrappedKeyByRecovery: withRecovery ? _crypto.wrap(secret, salt, 'answer:$answer', master) : null,
       email: mail == null || mail.isEmpty ? null : mail,
-      codeVerifiers: [for (final c in codes) _crypto.verifier(secret, salt, c)],
-      wrappedKeysByCode: [for (final c in codes) _crypto.wrap(secret, salt, c, master)],
     );
     await _save([...await list(), profile]);
     return Unlocked(profile, master);
@@ -186,7 +182,7 @@ class ProfileRegistry {
     return Unlocked((await find(profileId))!, master);
   }
 
-  /// A wrong PIN, answer or code: one more failure, and the delay of the
+  /// A wrong PIN or answer: one more failure, and the delay of the
   /// lockout policy (from the 5th failure).
   Future<WrongPin> _fail(ProfileInfo profile, DateTime now) async {
     final failures = profile.failedAttempts + 1;
@@ -194,50 +190,6 @@ class ProfileRegistry {
     final until = delay == Duration.zero ? null : now.add(delay);
     await _replace(profile.copyWith(failedAttempts: failures, lockedUntil: until, clearLock: until == null));
     return WrongPin(failures: failures, lockedUntil: until);
-  }
-
-  /// Forgotten PIN: the recovery code (downloaded at the creation) gives back
-  /// the master key, then a new PIN is set. Wrong codes count like wrong PINs.
-  Future<UnlockResult> recoverWithCode(String profileId, String code, String newPin) async {
-    final profile = (await find(profileId))!;
-    final now = _clock.now();
-    if (!profile.hasRecoveryCode) throw StateError('no recovery code');
-    if (profile.lockedUntil != null && now.isBefore(profile.lockedUntil!)) {
-      return LockedOut(profile.lockedUntil!);
-    }
-    final secret = await _deviceSecret();
-    // Any of the codes works (one try, whatever the number of codes).
-    for (final typed in PinCrypto.typedRecoveryCodes(code)) {
-      final normalised = 'code:$typed';
-      final verifier = _crypto.verifier(secret, profile.salt, normalised);
-      for (var i = 0; i < profile.codeVerifiers.length; i++) {
-        if (PinCrypto.sameBytes(verifier, profile.codeVerifiers[i])) {
-          final master = _crypto.unwrap(secret, profile.salt, normalised, profile.wrappedKeysByCode[i]);
-          await changePin(profileId, master, newPin);
-          return Unlocked((await find(profileId))!, master);
-        }
-      }
-    }
-    return _fail(profile, now);
-  }
-
-  /// The secrets of the recovery codes of [text] (see [PinCrypto.splitRecoveryCodes]).
-  static List<String> _codeSecrets(String text) => [
-    for (final c in PinCrypto.splitRecoveryCodes(text)) 'code:$c',
-  ];
-
-  /// Gives a profile new recovery codes ([code]: the 6 codes as one text);
-  /// the previous codes no longer work.
-  Future<void> setRecoveryCode(String profileId, Uint8List masterKey, String code) async {
-    final profile = (await find(profileId))!;
-    final secret = await _deviceSecret();
-    final codes = _codeSecrets(code);
-    await _replace(
-      profile.copyWith(
-        codeVerifiers: [for (final c in codes) _crypto.verifier(secret, profile.salt, c)],
-        wrappedKeysByCode: [for (final c in codes) _crypto.wrap(secret, profile.salt, c, masterKey)],
-      ),
-    );
   }
 
   // ------------------------------------------------------------ fingerprint

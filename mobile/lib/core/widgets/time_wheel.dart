@@ -48,6 +48,9 @@ class _TimeWheelSheetState extends State<TimeWheelSheet> {
     final text = Theme.of(context).textTheme;
     final extent = math.max(Space.touch, 40 * MediaQuery.textScalerOf(context).scale(1));
     final now = context.getInheritedWidgetOfExactType<AppScope>()?.services.clock.now() ?? DateTime.now();
+    // 5 visible rows, fewer (3 at least) on a short screen or with large
+    // text, so the sheet never overflows.
+    final rows = (MediaQuery.sizeOf(context).height * 0.45 / extent).floor().clamp(3, 5);
 
     Widget wheel(String label, FixedExtentScrollController c, int count, ValueChanged<int> onChanged) =>
         Expanded(
@@ -77,48 +80,62 @@ class _TimeWheelSheetState extends State<TimeWheelSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.title, style: text.titleMedium, textAlign: TextAlign.center),
-            const SizedBox(height: Space.xs),
-            Text(
-              '${_two(_value.hour)}:${_two(_value.minute)}',
-              key: const ValueKey('time-wheel-value'),
-              textAlign: TextAlign.center,
-              style: text.headlineSmall?.copyWith(color: AppColors.accent, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: Space.m),
-            // Labels over the wheels: hour (left), minute (right).
-            Row(
-              children: [
-                Expanded(
-                  child: Text(l10n.wheelHour, textAlign: TextAlign.center, style: text.labelLarge),
+            // Everything but the buttons scrolls if the screen is still too short.
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(widget.title, style: text.titleMedium, textAlign: TextAlign.center),
+                    const SizedBox(height: Space.xs),
+                    Text(
+                      '${_two(_value.hour)}:${_two(_value.minute)}',
+                      key: const ValueKey('time-wheel-value'),
+                      textAlign: TextAlign.center,
+                      style: text.headlineSmall?.copyWith(
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: Space.m),
+                    // Labels over the wheels: hour (left), minute (right).
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(l10n.wheelHour, textAlign: TextAlign.center, style: text.labelLarge),
+                        ),
+                        const SizedBox(width: Space.xl),
+                        Expanded(
+                          child: Text(l10n.wheelMinute, textAlign: TextAlign.center, style: text.labelLarge),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: extent * rows,
+                      child: Row(
+                        children: [
+                          wheel(
+                            l10n.wheelHour,
+                            _hour,
+                            24,
+                            (h) => setState(() => _value = TimeOfDay(hour: h, minute: _value.minute)),
+                          ),
+                          SizedBox(
+                            width: Space.xl,
+                            child: Text(':', textAlign: TextAlign.center, style: text.headlineSmall),
+                          ),
+                          wheel(
+                            l10n.wheelMinute,
+                            _minute,
+                            60,
+                            (m) => setState(() => _value = TimeOfDay(hour: _value.hour, minute: m)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: Space.xl),
-                Expanded(
-                  child: Text(l10n.wheelMinute, textAlign: TextAlign.center, style: text.labelLarge),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: extent * 5,
-              child: Row(
-                children: [
-                  wheel(
-                    l10n.wheelHour,
-                    _hour,
-                    24,
-                    (h) => setState(() => _value = TimeOfDay(hour: h, minute: _value.minute)),
-                  ),
-                  SizedBox(
-                    width: Space.xl,
-                    child: Text(':', textAlign: TextAlign.center, style: text.headlineSmall),
-                  ),
-                  wheel(
-                    l10n.wheelMinute,
-                    _minute,
-                    60,
-                    (m) => setState(() => _value = TimeOfDay(hour: _value.hour, minute: m)),
-                  ),
-                ],
               ),
             ),
             const SizedBox(height: Space.l),

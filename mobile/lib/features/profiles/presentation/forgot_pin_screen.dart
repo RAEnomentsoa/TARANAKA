@@ -12,17 +12,16 @@ import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import 'email_link_form.dart';
 
-enum _Method { code, question, email }
+enum _Method { question, email }
 
 /// "Code oublié ?" (spec §8).
-/// - Personal mode: the recovery code (downloaded at the creation), or the
-///   recovery question of an older profile, or the standard Firebase reset
-///   link sent to the e-mail address (password chosen on its page, then typed
-///   here), then a new secret code; data kept.
+/// - Personal mode: the standard Firebase reset link sent to the e-mail
+///   address (password chosen on its page, then typed here), or the recovery
+///   question of an older profile, then a new secret code; data kept.
 /// - Without any of them: reset, with loss of the local data, clearly said.
 /// - Agent mode: the supervisor resets the server PIN; the local profile is
 ///   deleted and synced data comes back at the next login.
-/// Wrong codes and answers count like wrong PINs (5 attempts, then a delay).
+/// Wrong answers count like wrong PINs (5 attempts, then a delay).
 class ForgotPinScreen extends StatefulWidget {
   const ForgotPinScreen({super.key, required this.profileId});
 
@@ -88,7 +87,6 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     final navigator = Navigator.of(context);
     final session = AppScope.read(context).session;
     final result = switch (_method!) {
-      _Method.code => await session.recoverWithCode(widget.profileId, _secret.text, confirmPin),
       _Method.question => await session.recover(widget.profileId, _secret.text, confirmPin),
       _Method.email => await session.recoverWithEmailSecret(widget.profileId, _emailSecret!, confirmPin),
     };
@@ -104,7 +102,6 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           _error = lockedUntil != null
               ? l10n.pinLockedUntil(formatWait(context, lockedUntil.difference(DateTime.now())))
               : switch (_method!) {
-                  _Method.code => l10n.recoveryCodeWrong,
                   _Method.question => l10n.answerWrong,
                   _Method.email => l10n.authErrorNoSecret,
                 };
@@ -127,7 +124,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
       label: Text(l10n.resetProfile),
     );
 
-    if (profile.mode == ProfileMode.agent && !profile.hasRecoveryCode) {
+    if (profile.mode == ProfileMode.agent) {
       return AppScreen(
         title: l10n.forgotPin,
         children: [
@@ -137,7 +134,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
         ],
       );
     }
-    if (!profile.hasRecovery && !profile.hasRecoveryCode && !profile.hasEmailRecovery) {
+    if (!profile.hasRecovery && !profile.hasEmailRecovery) {
       return AppScreen(
         title: l10n.forgotPin,
         children: [
@@ -159,7 +156,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     );
   }
 
-  /// How to get back in: the recovery code, the question, the e-mail.
+  /// How to get back in: the e-mail (Firebase), or the question of an older profile.
   Widget _methods(BuildContext context, ProfileInfo profile, Widget resetButton) {
     final l10n = context.l10n;
     return AppScreen(
@@ -167,26 +164,6 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
       children: [
         Text(l10n.forgotPinChoose, style: Theme.of(context).textTheme.titleLarge),
         const Gap(Space.l),
-        if (profile.hasRecoveryCode) ...[
-          BigTile(
-            key: const ValueKey('forgot-with-code'),
-            icon: Icons.vpn_key_outlined,
-            title: l10n.forgotWithCode,
-            subtitle: l10n.forgotWithCodeHint,
-            onTap: () => _choose(_Method.code),
-          ),
-          const Gap(Space.m),
-        ],
-        if (profile.hasRecovery) ...[
-          BigTile(
-            key: const ValueKey('forgot-with-question'),
-            icon: Icons.help_outline,
-            title: l10n.forgotWithQuestion,
-            subtitle: profile.recoveryQuestion,
-            onTap: () => _choose(_Method.question),
-          ),
-          const Gap(Space.m),
-        ],
         // By e-mail: the standard Firebase reset link (needs Internet).
         if (profile.hasEmailRecovery && profile.emailRecovery == EmailRecovery.active) ...[
           BigTile(
@@ -205,6 +182,16 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           ),
           const Gap(Space.m),
         ],
+        if (profile.hasRecovery) ...[
+          BigTile(
+            key: const ValueKey('forgot-with-question'),
+            icon: Icons.help_outline,
+            title: l10n.forgotWithQuestion,
+            subtitle: profile.recoveryQuestion,
+            onTap: () => _choose(_Method.question),
+          ),
+          const Gap(Space.m),
+        ],
         const Gap(Space.xl),
         Text(l10n.forgotPinLastResort, style: Theme.of(context).textTheme.bodySmall),
         const Gap(Space.s),
@@ -213,11 +200,10 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
     );
   }
 
-  /// The code (or answer), then the new secret code twice.
+  /// The e-mail link (or answer), then the new secret code twice.
   Widget _withSecret(BuildContext context, ProfileInfo profile, _Method method) {
     final l10n = context.l10n;
     final title = Theme.of(context).textTheme.titleLarge;
-    final isCode = method == _Method.code;
     final isEmail = method == _Method.email;
     return AppScreen(
       title: l10n.forgotPin,
@@ -266,23 +252,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
                 return null;
               },
             )
-          else if (isCode) ...[
-            Text(l10n.forgotWithCodeHelp),
-            const Gap(Space.l),
-            TextField(
-              key: const ValueKey('recovery-code-input'),
-              controller: _secret,
-              autocorrect: false,
-              enableSuggestions: false,
-              textCapitalization: TextCapitalization.characters,
-              style: const TextStyle(fontFamily: 'monospace', letterSpacing: 1.5),
-              decoration: InputDecoration(
-                labelText: l10n.recoveryCodeLabel,
-                hintText: 'XXXX',
-                prefixIcon: const Icon(Icons.vpn_key_outlined),
-              ),
-            ),
-          ] else ...[
+          else ...[
             Text(l10n.forgotPinRecovery),
             const Gap(Space.l),
             Text(profile.recoveryQuestion!, style: title),

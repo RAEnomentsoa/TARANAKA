@@ -7,83 +7,8 @@ import '../../../core/security/pin_crypto.dart';
 import '../../../core/security/profile.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
-import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../profiles/presentation/email_link_form.dart';
-import '../../profiles/presentation/recovery_code_card.dart';
-
-/// "Mon code de récupération" (Paramètres): the code of the open profile, to
-/// download or copy again, or a new one (the old one then stops working).
-class RecoveryCodeScreen extends StatefulWidget {
-  const RecoveryCodeScreen({super.key});
-
-  @override
-  State<RecoveryCodeScreen> createState() => _RecoveryCodeScreenState();
-}
-
-class _RecoveryCodeScreenState extends State<RecoveryCodeScreen> {
-  Future<String?>? _code;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _code ??= AppScope.read(context).session.recoveryCode();
-  }
-
-  Future<void> _renew({required bool confirm}) async {
-    final l10n = context.l10n;
-    final session = AppScope.read(context).session;
-    if (confirm) {
-      final ok = await confirmAction(
-        context,
-        message: l10n.recoveryCodeRenewConfirm,
-        confirmLabel: l10n.confirm,
-      );
-      if (!ok) return;
-    }
-    final code = await session.renewRecoveryCode();
-    if (mounted) setState(() => _code = Future.value(code));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final session = AppScope.of(context).session;
-    return FutureBuilder<String?>(
-      future: _code,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) return const Scaffold(body: LoadingView());
-        final code = snap.data;
-        return AppScreen(
-          title: l10n.recoveryCodeTitle,
-          children: [
-            Text(l10n.recoveryCodeHelp),
-            const Gap(Space.l),
-            if (code == null) ...[
-              NoticeBox(icon: Icons.info_outline, text: l10n.recoveryCodeNone),
-              const Gap(Space.l),
-              FilledButton.icon(
-                key: const ValueKey('recovery-code-create'),
-                onPressed: () => _renew(confirm: false),
-                icon: const Icon(Icons.vpn_key_outlined),
-                label: Text(l10n.recoveryCodeCreate),
-              ),
-            ] else ...[
-              RecoveryCodeCard(code: code, profileName: session.active?.info.displayName),
-              const Gap(Space.xl),
-              TextButton.icon(
-                key: const ValueKey('recovery-code-renew'),
-                onPressed: () => _renew(confirm: true),
-                icon: const Icon(Icons.autorenew),
-                label: Text(l10n.recoveryCodeRenew),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
 
 /// "Déverrouiller avec l'empreinte": shown only when the phone has a
 /// fingerprint enrolled. Turning it on asks for the fingerprint first.

@@ -47,6 +47,11 @@ void main() {
       expect(find.text("Date probable d'accouchement : 19/05/2027"), findsOneWidget);
       expect(find.textContaining('CPN 1 · 12 SA'), findsOneWidget);
 
+      // The signs are behind one clearly marked entry, not listed here.
+      expect(find.byKey(const ValueKey('danger-saignement_vaginal')), findsNothing);
+      await tapKey(tester, 'pregnancy-danger-signs');
+      expect(find.text("Signes d'alerte pendant la grossesse"), findsOneWidget);
+
       final watch = Stopwatch()..start();
       await tester.tap(find.byKey(const ValueKey('danger-saignement_vaginal')));
       await tester.pump(); // a single frame, no transition
@@ -128,9 +133,13 @@ void main() {
       await repo.recordDelivery((await repo.current())!.id, addDays(env.clock.now(), -2), 'exclusif');
     });
     await tapKey(tester, 'tile-pregnancy');
+    expect(find.textContaining('Consultation postnatale 2 · J3'), findsOneWidget);
+    expect(find.text("Signes d'alerte après l'accouchement"), findsOneWidget);
+    await tapKey(tester, 'pregnancy-danger-signs');
     expect(find.byKey(const ValueKey('danger-pertes_malodorantes')), findsOneWidget);
     expect(find.byKey(const ValueKey('danger-perte_des_eaux')), findsNothing);
-    expect(find.textContaining('Consultation postnatale 2 · J3'), findsOneWidget);
+    tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+    await settle(tester);
     // "Mouvements du bébé" stays reachable after the delivery too.
     await revealKey(tester, 'pregnancy-movements');
     expect(find.byKey(const ValueKey('pregnancy-movements')), findsOneWidget);
@@ -295,6 +304,87 @@ void main() {
     final p = await tester.runAsync(() => PregnancyRepository(session.active!.db).current());
     expect(p!.dates.dueOn, DateTime(2026, 11, 1));
     expect(p.dueDate, DateTime(2026, 11, 1));
+    await finish(tester, env, session);
+  });
+
+  testWidgets('"Mes repas": groups with local examples, count without judgement, advice, previous days', (
+    tester,
+  ) async {
+    final (env, session) = await start(tester, daysSinceLmp: 84);
+    // Yesterday: cereals, pulses, meat or fish, dark green leaves.
+    await tester.runAsync(
+      () => PregnancyRepository(session.active!.db).setDiet(DateTime(2026, 11, 3), {0, 1, 4, 6}),
+    );
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'pregnancy-diet');
+    expect(
+      find.text(
+        "Cochez les groupes d'aliments consommés aujourd'hui pour suivre la diversité de votre alimentation.",
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('women-diet-rule')), findsOneWidget);
+    expect(find.text('Aucun groupe sur 10 consommé'), findsOneWidget);
+    expect(find.text('Ex. : riz, manioc, patate douce, maïs, pain, etc.'), findsOneWidget);
+    // No judgement on the diet.
+    expect(find.text('Suffisante'), findsNothing);
+    expect(find.text('Insuffisante'), findsNothing);
+
+    await tapKey(tester, 'women-group-0');
+    expect(find.text('1 groupe sur 10 consommé'), findsOneWidget);
+    await revealKey(tester, 'women-diet-advice-fruitVegetable');
+    expect(find.textContaining('pensez à ajouter un fruit ou un légume'), findsOneWidget);
+    await tapKey(tester, 'women-group-9');
+    expect(find.text('2 groupes sur 10 consommés'), findsOneWidget);
+    expect(find.byKey(const ValueKey('women-diet-advice-fruitVegetable')), findsNothing);
+    final saved = await tester.runAsync(
+      () => PregnancyRepository(session.active!.db).dietOn(DateTime(2026, 11, 4)),
+    );
+    expect(saved, {0, 9});
+
+    // Previous days: yesterday with its count; unfolds the groups eaten.
+    await revealKey(tester, 'women-diet-average');
+    expect(find.text('En moyenne sur les jours notés : 4,0 groupes sur 10'), findsOneWidget);
+    await revealKey(tester, 'women-day-2026-11-03');
+    expect(find.text('4 groupes sur 10 consommés'), findsOneWidget);
+    await tapKey(tester, 'women-day-2026-11-03');
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('women-day-2026-11-03')),
+        matching: find.text('Brèdes et feuilles vert foncé'),
+      ),
+      findsOneWidget,
+    );
+    await finish(tester, env, session);
+  });
+
+  testWidgets('"Mes repas" at 320 dp and 200 % in Malagasy: no overflow', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final (env, session) = await start(tester, daysSinceLmp: 84);
+    await tester.runAsync(() async {
+      await session.setLanguage('mg');
+      await PregnancyRepository(session.active!.db).setDiet(DateTime(2026, 11, 2), {0, 3, 7});
+    });
+    await settle(tester);
+    await tapKey(tester, 'tile-pregnancy');
+    await tapKey(tester, 'pregnancy-diet');
+    // Large text: the count is in the list, not pinned over half the screen.
+    await revealKey(tester, 'women-diet-score');
+    expect(find.byKey(const ValueKey('women-diet-score')), findsOneWidget);
+    await tapKey(tester, 'women-group-4');
+    for (final key in [
+      'women-diet-rule',
+      'women-group-9',
+      'women-diet-advice-fruitVegetable',
+      'women-day-2026-11-02',
+    ]) {
+      await revealKey(tester, key);
+      expect(tester.takeException(), isNull, reason: key);
+    }
     await finish(tester, env, session);
   });
 }

@@ -74,7 +74,7 @@ void main() {
     expect(find.byKey(const ValueKey('email-error')), findsNothing);
   });
 
-  testWidgets('offline: a clear message, the code is suggested', (tester) async {
+  testWidgets('offline: a clear message, try again once connected', (tester) async {
     await pump(
       tester,
       onSend: () async => const AuthResult.failed(AuthError.offline),
@@ -83,7 +83,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('email-send')));
     await tester.pumpAndSettle();
     expect(
-      find.text('Pas de connexion Internet. Réessayez plus tard, ou utilisez votre code de récupération.'),
+      find.text('Pas de connexion Internet. Réessayez quand le téléphone est connecté.'),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('email-password')), findsNothing);

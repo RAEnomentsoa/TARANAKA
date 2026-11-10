@@ -77,12 +77,18 @@ class _DangerSignButtonsState extends State<DangerSignButtons> {
   }
 }
 
-/// The danger signs as one compact, always visible card (Ma grossesse): a
-/// clear warning title, then one line per sign. The "Alerte" button of each
+/// The danger signs as one compact card (page "Signes d'alerte" of Ma
+/// grossesse): a clear warning, then one line per sign. The "Alerte" button of each
 /// line opens the red alert at once (one tap, never hidden); tapping the
 /// sign itself unfolds what it means and what to do.
 class DangerSignsPanel extends StatefulWidget {
-  const DangerSignsPanel({super.key, required this.kind, required this.title, this.onSignal});
+  const DangerSignsPanel({
+    super.key,
+    required this.kind,
+    required this.title,
+    this.onSignal,
+    this.showTitle = true,
+  });
 
   /// `grossesse` or `post_partum`.
   final String kind;
@@ -90,6 +96,9 @@ class DangerSignsPanel extends StatefulWidget {
   /// Warning title above the list.
   final String title;
   final Future<void> Function(String code)? onSignal;
+
+  /// False on a page whose app bar already shows [title].
+  final bool showTitle;
 
   @override
   State<DangerSignsPanel> createState() => _DangerSignsPanelState();
@@ -146,15 +155,17 @@ class _DangerSignsPanelState extends State<DangerSignsPanel> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.title,
-                          key: const ValueKey('danger-panel-title'),
-                          style: text.titleMedium?.copyWith(
-                            color: AppColors.danger,
-                            fontWeight: FontWeight.w800,
+                        if (widget.showTitle) ...[
+                          Text(
+                            widget.title,
+                            key: const ValueKey('danger-panel-title'),
+                            style: text.titleMedium?.copyWith(
+                              color: AppColors.danger,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const Gap(Space.xs),
+                          const Gap(Space.xs),
+                        ],
                         Text(l10n.dangerPanelHint, style: text.bodyMedium?.copyWith(color: AppColors.text)),
                       ],
                     ),
@@ -219,6 +230,86 @@ class _DangerSignsPanelState extends State<DangerSignsPanel> {
       ),
     );
   }
+}
+
+/// "Signes d'alerte pendant la grossesse" (or after the delivery) on the
+/// home of Ma grossesse: one entry, clearly marked, instead of the whole list.
+/// One tap opens [DangerSignsPanelScreen]; its "Alerte" buttons then open
+/// the red alert at once.
+class DangerSignsEntry extends StatelessWidget {
+  const DangerSignsEntry({super.key, required this.title, required this.onTap});
+
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      child: Material(
+        color: AppColors.dangerSoft,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.l),
+          side: const BorderSide(color: AppColors.danger, width: 1.5),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: Space.touchLarge),
+            child: Padding(
+              padding: const EdgeInsets.all(Space.l),
+              // Title next to the icon, the hint under them at full width: it
+              // stays short with large text on a small phone.
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 28),
+                      const SizedBox(width: Space.s),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: text.titleMedium?.copyWith(
+                            color: AppColors.danger,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const ExcludeSemantics(child: Icon(Icons.chevron_right, color: AppColors.danger)),
+                    ],
+                  ),
+                  const Gap(Space.xs),
+                  Text(
+                    context.l10n.dangerSignsEntryHint,
+                    style: text.bodyMedium?.copyWith(color: AppColors.text),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The page opened by [DangerSignsEntry]: every sign of [kind], each with
+/// its "Alerte" button and what it means, then the disclaimer.
+class DangerSignsPanelScreen extends StatelessWidget {
+  const DangerSignsPanelScreen({super.key, required this.kind, required this.title, this.onSignal});
+
+  final String kind;
+  final String title;
+  final Future<void> Function(String code)? onSignal;
+
+  @override
+  Widget build(BuildContext context) => AppScreen(
+    title: title,
+    children: [DangerSignsPanel(kind: kind, title: title, onSignal: onSignal, showTitle: false)],
+  );
 }
 
 /// Full screen list of the signs, for the child module.

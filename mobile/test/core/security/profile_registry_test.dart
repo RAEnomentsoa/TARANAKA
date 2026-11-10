@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/core/auth/auth_service.dart';
-import 'package:taranaka/core/security/pin_crypto.dart';
 import 'package:taranaka/core/security/profile.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
 import 'package:taranaka/core/security/secret_store.dart';
@@ -106,134 +105,22 @@ void main() {
     );
   });
 
-  group('recovery codes', () {
-    String newCodes() => PinCrypto.joinRecoveryCodes(PinCrypto().newRecoveryCodes());
-
-    test('format: 6 distinct codes of exactly 4 letters or digits', () {
-      for (var n = 0; n < 50; n++) {
-        final codes = PinCrypto().newRecoveryCodes();
-        expect(codes, hasLength(6));
-        expect(codes.toSet(), hasLength(6));
-        for (final c in codes) {
-          expect(c, matches(RegExp(r'^[A-Z0-9]{4}$')));
-        }
-      }
-      expect(PinCrypto.normaliseRecoveryCode(' ab-cd '), 'ABCD');
-      expect(PinCrypto.splitRecoveryCodes('ABCD EFGH JKMN'), ['ABCD', 'EFGH', 'JKMN']);
-      // An older single 16-character code stays one code.
-      expect(PinCrypto.splitRecoveryCodes('ABCD-EFGH-JKMN-PQRS'), ['ABCDEFGHJKMNPQRS']);
-    });
-
-    test('each of the 6 codes sets a new PIN and keeps the key; typed loosely too', () async {
-      final text = newCodes();
-      final codes = PinCrypto.splitRecoveryCodes(text);
-      final a = await registry.create(
-        displayName: 'Hery',
-        pin: '1111',
-        mode: ProfileMode.personal,
-        recoveryCode: text,
-        email: 'hery@exemple.mg',
-      );
-      expect(a.profile.hasRecoveryCode, isTrue);
-      expect(a.profile.codeVerifiers, hasLength(6));
-      expect(a.profile.email, 'hery@exemple.mg');
-      for (final c in codes) {
-        expect(store.values['profiles_v1']!.contains(c), isFalse);
-      }
-      var pin = '1111';
-      for (final (i, c) in codes.indexed) {
-        final next = '${4000 + i}';
-        final typed = i.isEven ? ' ${c.toLowerCase()} ' : '${c.substring(0, 2)}-${c.substring(2)}';
-        final r = await registry.recoverWithCode(a.profile.id, typed, next) as Unlocked;
-        expect(r.masterKey, a.masterKey);
-        expect(await registry.unlock(a.profile.id, pin), isA<WrongPin>());
-        pin = next;
-        expect(await registry.unlock(a.profile.id, pin), isA<Unlocked>());
-      }
-    });
-
-    test('the 6 codes pasted together also work', () async {
-      final text = newCodes();
-      final a = await registry.create(
-        displayName: 'Hery',
-        pin: '1111',
-        mode: ProfileMode.personal,
-        recoveryCode: text,
-      );
-      expect(
-        await registry.recoverWithCode(a.profile.id, text.replaceAll(' ', '\n'), '2222'),
-        isA<Unlocked>(),
-      );
-    });
-
-    test('a profile with an older 16-character code still recovers', () async {
-      final a = await registry.create(
-        displayName: 'Hery',
-        pin: '1111',
-        mode: ProfileMode.personal,
-        recoveryCode: 'ABCD-EFGH-JKMN-PQRS',
-      );
-      expect(a.profile.codeVerifiers, hasLength(1));
-      expect(await registry.recoverWithCode(a.profile.id, 'abcd efgh jkmn pqrs', '2222'), isA<Unlocked>());
-    });
-
-    test('older saved profiles (one code_verifier) are read as one code', () {
-      final json =
-          ProfileInfo(
-              id: 'p',
-              displayName: 'Hery',
-              mode: ProfileMode.personal,
-              salt: const [1],
-              pinVerifier: const [2],
-              wrappedKeyByPin: const [3],
-              createdAt: DateTime(2026),
-            ).toJson()
-            ..remove('code_verifiers')
-            ..remove('wrapped_keys_code')
-            ..['code_verifier'] = 'BAU='
-            ..['wrapped_key_code'] = 'Bgc=';
-      final p = ProfileInfo.fromJson(json);
-      expect(p.hasRecoveryCode, isTrue);
-      expect(p.codeVerifiers, [
-        [4, 5],
-      ]);
-    });
-
-    test('wrong codes count like wrong PINs', () async {
-      final a = await registry.create(
-        displayName: 'Hery',
-        pin: '1111',
-        mode: ProfileMode.personal,
-        recoveryCode: newCodes(),
-      );
-      // "0" is never in a code: always wrong.
-      for (var i = 1; i <= 4; i++) {
-        final r = await registry.recoverWithCode(a.profile.id, '0000', '4321') as WrongPin;
-        expect(r.lockedUntil, isNull);
-      }
-      final fifth = await registry.recoverWithCode(a.profile.id, '0000', '4321') as WrongPin;
-      expect(fifth.lockedUntil, isNotNull);
-      expect(await registry.unlock(a.profile.id, '1111'), isA<LockedOut>());
-    });
-
-    test('renewed codes replace all the old ones', () async {
-      final old = newCodes();
-      final a = await registry.create(
-        displayName: 'Hery',
-        pin: '1111',
-        mode: ProfileMode.personal,
-        recoveryCode: old,
-      );
-      final fresh = newCodes();
-      await registry.setRecoveryCode(a.profile.id, a.masterKey, fresh);
-      for (final c in PinCrypto.splitRecoveryCodes(old).take(3)) {
-        expect(await registry.recoverWithCode(a.profile.id, c, '2222'), isA<WrongPin>());
-      }
-      expect(
-        await registry.recoverWithCode(a.profile.id, PinCrypto.splitRecoveryCodes(fresh)[3], '2222'),
-        isA<Unlocked>(),
-      );
-    });
+  test('no recovery codes: profiles saved with older codes still load, codes dropped', () {
+    final json =
+        ProfileInfo(
+            id: 'p',
+            displayName: 'Hery',
+            mode: ProfileMode.personal,
+            salt: const [1],
+            pinVerifier: const [2],
+            wrappedKeyByPin: const [3],
+            createdAt: DateTime(2026),
+          ).toJson()
+          ..['code_verifiers'] = ['BAU=']
+          ..['wrapped_keys_code'] = ['Bgc='];
+    final p = ProfileInfo.fromJson(json);
+    expect(p.displayName, 'Hery');
+    expect(p.toJson().keys.where((k) => k.contains('code')), isEmpty);
   });
 
   group('fingerprint', () {

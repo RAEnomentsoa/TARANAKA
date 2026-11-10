@@ -45,6 +45,74 @@ class Period {
 /// Bleeding intensities, lightest first (server enum, 3 pictograms).
 const List<String> periodIntensities = ['faible', 'moyenne', 'forte'];
 
+/// Small blood losses outside a real period ("spotting"): noted on a day,
+/// never counted as a period nor as its flow.
+const String spottingFlow = 'spotting';
+
+/// Pain scale of the daily follow-up: 0 none, 1 light, 2 moderate, 3 strong.
+const int painMax = 3;
+
+/// Mood scale: 1 very bad to 5 very good (face icons).
+const int moodMax = 5;
+
+/// What was noted for one day in "Mon suivi du jour" (spec §4). Every field
+/// is optional: only what the user chose is kept.
+class DayLog {
+  const DayLog({required this.day, this.flow, this.pain, this.mood, this.symptoms = const {}});
+
+  final DateTime day;
+
+  /// One of [periodIntensities], [spottingFlow], or null (no bleeding noted).
+  final String? flow;
+
+  /// 0 to [painMax].
+  final int? pain;
+
+  /// 1 to [moodMax].
+  final int? mood;
+
+  /// Codes of [periodSymptoms].
+  final Set<String> symptoms;
+
+  bool get isEmpty => flow == null && pain == null && mood == null && symptoms.isEmpty;
+  bool get isSpotting => flow == spottingFlow;
+
+  /// A changed copy; pass null to [flow], [pain] or [mood] to clear it.
+  DayLog copyWith({
+    Object? flow = _keep,
+    Object? pain = _keep,
+    Object? mood = _keep,
+    Set<String>? symptoms,
+  }) => DayLog(
+    day: day,
+    flow: identical(flow, _keep) ? this.flow : flow as String?,
+    pain: identical(pain, _keep) ? this.pain : pain as int?,
+    mood: identical(mood, _keep) ? this.mood : mood as int?,
+    symptoms: symptoms ?? this.symptoms,
+  );
+
+  static const Object _keep = Object();
+}
+
+/// The period that contains [day] (an ongoing one runs until [today]).
+Period? periodOn(List<Period> periods, DateTime day, DateTime today) {
+  final d = dateOnly(day);
+  for (final p in periods) {
+    final end = dateOnly(p.end ?? today);
+    if (!d.isBefore(dateOnly(p.start)) && !d.isAfter(end)) return p;
+  }
+  return null;
+}
+
+/// The heaviest real flow of [days] (spotting ignored), or null.
+String? heaviestFlow(Iterable<DayLog> days) {
+  var best = -1;
+  for (final d in days) {
+    best = periodIntensities.indexOf(d.flow ?? '') > best ? periodIntensities.indexOf(d.flow!) : best;
+  }
+  return best < 0 ? null : periodIntensities[best];
+}
+
 /// Symptoms that can be noted for a period (stored codes, never translated).
 const List<String> periodSymptoms = [
   'crampes',

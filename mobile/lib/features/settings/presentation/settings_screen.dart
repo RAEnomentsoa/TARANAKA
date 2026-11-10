@@ -78,18 +78,8 @@ class SettingsScreen extends StatelessWidget {
                         .push(MaterialPageRoute<void>(builder: (_) => const ChangePinScreen())),
               ),
               const Divider(),
-              // Personal profiles: the recovery code to show or download again.
+              // Personal profiles: the recovery by e-mail (Firebase Auth).
               if (session.active?.info.mode != ProfileMode.agent) ...[
-                ListTile(
-                  key: const ValueKey('settings-recovery-code'),
-                  leading: const Icon(Icons.vpn_key_outlined),
-                  title: Text(l10n.recoveryCodeTitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () =>
-                      Navigator.of(context)
-                          .push(MaterialPageRoute<void>(builder: (_) => const RecoveryCodeScreen())),
-                ),
-                const Divider(),
                 const EmailRecoveryTile(),
                 const Divider(),
               ],

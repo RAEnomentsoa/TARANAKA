@@ -171,7 +171,29 @@ void main() {
     }
     final fr = [for (final (_, label) in diet.shown('fr')) label];
     expect(fr.where((l) => l.toLowerCase().contains('légume')).length, 1);
-    expect(fr, contains('Légumes : tomate, oignon, chou, aubergine'));
+    expect(fr, contains('Légumes'));
+  });
+
+  test('meal list: local examples under each group, ending with "etc."', () {
+    final diet = WomenDiet(sampleConfig());
+    for (final (i, _) in diet.shown('fr')) {
+      expect(diet.examples(i, 'fr'), endsWith('etc.'));
+      expect(diet.examples(i, 'en'), endsWith('etc.'));
+      expect(diet.examples(i, 'mg'), endsWith('sns.'));
+    }
+    expect(diet.examples(0, 'fr'), contains('manioc'));
+    expect(diet.examples(1, 'fr'), contains('voanjobory'));
+    expect(diet.examples(6, 'fr'), contains('anamamy'));
+  });
+
+  test('meal advice: from the missing groups, fruits or vegetables first; nothing before a tick', () {
+    final diet = WomenDiet(sampleConfig());
+    expect(diet.advice(const {}), isNull);
+    expect(diet.advice({0}), DietAdvice.fruitVegetable);
+    expect(diet.advice({0, 9}), DietAdvice.animal);
+    expect(diet.advice({0, 9, 5}), DietAdvice.protein);
+    expect(diet.advice({0, 9, 5, 1}), DietAdvice.leaves);
+    expect(diet.advice({0, 9, 5, 1, 6}), DietAdvice.varied);
   });
 
   test('meal list: an unknown label from a new configuration loses its repeated words', () {
@@ -185,7 +207,8 @@ void main() {
     final diet = WomenDiet(ClinicalConfig.fromJson(json));
     expect(
       [for (final (i, l) in diet.shown('fr')) '$i=$l'],
-      ['0=Légumes verts', '1=Fruits jaunes', '2=Tomate, oignon, chou, aubergine', '3=Lait', '4=Produits'],
+      // "Autres légumes" is shown "Légumes", already said by "Légumes verts": left out.
+      ['0=Légumes verts', '1=Fruits jaunes', '3=Lait', '4=Produits'],
     );
   });
 

@@ -39,7 +39,7 @@ class ActiveProfile {
   final AppDatabase db;
 
   /// Key of the open database, in memory only while unlocked (to enable the
-  /// fingerprint or give a new recovery code).
+  /// fingerprint or set up the recovery by e-mail).
   final Uint8List masterKey;
 }
 
@@ -172,7 +172,6 @@ class SessionController extends ChangeNotifier {
     required ProfileMode mode,
     String? recoveryQuestion,
     String? recoveryAnswer,
-    String? recoveryCode,
     String? email,
     Future<void> Function(AppDatabase db)? prepare,
   }) async {
@@ -182,7 +181,6 @@ class SessionController extends ChangeNotifier {
       mode: mode,
       recoveryQuestion: recoveryQuestion,
       recoveryAnswer: recoveryAnswer,
-      recoveryCode: recoveryCode,
       email: email,
     );
     if (unlocked.profile.email != null && mode == ProfileMode.personal) {
@@ -190,43 +188,8 @@ class SessionController extends ChangeNotifier {
       unlocked = Unlocked((await services.registry.find(unlocked.profile.id))!, unlocked.masterKey);
     }
     _firstProfileMode = null;
-    await _activate(
-      unlocked,
-      prepare: (db) async {
-        // Kept in the encrypted database, to show or download it again.
-        if (recoveryCode != null) await db.setMeta(_recoveryCodeKey, recoveryCode);
-        await prepare?.call(db);
-      },
-    );
+    await _activate(unlocked, prepare: prepare);
     return unlocked.profile;
-  }
-
-  static const _recoveryCodeKey = 'recovery_code_v1';
-
-  /// The recovery code of the open profile, or null (profile created before
-  /// the codes, or a code given elsewhere).
-  Future<String?> recoveryCode() async => _active?.db.getMeta(_recoveryCodeKey);
-
-  /// A new recovery code for the open profile; the previous one stops working.
-  Future<String> renewRecoveryCode() async {
-    final active = _active!;
-    final code = PinCrypto.joinRecoveryCodes(PinCrypto().newRecoveryCodes());
-    await services.registry.setRecoveryCode(active.info.id, active.masterKey, code);
-    await active.db.setMeta(_recoveryCodeKey, code);
-    await _refreshActiveInfo();
-    return code;
-  }
-
-  /// "Code oublié ?" with the recovery code: new PIN, profile opened.
-  Future<UnlockResult> recoverWithCode(String profileId, String code, String newPin) async {
-    final result = await services.registry.recoverWithCode(profileId, code, newPin);
-    if (result is Unlocked) {
-      await _activate(result);
-    } else {
-      _profiles = await services.registry.list();
-      notifyListeners();
-    }
-    return result;
   }
 
   // ------------------------------------------------- recovery by e-mail

@@ -36,7 +36,14 @@ class _FeedingScreenState extends State<FeedingScreen> {
   List<FeedingLog> _week = const [];
   List<Food> _custom = const [];
   List<BreastFeed> _feeds = const [];
+
+  /// Difficulties reported by the mother (codes), for the advice.
+  Set<String> _difficulties = const {};
   bool _loaded = false;
+
+  /// First day of the 7-day calendar, which always ends today.
+  DateTime get _weekStart =>
+      dateOnly(AppScope.read(context).services.clock.now()).subtract(const Duration(days: 6));
 
   @override
   void didChangeDependencies() {
@@ -51,11 +58,13 @@ class _FeedingScreenState extends State<FeedingScreen> {
     final repo = childRepository(context);
     final child = await repo.child(widget.childId);
     final log = await repo.feeding(widget.childId, _day);
-    final week = await repo.feedingSince(widget.childId, _day.subtract(const Duration(days: 6)));
+    final week = await repo.feedingSince(widget.childId, _weekStart);
     final custom = await repo.customFoods();
     final feeds = await repo.feeds(widget.childId, _day);
+    final difficulties = await repo.breastfeedingDifficultiesOf(widget.childId);
     if (!mounted) return;
     setState(() {
+      _difficulties = difficulties;
       _custom = custom;
       _feeds = feeds;
       _child = child;
@@ -68,7 +77,7 @@ class _FeedingScreenState extends State<FeedingScreen> {
     setState(() => _log = log);
     final repo = childRepository(context);
     await repo.saveFeeding(widget.childId, log);
-    final week = await repo.feedingSince(widget.childId, _day.subtract(const Duration(days: 6)));
+    final week = await repo.feedingSince(widget.childId, _weekStart);
     if (mounted) setState(() => _week = week);
   }
 
@@ -77,7 +86,7 @@ class _FeedingScreenState extends State<FeedingScreen> {
 
   /// Notes a feed (sheet), then reloads the day. From 6 months, a feed also
   /// ticks breast milk in the food diary.
-  Future<void> _addFeed(FeedingRules? rules) async {
+  Future<void> _addFeed(FeedingRules? rules, {BreastFeed? existing}) async {
     final today = dateOnly(AppScope.read(context).services.clock.now());
     final now = AppScope.read(context).services.clock.now();
     final feed = await showModalBottomSheet<_NewFeed>(
@@ -86,12 +95,23 @@ class _FeedingScreenState extends State<FeedingScreen> {
       useSafeArea: true,
       showDragHandle: true,
       builder: (_) => _FeedSheet(
+        feed: existing,
         initial: _day == today ? TimeOfDay.fromDateTime(now) : const TimeOfDay(hour: 12, minute: 0),
       ),
     );
     if (feed == null || !mounted) return;
     final repo = childRepository(context);
+    if (existing != null && feed.delete) {
+      await _deleteFeed(existing);
+      return;
+    }
     final at = DateTime(_day.year, _day.month, _day.day, feed.time.hour, feed.time.minute);
+    if (existing != null) {
+      await repo.updateFeed(existing.id, at, feed.type, minutes: feed.minutes, millilitres: feed.millilitres);
+      final feeds = await repo.feeds(widget.childId, _day);
+      if (mounted) setState(() => _feeds = feeds);
+      return;
+    }
     await repo.addFeed(widget.childId, at, feed.type, minutes: feed.minutes, millilitres: feed.millilitres);
     final breastMilk = rules?.foods.where((f) => f.group == rules.breastMilkGroup).firstOrNull;
     if (rules != null && breastMilk != null && !_current.foods.contains(breastMilk.code)) {
@@ -123,6 +143,32 @@ class _FeedingScreenState extends State<FeedingScreen> {
     await repo.deleteFeed(feed.id);
     final feeds = await repo.feeds(widget.childId, _day);
     if (mounted) setState(() => _feeds = feeds);
+  }
+
+  Future<void> _setDifficulties(Set<String> codes) async {
+    setState(() => _difficulties = codes);
+    await childRepository(context).setBreastfeedingDifficulties(widget.childId, codes);
+  }
+
+  /// Difficulties, then the advice for this baby: its age today, what was
+  /// reported, a mixed day in the last 7 days.
+  List<Widget> _advice(MyChild child, DateTime today) {
+    final ageDays = ScreeningCalculator.ageDays(child.birthDate, today);
+    final mixed = _week.any((l) => l.breastfeeding == 'mixte' && !l.date.isBefore(_weekStart));
+    return [
+      _DifficultiesCard(value: _difficulties, onChanged: _setDifficulties),
+      const Gap(Space.l),
+      _PersonalTips(
+        childName: child.name,
+        codes: personalBreastfeedingTips(
+          ageDays: ageDays < 0 ? 0 : ageDays,
+          difficulties: _difficulties,
+          mixedRecently: mixed,
+        ),
+      ),
+      const Gap(Space.l),
+      const _BreastfeedingTips(),
+    ];
   }
 
   void _move(int days) {
@@ -200,11 +246,17 @@ class _FeedingScreenState extends State<FeedingScreen> {
             text: l10n.breastfeedingAfter6,
           ),
           const Gap(Space.l),
-          _FeedsCard(feeds: _feeds, legacyCount: null, onAdd: () => _addFeed(rules), onDelete: _deleteFeed),
+          _FeedsCard(
+            feeds: _feeds,
+            legacyCount: null,
+            onAdd: () => _addFeed(rules),
+            onEdit: (f) => _addFeed(rules, existing: f),
+            onDelete: _deleteFeed,
+          ),
           const Gap(Space.l),
           ..._diary(context, rules, months, config),
           const Gap(Space.l),
-          const _BreastfeedingTips(),
+          ..._advice(child, today),
         ] else
           NoticeBox(icon: Icons.info_outline, text: l10n.feedingNotInRange),
         if (_log != null) ...[
@@ -231,7 +283,6 @@ class _FeedingScreenState extends State<FeedingScreen> {
       others: others,
     );
     final labels = l10n.otherIntakeLabels.split('|');
-    final end = _day.isAfter(today) ? today : _day;
     return [
       Text(l10n.exclusiveQuestion, key: const ValueKey('exclusive-question'), style: text.titleMedium),
       const Gap(Space.m),
@@ -276,20 +327,21 @@ class _FeedingScreenState extends State<FeedingScreen> {
         feeds: _feeds,
         legacyCount: _feeds.isEmpty ? log.breastFeeds : null,
         onAdd: () => _addFeed(null),
+        onEdit: (f) => _addFeed(null, existing: f),
         onDelete: _deleteFeed,
       ),
       const Gap(Space.l),
       _WeekSummary(
         days: breastfeedingWeek(
           answers: {for (final l in _week) dateOnly(l.date): l.breastfeeding},
-          end: end,
+          end: today,
           birth: child.birthDate,
         ),
         selected: _day,
         onTap: (d) => _move(daysBetween(_day, d)),
       ),
       const Gap(Space.l),
-      const _BreastfeedingTips(),
+      ..._advice(child, today),
     ];
   }
 
@@ -660,24 +712,33 @@ class _FoodNameDialogState extends State<_FoodNameDialog> {
   }
 }
 
-/// A feed being noted in the sheet.
+/// A feed being noted or corrected in the sheet; [delete]: remove it.
 class _NewFeed {
-  const _NewFeed(this.type, this.time, this.minutes, this.millilitres);
+  const _NewFeed(this.type, this.time, this.minutes, this.millilitres) : delete = false;
+  const _NewFeed.delete()
+    : type = '',
+      time = const TimeOfDay(hour: 0, minute: 0),
+      minutes = null,
+      millilitres = null,
+      delete = true;
   final String type;
   final TimeOfDay time;
   final int? minutes;
   final int? millilitres;
+  final bool delete;
 }
 
 String _hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
 /// "Tétées et lait exprimé": the feeds of the day, their totals, "Noter une
-/// tétée". Tapping a feed deletes it (after confirmation).
+/// tétée". Tapping a feed opens it to correct its time, duration or
+/// quantity; the bin icon deletes it (after confirmation).
 class _FeedsCard extends StatelessWidget {
   const _FeedsCard({
     required this.feeds,
     required this.legacyCount,
     required this.onAdd,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -686,6 +747,7 @@ class _FeedsCard extends StatelessWidget {
   /// Feeds counted on an older version, for a day without feed log.
   final int? legacyCount;
   final VoidCallback onAdd;
+  final ValueChanged<BreastFeed> onEdit;
   final ValueChanged<BreastFeed> onDelete;
 
   @override
@@ -736,8 +798,14 @@ class _FeedsCard extends StatelessWidget {
                       if ((f.millilitres ?? 0) > 0) l10n.mlShort(f.millilitres!),
                     ].join(' · '),
                   ),
-                  trailing: Icon(Icons.delete_outline, semanticLabel: l10n.delete),
-                  onTap: () => onDelete(f),
+                  subtitle: Text(l10n.feedTapToEdit),
+                  trailing: IconButton(
+                    key: ValueKey('feed-delete-${f.id}'),
+                    tooltip: l10n.delete,
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => onDelete(f),
+                  ),
+                  onTap: () => onEdit(f),
                 ),
             ],
             const Gap(Space.s),
@@ -757,18 +825,21 @@ class _FeedsCard extends StatelessWidget {
 /// Sheet to note a feed: at the breast (duration) or expressed breast milk
 /// (quantity), and its time. "Enregistrer" stays visible under the fields.
 class _FeedSheet extends StatefulWidget {
-  const _FeedSheet({required this.initial});
+  const _FeedSheet({required this.initial, this.feed});
   final TimeOfDay initial;
+
+  /// The feed to correct, or null for a new one.
+  final BreastFeed? feed;
 
   @override
   State<_FeedSheet> createState() => _FeedSheetState();
 }
 
 class _FeedSheetState extends State<_FeedSheet> {
-  String _type = BreastFeed.atBreast;
-  late TimeOfDay _time = widget.initial;
-  int _minutes = 15;
-  int _ml = 60;
+  late String _type = widget.feed?.type ?? BreastFeed.atBreast;
+  late TimeOfDay _time = widget.feed == null ? widget.initial : TimeOfDay.fromDateTime(widget.feed!.at);
+  late int _minutes = widget.feed?.minutes ?? 15;
+  late int _ml = widget.feed?.millilitres ?? 60;
 
   Future<void> _pickTime() async {
     final picked = await showTimeWheel(context, title: context.l10n.feedTime, initial: _time);
@@ -793,7 +864,7 @@ class _FeedSheetState extends State<_FeedSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(l10n.feedAdd, style: text.titleMedium),
+                  Text(widget.feed == null ? l10n.feedAdd : l10n.feedEdit, style: text.titleMedium),
                   const Gap(Space.m),
                   Wrap(
                     spacing: Space.s,
@@ -817,18 +888,28 @@ class _FeedSheetState extends State<_FeedSheet> {
                   ),
                   if (expressed) ...[const Gap(Space.s), Text(l10n.feedExpressedHint, style: text.bodySmall)],
                   const Gap(Space.m),
-                  Row(
-                    children: [
-                      Expanded(child: Text(l10n.feedTime, style: text.bodyLarge)),
-                      OutlinedButton.icon(
-                        key: const ValueKey('feed-time'),
-                        onPressed: _pickTime,
-                        icon: const Icon(Icons.access_time),
-                        label: Text(_hhmm(_time)),
+                  // "Heure de la tétée": a full-width field like the date
+                  // fields (label on its own line, never squeezed by the
+                  // button); a tap opens the hour and minute wheels.
+                  Semantics(
+                    button: true,
+                    label: '${l10n.feedTime}, ${_hhmm(_time)}',
+                    excludeSemantics: true,
+                    child: InkWell(
+                      key: const ValueKey('feed-time'),
+                      borderRadius: BorderRadius.circular(Radii.m),
+                      onTap: _pickTime,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: l10n.feedTime,
+                          prefixIcon: const Icon(Icons.schedule),
+                          suffixIcon: const Icon(Icons.unfold_more),
+                        ),
+                        child: Text(_hhmm(_time), style: text.titleMedium),
                       ),
-                    ],
+                    ),
                   ),
-                  const Gap(Space.s),
+                  const Gap(Space.m),
                   if (expressed)
                     _Counter(
                       label: l10n.feedQuantity,
@@ -854,17 +935,30 @@ class _FeedSheetState extends State<_FeedSheet> {
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(Space.l, Space.m, Space.l, Space.m),
-              child: FilledButton(
-                key: const ValueKey('feed-save'),
-                onPressed: () => Navigator.of(context).pop(
-                  _NewFeed(
-                    _type,
-                    _time,
-                    expressed ? null : (_minutes > 0 ? _minutes : null),
-                    expressed ? (_ml > 0 ? _ml : null) : null,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton(
+                    key: const ValueKey('feed-save'),
+                    onPressed: () => Navigator.of(context).pop(
+                      _NewFeed(
+                        _type,
+                        _time,
+                        expressed ? null : (_minutes > 0 ? _minutes : null),
+                        expressed ? (_ml > 0 ? _ml : null) : null,
+                      ),
+                    ),
+                    child: Text(l10n.save),
                   ),
-                ),
-                child: Text(l10n.save),
+                  if (widget.feed != null)
+                    TextButton(
+                      key: const ValueKey('feed-sheet-delete'),
+                      style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                      onPressed: () => Navigator.of(context).pop(const _NewFeed.delete()),
+                      child: Text(l10n.delete),
+                    ),
+                ],
               ),
             ),
           ),
@@ -874,37 +968,37 @@ class _FeedSheetState extends State<_FeedSheet> {
   }
 }
 
-/// The last 7 days: exclusive, mixed or not noted, each with its own icon
-/// and colour (never colour alone), and the count of each.
+/// "Bilan des 7 derniers jours": the balance ("5 jours d'allaitement
+/// exclusif sur 7") with a progress bar, then a horizontal calendar of the
+/// last 7 days ending today: green exclusive, orange mixed, grey not noted —
+/// each with its own icon too, never the colour alone. A day opens on tap.
 class _WeekSummary extends StatelessWidget {
   const _WeekSummary({required this.days, required this.selected, required this.onTap});
 
-  final List<(DateTime, BreastfeedingDay)> days;
+  final List<(DateTime, BreastfeedingDay?)> days;
   final DateTime selected;
   final ValueChanged<DateTime> onTap;
 
-  static ({IconData icon, Color fg, Color bg}) _style(BreastfeedingDay d) => switch (d) {
-    BreastfeedingDay.exclusive => (
-      icon: Icons.check_circle,
-      fg: AppColors.success,
-      bg: AppColors.successSoft,
-    ),
+  static ({IconData icon, Color fg, Color bg}) _style(BreastfeedingDay? d) => switch (d) {
+    BreastfeedingDay.exclusive => (icon: Icons.check_circle, fg: AppColors.surface, bg: AppColors.success),
     BreastfeedingDay.mixed => (
       icon: Icons.change_circle_outlined,
-      fg: AppColors.warning,
-      bg: AppColors.warningSoft,
+      fg: AppColors.surface,
+      bg: AppColors.warning,
     ),
     BreastfeedingDay.notNoted => (
       icon: Icons.remove_circle_outline,
       fg: AppColors.neutral,
       bg: AppColors.neutralSoft,
     ),
+    null => (icon: Icons.horizontal_rule, fg: AppColors.outline, bg: AppColors.surface),
   };
 
-  static String _label(AppLocalizations l10n, BreastfeedingDay d) => switch (d) {
+  static String _label(AppLocalizations l10n, BreastfeedingDay? d) => switch (d) {
     BreastfeedingDay.exclusive => l10n.bfDayExclusive,
     BreastfeedingDay.mixed => l10n.bfDayMixed,
     BreastfeedingDay.notNoted => l10n.bfDayNotNoted,
+    null => l10n.bfBeforeBirth,
   };
 
   @override
@@ -912,13 +1006,13 @@ class _WeekSummary extends StatelessWidget {
     final l10n = context.l10n;
     final text = Theme.of(context).textTheme;
     final weekdays = l10n.weekdayShort.split('|');
-    int count(BreastfeedingDay d) => days.where((e) => e.$2 == d).length;
+    final balance = WeekBalance.of(days);
     return Card(
       key: const ValueKey('bf-week'),
       child: Padding(
         padding: const EdgeInsets.all(Space.l),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
@@ -928,20 +1022,44 @@ class _WeekSummary extends StatelessWidget {
               ],
             ),
             const Gap(Space.m),
+            // The balance in words, then as a bar.
+            Text(
+              l10n.bfBalance(balance.exclusive, balance.total),
+              key: const ValueKey('bf-balance'),
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const Gap(Space.s),
+            Semantics(
+              label: l10n.bfBalance(balance.exclusive, balance.total),
+              excludeSemantics: true,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.s),
+                child: LinearProgressIndicator(
+                  key: const ValueKey('bf-progress'),
+                  value: balance.exclusiveShare,
+                  minHeight: 12,
+                  color: AppColors.success,
+                  backgroundColor: AppColors.neutralSoft,
+                ),
+              ),
+            ),
+            const Gap(Space.l),
+            // Horizontal calendar: weekday, colour block with icon, date.
             Row(
               children: [
                 for (final (d, status) in days)
                   Expanded(
                     child: Semantics(
-                      button: true,
+                      button: status != null,
+                      selected: d == selected,
                       label: '${formatDate(d)}, ${_label(l10n, status)}',
                       excludeSemantics: true,
                       child: InkWell(
                         key: ValueKey('bf-day-${isoDate(d)}'),
                         borderRadius: BorderRadius.circular(Radii.s),
-                        onTap: () => onTap(d),
+                        onTap: status == null ? null : () => onTap(d),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: Space.xs, horizontal: 1),
+                          padding: const EdgeInsets.symmetric(vertical: Space.xs, horizontal: 2),
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Column(
@@ -952,19 +1070,20 @@ class _WeekSummary extends StatelessWidget {
                                 ),
                                 const Gap(Space.xs),
                                 Container(
-                                  width: 36,
-                                  height: 36,
+                                  width: 38,
+                                  height: 44,
                                   decoration: BoxDecoration(
                                     color: _style(status).bg,
-                                    shape: BoxShape.circle,
-                                    border: d == selected
-                                        ? Border.all(color: AppColors.text, width: 2)
-                                        : null,
+                                    borderRadius: BorderRadius.circular(Radii.s),
+                                    border: Border.all(
+                                      color: d == selected ? AppColors.text : AppColors.outline,
+                                      width: d == selected ? 2.5 : 1,
+                                    ),
                                   ),
                                   child: Icon(_style(status).icon, color: _style(status).fg, size: 22),
                                 ),
                                 const Gap(Space.xs),
-                                Text('${d.day}', style: text.labelMedium),
+                                Text('${d.day}/${d.month}', style: text.labelMedium),
                               ],
                             ),
                           ),
@@ -980,17 +1099,28 @@ class _WeekSummary extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: Space.xs),
                 child: Row(
                   children: [
-                    Icon(_style(status).icon, color: _style(status).fg, size: 20),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: _style(status).bg,
+                        borderRadius: BorderRadius.circular(Radii.s / 2),
+                        border: Border.all(color: AppColors.outline),
+                      ),
+                      child: Icon(_style(status).icon, color: _style(status).fg, size: 16),
+                    ),
                     const SizedBox(width: Space.s),
                     Expanded(child: Text(_label(l10n, status), style: text.bodyMedium)),
                     Text(
-                      l10n.daysCount(count(status)),
+                      l10n.daysCount(balance.count(status)),
                       key: ValueKey('bf-count-${status.name}'),
                       style: text.titleSmall,
                     ),
                   ],
                 ),
               ),
+            const Gap(Space.xs),
+            Text(l10n.bfCalendarHint, style: text.bodySmall?.copyWith(color: AppColors.textMuted)),
           ],
         ),
       ),
@@ -998,8 +1128,193 @@ class _WeekSummary extends StatelessWidget {
   }
 }
 
-/// Short practical tips, folded: good position, common difficulties, signs
-/// that the baby gets enough milk.
+/// A pale yellow box for practical advice: pictogram, title, short lines.
+class _YellowBox extends StatelessWidget {
+  const _YellowBox({super.key, required this.icon, required this.title, required this.lines});
+
+  final IconData icon;
+  final String title;
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.all(Space.m),
+      decoration: BoxDecoration(
+        color: AppColors.cautionSoft,
+        borderRadius: BorderRadius.circular(Radii.m),
+        border: Border.all(color: AppColors.cautionBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(color: AppColors.surface, shape: BoxShape.circle),
+            child: Icon(icon, color: AppColors.caution, size: 26),
+          ),
+          const SizedBox(width: Space.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: text.titleSmall?.copyWith(color: AppColors.text)),
+                for (final line in lines) ...[
+                  const Gap(Space.xs),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 7),
+                        child: Icon(Icons.circle, size: 6, color: AppColors.caution),
+                      ),
+                      const SizedBox(width: Space.s),
+                      Expanded(
+                        child: Text(line, style: text.bodyMedium?.copyWith(color: AppColors.text)),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Une difficulté en ce moment ?": what the mother ticks adapts the advice.
+/// Kept until she unticks it.
+class _DifficultiesCard extends StatelessWidget {
+  const _DifficultiesCard({required this.value, required this.onChanged});
+
+  final Set<String> value;
+  final ValueChanged<Set<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final labels = l10n.bfDifficultyLabels.split('|');
+    return Card(
+      key: const ValueKey('bf-difficulties'),
+      child: Padding(
+        padding: const EdgeInsets.all(Space.l),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.support_outlined, color: AppColors.accent),
+                const SizedBox(width: Space.s),
+                Expanded(child: Text(l10n.bfDifficultiesTitle, style: text.titleMedium)),
+              ],
+            ),
+            const Gap(Space.xs),
+            Text(l10n.bfDifficultiesHint, style: text.bodySmall?.copyWith(color: AppColors.textMuted)),
+            const Gap(Space.s),
+            Wrap(
+              spacing: Space.s,
+              runSpacing: Space.s,
+              children: [
+                for (final (i, code) in breastfeedingDifficulties.indexed)
+                  FilterChip(
+                    key: ValueKey('bf-difficulty-$code'),
+                    label: Text(labels[i]),
+                    selected: value.contains(code),
+                    onSelected: (on) => onChanged(on ? {...value, code} : ({...value}..remove(code))),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Conseils pour vous": the advice chosen for this baby (age, difficulties,
+/// a mixed day), most useful first, each in a pale yellow box.
+class _PersonalTips extends StatelessWidget {
+  const _PersonalTips({required this.childName, required this.codes});
+
+  final String childName;
+  final List<String> codes;
+
+  static IconData _icon(String code) => switch (code) {
+    'difficulty_douleur' => Icons.healing_outlined,
+    'difficulty_engorgement' => Icons.water_drop_outlined,
+    'difficulty_peu_de_lait' => Icons.trending_up,
+    'difficulty_prise_du_sein' => Icons.child_care,
+    'difficulty_reprise_travail' => Icons.work_outline,
+    'back_to_exclusive' => Icons.restart_alt,
+    'stage_firstWeek' => Icons.favorite_border,
+    'stage_withFoods' => Icons.restaurant_outlined,
+    _ => Icons.child_friendly_outlined,
+  };
+
+  static String _text(AppLocalizations l10n, String code) => switch (code) {
+    'difficulty_douleur' => l10n.ptDouleur,
+    'difficulty_engorgement' => l10n.ptEngorgement,
+    'difficulty_peu_de_lait' => l10n.ptPeuDeLait,
+    'difficulty_prise_du_sein' => l10n.ptPriseDuSein,
+    'difficulty_reprise_travail' => l10n.ptRepriseTravail,
+    'back_to_exclusive' => l10n.ptBackToExclusive,
+    'stage_firstWeek' => l10n.ptStageFirstWeek,
+    'stage_firstWeeks' => l10n.ptStageFirstWeeks,
+    'stage_settled' => l10n.ptStageSettled,
+    'stage_beforeFoods' => l10n.ptStageBeforeFoods,
+    _ => l10n.ptStageWithFoods,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    return Card(
+      key: const ValueKey('bf-personal-tips'),
+      child: Padding(
+        padding: const EdgeInsets.all(Space.l),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.tips_and_updates_outlined, color: AppColors.accent),
+                const SizedBox(width: Space.s),
+                Expanded(child: Text(l10n.personalTipsTitle, style: text.titleMedium)),
+              ],
+            ),
+            const Gap(Space.xs),
+            Text(
+              l10n.personalTipsSubtitle(childName),
+              style: text.bodySmall?.copyWith(color: AppColors.textMuted),
+            ),
+            for (final code in codes) ...[
+              const Gap(Space.m),
+              () {
+                final parts = _text(l10n, code).split('|');
+                return _YellowBox(
+                  key: ValueKey('tip-$code'),
+                  icon: _icon(code),
+                  title: parts.first,
+                  lines: parts.skip(1).toList(),
+                );
+              }(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Conseils pratiques": the breastfeeding positions, each with a pictogram
+/// and one short sentence, then the good latch, common difficulties and
+/// signs that the baby gets enough milk — all in pale yellow boxes.
 class _BreastfeedingTips extends StatelessWidget {
   const _BreastfeedingTips();
 
@@ -1007,55 +1322,101 @@ class _BreastfeedingTips extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final text = Theme.of(context).textTheme;
+    final positions = [
+      ('cradle', Icons.event_seat_outlined, l10n.posCradle),
+      ('cross', Icons.pan_tool_outlined, l10n.posCrossCradle),
+      ('rugby', Icons.sports_rugby_outlined, l10n.posRugby),
+      ('side', Icons.airline_seat_flat_outlined, l10n.posSideLying),
+    ];
     final tips = [
       ('position', Icons.accessibility_new, l10n.tipPositionTitle, l10n.tipPosition),
       ('difficulties', Icons.healing_outlined, l10n.tipDifficultiesTitle, l10n.tipDifficulties),
       ('enough', Icons.thumb_up_alt_outlined, l10n.tipEnoughTitle, l10n.tipEnough),
     ];
     return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(Space.l, Space.l, Space.l, Space.xs),
-            child: Row(
+      key: const ValueKey('bf-practical-tips'),
+      child: Padding(
+        padding: const EdgeInsets.all(Space.l),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
                 const Icon(Icons.lightbulb_outline, color: AppColors.accent),
                 const SizedBox(width: Space.s),
                 Expanded(child: Text(l10n.tipsTitle, style: text.titleMedium)),
               ],
             ),
-          ),
-          for (final (code, icon, title, body) in tips)
-            ExpansionTile(
-              key: ValueKey('tip-$code'),
-              shape: const Border(),
-              collapsedShape: const Border(),
-              leading: Icon(icon, color: AppColors.accent),
-              title: Text(title, style: text.titleSmall),
-              childrenPadding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.m),
-              expandedCrossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final line in body.split('|'))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: Space.s),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 6),
-                          child: Icon(Icons.circle, size: 6, color: AppColors.textMuted),
+            const Gap(Space.m),
+            Semantics(header: true, child: Text(l10n.positionsTitle, style: text.titleSmall)),
+            const Gap(Space.xs),
+            Text(l10n.positionsCommon, style: text.bodySmall),
+            // Two columns when there is room, one on a small phone or with
+            // large text.
+            LayoutBuilder(
+              builder: (context, box) {
+                final two = box.maxWidth >= 480;
+                final width = two ? (box.maxWidth - Space.s) / 2 : box.maxWidth;
+                return Wrap(
+                  spacing: Space.s,
+                  runSpacing: Space.s,
+                  children: [
+                    for (final (code, icon, body) in positions)
+                      SizedBox(
+                        width: width,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: Space.s),
+                          child: _YellowBox(
+                            key: ValueKey('position-$code'),
+                            icon: icon,
+                            title: body.split('|').first,
+                            lines: body.split('|').skip(1).toList(),
+                          ),
                         ),
-                        const SizedBox(width: Space.s),
-                        Expanded(child: Text(line, style: text.bodyMedium)),
-                      ],
-                    ),
-                  ),
-              ],
+                      ),
+                  ],
+                );
+              },
             ),
-          const Gap(Space.s),
-        ],
+            for (final (code, icon, title, body) in tips) ...[
+              const Gap(Space.s),
+              Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: AppColors.cautionSoft,
+                  borderRadius: BorderRadius.circular(Radii.m),
+                  border: Border.all(color: AppColors.cautionBorder),
+                ),
+                child: ExpansionTile(
+                  key: ValueKey('tip-$code'),
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  leading: Icon(icon, color: AppColors.caution),
+                  title: Text(title, style: text.titleSmall),
+                  childrenPadding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.m),
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final line in body.split('|'))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Space.s),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 7),
+                              child: Icon(Icons.circle, size: 6, color: AppColors.caution),
+                            ),
+                            const SizedBox(width: Space.s),
+                            Expanded(child: Text(line, style: text.bodyMedium)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -48,8 +48,6 @@ class ProfileInfo {
     this.recoveryVerifier,
     this.wrappedKeyByRecovery,
     this.email,
-    this.codeVerifiers = const [],
-    this.wrappedKeysByCode = const [],
     this.biometric = false,
     this.emailVerifier,
     this.wrappedKeyByEmail,
@@ -79,17 +77,10 @@ class ProfileInfo {
   final List<int>? wrappedKeyByEmail;
   final EmailRecovery emailRecovery;
 
-  /// Recovery codes (6 codes of 4 characters, each one valid; or one older
-  /// 16-character code): a verifier and the master key wrapped by each code,
-  /// same order.
-  final List<List<int>> codeVerifiers;
-  final List<List<int>> wrappedKeysByCode;
-
   /// Unlock with the fingerprint enabled (the key itself is kept apart).
   final bool biometric;
 
   bool get hasRecovery => recoveryQuestion != null && wrappedKeyByRecovery != null;
-  bool get hasRecoveryCode => codeVerifiers.isNotEmpty && codeVerifiers.length == wrappedKeysByCode.length;
   bool get hasEmailRecovery => email != null && emailVerifier != null && wrappedKeyByEmail != null;
 
   ProfileInfo copyWith({
@@ -100,8 +91,6 @@ class ProfileInfo {
     int? failedAttempts,
     DateTime? lockedUntil,
     bool clearLock = false,
-    List<List<int>>? codeVerifiers,
-    List<List<int>>? wrappedKeysByCode,
     bool? biometric,
     String? email,
     List<int>? emailVerifier,
@@ -121,8 +110,6 @@ class ProfileInfo {
     recoveryVerifier: recoveryVerifier,
     wrappedKeyByRecovery: wrappedKeyByRecovery,
     email: email ?? this.email,
-    codeVerifiers: codeVerifiers ?? this.codeVerifiers,
-    wrappedKeysByCode: wrappedKeysByCode ?? this.wrappedKeysByCode,
     biometric: biometric ?? this.biometric,
     emailVerifier: emailVerifier ?? this.emailVerifier,
     wrappedKeyByEmail: wrappedKeyByEmail ?? this.wrappedKeyByEmail,
@@ -143,8 +130,6 @@ class ProfileInfo {
     'recovery_verifier': recoveryVerifier == null ? null : base64Encode(recoveryVerifier!),
     'wrapped_key_recovery': wrappedKeyByRecovery == null ? null : base64Encode(wrappedKeyByRecovery!),
     'email': email,
-    'code_verifiers': [for (final v in codeVerifiers) base64Encode(v)],
-    'wrapped_keys_code': [for (final k in wrappedKeysByCode) base64Encode(k)],
     'biometric': biometric,
     'email_verifier': emailVerifier == null ? null : base64Encode(emailVerifier!),
     'wrapped_key_email': wrappedKeyByEmail == null ? null : base64Encode(wrappedKeyByEmail!),
@@ -155,14 +140,6 @@ class ProfileInfo {
     List<int>? bytes(String key) {
       final value = json[key];
       return value is String ? base64Decode(value) : null;
-    }
-
-    // Lists of codes; profiles created before them have one code.
-    List<List<int>> bytesList(String key, String single) {
-      final value = json[key];
-      if (value is List) return [for (final v in value.whereType<String>()) base64Decode(v)];
-      final one = bytes(single);
-      return one == null ? const [] : [one];
     }
 
     final lockedUntil = json['locked_until'];
@@ -180,8 +157,6 @@ class ProfileInfo {
       recoveryVerifier: bytes('recovery_verifier'),
       wrappedKeyByRecovery: bytes('wrapped_key_recovery'),
       email: json['email'] as String?,
-      codeVerifiers: bytesList('code_verifiers', 'code_verifier'),
-      wrappedKeysByCode: bytesList('wrapped_keys_code', 'wrapped_key_code'),
       biometric: json['biometric'] == true,
       emailVerifier: bytes('email_verifier'),
       wrappedKeyByEmail: bytes('wrapped_key_email'),

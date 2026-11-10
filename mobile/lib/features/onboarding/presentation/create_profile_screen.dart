@@ -10,15 +10,14 @@ import '../../../core/widgets/pin_pad.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../../agent/presentation/agent_login_screen.dart';
-import '../../profiles/presentation/recovery_code_card.dart';
 
-enum _Step { name, pin, confirm, mode, recovery }
+enum _Step { name, pin, confirm, mode }
 
 /// Profile creation (spec §3): the profile type first ("Pour moi et ma
 /// famille" or "Agent de santé", unless already chosen), then name and
-/// optional e-mail address (account recovery), the secret 4-digit code, and
-/// the recovery code to download or write down (personal mode only: agents
-/// are reset by their supervisor).
+/// optional e-mail address (account recovery by e-mail, Firebase Auth), then
+/// the secret 4-digit code. The profile is created once the code is
+/// confirmed.
 ///
 /// The actions sit at the end of the scrollable content, not in a fixed bar:
 /// on small phones, with large text or with the keyboard open, the "Créer le
@@ -41,8 +40,6 @@ class CreateProfileScreen extends StatefulWidget {
 class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
-  late final String _recoveryCode = PinCrypto.joinRecoveryCodes(PinCrypto().newRecoveryCodes());
-  bool _codeKept = false;
   final _pinKey = GlobalKey<PinPadState>();
   late _Step _step = _firstStep;
   String? _pin;
@@ -89,16 +86,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         _go(_Step.name);
       case _Step.confirm:
         _go(_Step.pin);
-      case _Step.recovery:
-        _go(_Step.pin);
-    }
-  }
-
-  void _afterPin() {
-    if (_mode == ProfileMode.personal) {
-      _go(_Step.recovery);
-    } else {
-      _create();
     }
   }
 
@@ -107,14 +94,11 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     setState(() => _busy = true);
     final session = AppScope.read(context).session;
     final navigator = Navigator.of(context);
-    final personal = _mode == ProfileMode.personal;
     await session.createProfile(
       displayName: _name.text,
       pin: _pin!,
       mode: _mode!,
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
-      // Valid with or without e-mail; still shown later in Paramètres.
-      recoveryCode: personal ? _recoveryCode : null,
     );
     // The gate now shows the home of the new profile.
     if (widget.canCancel && navigator.mounted) navigator.popUntil((r) => r.isFirst);
@@ -165,35 +149,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
           }
         },
         child: Text(l10n.continueLabel),
-      ),
-      _Step.recovery => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CheckboxListTile(
-            key: const ValueKey('recovery-code-kept'),
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            value: _codeKept,
-            onChanged: (v) => setState(() => _codeKept = v ?? false),
-            title: Text(l10n.recoveryCodeKept),
-          ),
-          const Gap(Space.s),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              key: const ValueKey('recovery-save'),
-              onPressed: _busy || !_codeKept ? null : _create,
-              child: Text(l10n.createProfileAction),
-            ),
-          ),
-          const Gap(Space.s),
-          // The code stays in Paramètres → "Mon code de récupération".
-          TextButton(
-            key: const ValueKey('recovery-skip'),
-            onPressed: _busy ? null : _create,
-            child: Text(l10n.recoveryCodeLater),
-          ),
-        ],
       ),
       _ => null,
     };
@@ -258,7 +213,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
             key: const ValueKey('pin-confirm-pad'),
             onCompleted: (pin) {
               if (pin == _pin) {
-                _afterPin();
+                _create();
               } else {
                 _pin = null;
                 setState(() {
@@ -294,14 +249,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
               context,
             ).pushReplacement(MaterialPageRoute<void>(builder: (_) => const AgentLoginScreen.newProfile())),
           ),
-        ];
-      case _Step.recovery:
-        return [
-          Text(l10n.recoveryCodeTitle, style: title),
-          const Gap(Space.s),
-          Text(l10n.recoveryCodeHelp),
-          const Gap(Space.l),
-          RecoveryCodeCard(code: _recoveryCode, onSaved: () => setState(() => _codeKept = true)),
         ];
     }
   }

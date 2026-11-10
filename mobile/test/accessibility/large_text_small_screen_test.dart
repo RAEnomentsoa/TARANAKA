@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/core/alerts/alert_contact.dart';
 import 'package:taranaka/core/growth/who_lms.dart';
 import 'package:taranaka/core/security/profile.dart';
+import 'package:taranaka/core/theme/tokens.dart';
 import 'package:taranaka/core/util/clock.dart';
 import 'package:taranaka/features/child/data/child_repository.dart';
 import 'package:taranaka/features/cycle/data/cycle_repository.dart';
@@ -105,8 +106,15 @@ void main() {
       back();
       await settle(tester);
       check('step 7');
+      // At 200 % the entry can be taller than the screen: tap its top.
+      final entry = await revealKey(tester, 'pregnancy-danger-signs');
+      await tester.tapAt(tester.getTopLeft(entry) + const Offset(Space.xl, Space.xl));
+      await settle(tester);
+      check('step 7b');
       await tapKey(tester, 'danger-saignement_vaginal');
       check('step 8');
+      back();
+      await settle(tester);
       back();
       await settle(tester);
       check('step 9');

@@ -318,7 +318,40 @@ class ChildRepository {
         'created_at': _now(),
       });
 
+  /// Corrects a feed: its time, type, duration or quantity.
+  Future<void> updateFeed(String id, DateTime at, String type, {int? minutes, int? millilitres}) =>
+      _db.update(
+        'tetee',
+        {
+          'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
+          'type': type,
+          'duree_min': minutes,
+          'quantite_ml': millilitres,
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
   Future<void> deleteFeed(String id) => _db.delete('tetee', where: 'id = ?', whereArgs: [id]);
+
+  // ------------------------------------------- breastfeeding difficulties
+
+  static String _difficultiesKey(String childId) => 'allaitement_difficultes_$childId';
+
+  /// Difficulties reported by the mother for this child (codes of
+  /// [breastfeedingDifficulties]), kept until she removes them.
+  Future<Set<String>> breastfeedingDifficultiesOf(String childId) async {
+    final value = (await database.getMetaJson(_difficultiesKey(childId)))?['codes'];
+    return value is List ? value.whereType<String>().where(breastfeedingDifficulties.contains).toSet() : {};
+  }
+
+  Future<void> setBreastfeedingDifficulties(String childId, Set<String> codes) =>
+      database.setMetaJson(_difficultiesKey(childId), {
+        'codes': [
+          for (final c in breastfeedingDifficulties)
+            if (codes.contains(c)) c,
+        ],
+      });
 
   // -------------------------------------------------------------- vaccines
 

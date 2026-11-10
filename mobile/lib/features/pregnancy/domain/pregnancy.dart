@@ -206,6 +206,12 @@ class PregnancyCalculator {
   }
 }
 
+/// What a food group brings, for the advice on the missing groups.
+enum DietKind { staple, protein, animal, leaves, fruitVegetable }
+
+/// The advice shown after the day's groups are ticked.
+enum DietAdvice { fruitVegetable, animal, protein, leaves, varied }
+
 /// Women's dietary diversity (MDD-W, 10 groups, optional; spec §5).
 class WomenDiet {
   WomenDiet(this.config);
@@ -266,21 +272,115 @@ class WomenDiet {
       'mg': 'Anana maitso mavana',
     },
     'autres fruits et légumes riches en vitamine a': {
-      'fr': 'Riches en vitamine A : carotte, citrouille, mangue, papaye',
-      'en': 'Rich in vitamin A: carrot, pumpkin, mango, papaya',
-      'mg': 'Manankarena vitamina A: karaoty, voatavo, manga, papay',
+      'fr': 'Riches en vitamine A (orange ou jaune)',
+      'en': 'Rich in vitamin A (orange or yellow)',
+      'mg': 'Manankarena vitamina A (volomboasary na mavo)',
+    },
+    'autres légumes': {'fr': 'Légumes', 'en': 'Vegetables', 'mg': 'Legioma'},
+    'autres fruits': {'fr': 'Fruits', 'en': 'Fruits', 'mg': 'Voankazo'},
+  };
+
+  /// Common Malagasy foods of each group, shown under its name ("Ex. : riz,
+  /// manioc, patate douce, etc."): a few examples, never the whole list.
+  /// Keyed like [_displayLabels]; display only.
+  static const _examples = <String, Map<String, String>>{
+    'céréales, racines, tubercules et plantains': {
+      'fr': 'riz, manioc, patate douce, maïs, pain, etc.',
+      'en': 'rice, cassava, sweet potato, maize, bread, etc.',
+      'mg': 'vary, mangahazo, vomanga, katsaka, mofo, sns.',
+    },
+    'légumineuses': {
+      'fr': 'voanjobory, haricots, lentilles, pois du Cap, etc.',
+      'en': 'bambara groundnut (voanjobory), beans, lentils, lima beans, etc.',
+      'mg': 'voanjobory, tsaramaso, lantily, kabaro, sns.',
+    },
+    'noix et graines': {
+      'fr': 'arachides, noix de cajou, graines de sésame, etc.',
+      'en': 'peanuts, cashew nuts, sesame seeds, etc.',
+      'mg': 'voanjo, voanakazo, voamaintilany, sns.',
+    },
+    'lait et produits laitiers': {
+      'fr': 'lait, yaourt, lait caillé, fromage, etc.',
+      'en': 'milk, yoghurt, curdled milk, cheese, etc.',
+      'mg': 'ronono, yaorta, ronono nandriana, fromazy, sns.',
+    },
+    'viandes, volailles et poissons': {
+      'fr': 'zébu, poulet, petits poissons séchés, crevettes, foie, etc.',
+      'en': 'zebu, chicken, small dried fish, shrimps, liver, etc.',
+      'mg': "hen'omby, akoho, trondro madinika maina, patsa, aty, sns.",
+    },
+    'œufs': {
+      'fr': 'œufs de poule, de cane, etc.',
+      'en': 'hen or duck eggs, etc.',
+      'mg': "atodin'akoho, atodin-gana, sns.",
+    },
+    'légumes à feuilles vert foncé': {
+      'fr': 'anamamy, ravitoto, anamalaho, brèdes mafane, etc.',
+      'en': 'anamamy, cassava leaves (ravitoto), anamalaho, etc.',
+      'mg': 'anamamy, ravitoto, anamalaho, anamafana, sns.',
+    },
+    'autres fruits et légumes riches en vitamine a': {
+      'fr': 'carotte, citrouille, mangue, papaye, patate douce orange, etc.',
+      'en': 'carrot, pumpkin, mango, papaya, orange sweet potato, etc.',
+      'mg': 'karaoty, voatavo, manga, papay, vomanga volomboasary, sns.',
     },
     'autres légumes': {
-      'fr': 'Légumes : tomate, oignon, chou, aubergine',
-      'en': 'Vegetables: tomato, onion, cabbage, eggplant',
-      'mg': 'Legioma: voatabia, tongolo, laisoa, baranjely',
+      'fr': 'tomate, oignon, chou, haricot vert, aubergine, etc.',
+      'en': 'tomato, onion, cabbage, green beans, eggplant, etc.',
+      'mg': 'voatabia, tongolo, laisoa, tsaramaso maitso, baranjely, sns.',
     },
     'autres fruits': {
-      'fr': 'Fruits : banane, orange, ananas, litchi',
-      'en': 'Fruits: banana, orange, pineapple, lychee',
-      'mg': 'Voankazo: akondro, voasary, mananasy, letisy',
+      'fr': 'banane, orange, ananas, letchi, goyave, etc.',
+      'en': 'banana, orange, pineapple, lychee, guava, etc.',
+      'mg': 'akondro, voasary, mananasy, letisy, goavy, sns.',
     },
   };
+
+  /// What each group brings, for the advice on the missing groups (keyed like
+  /// [_displayLabels]).
+  static const _kinds = <String, DietKind>{
+    'céréales, racines, tubercules et plantains': DietKind.staple,
+    'légumineuses': DietKind.protein,
+    'noix et graines': DietKind.protein,
+    'lait et produits laitiers': DietKind.animal,
+    'viandes, volailles et poissons': DietKind.animal,
+    'œufs': DietKind.animal,
+    'légumes à feuilles vert foncé': DietKind.leaves,
+    'autres fruits et légumes riches en vitamine a': DietKind.fruitVegetable,
+    'autres légumes': DietKind.fruitVegetable,
+    'autres fruits': DietKind.fruitVegetable,
+  };
+
+  static String _key(Object g) => localizedText(g, 'fr').trim().toLowerCase();
+
+  /// Examples of group [index] of [groups] in [lang], or null (group unknown).
+  String? examples(int index, String lang) {
+    final all = groups;
+    if (index < 0 || index >= all.length) return null;
+    final known = _examples[_key(all[index])];
+    return known?[lang] ?? known?['fr'];
+  }
+
+  /// One simple, kind piece of advice for a day, from the groups not ticked:
+  /// fruits or vegetables first, then foods from animals, then pulses and
+  /// nuts, then dark green leaves. [DietAdvice.varied] when none is missing;
+  /// null before anything is ticked.
+  DietAdvice? advice(Set<int> eaten) {
+    if (eaten.isEmpty) return null;
+    final all = groups;
+    final kinds = {
+      for (final i in eaten)
+        if (i >= 0 && i < all.length) ?_kinds[_key(all[i])],
+    };
+    // Only the kinds this configuration has can be missing.
+    final available = {for (final g in all) ?_kinds[_key(g)]};
+    bool missing(DietKind k) => available.contains(k) && !kinds.contains(k);
+    if (missing(DietKind.fruitVegetable)) return DietAdvice.fruitVegetable;
+    if (missing(DietKind.animal)) return DietAdvice.animal;
+    if (missing(DietKind.protein)) return DietAdvice.protein;
+    if (missing(DietKind.leaves)) return DietAdvice.leaves;
+    return DietAdvice.varied;
+  }
 
   /// Small linking words: the only words allowed to appear more than once.
   static const _linkWords = {

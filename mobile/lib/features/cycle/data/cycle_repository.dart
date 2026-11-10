@@ -74,7 +74,10 @@ class CycleRepository {
     return (await periods()).firstWhere((e) => e.id == p.id);
   }
 
-  Future<void> end(String id, DateTime day) => _update(id, {'date_fin': isoDate(day)});
+  Future<void> end(String id, DateTime day) async {
+    await _update(id, {'date_fin': isoDate(day)});
+    await _syncPeriod(id);
+  }
 
   Future<void> setDetails(
     String id, {
@@ -93,8 +96,84 @@ class CycleRepository {
     if (irregular != null) 'irreguliere': irregular ? 1 : 0,
   });
 
-  Future<void> setDates(String id, DateTime start, DateTime? end) =>
-      _update(id, {'date_debut': isoDate(start), 'date_fin': end == null ? null : isoDate(end)});
+  Future<void> setDates(String id, DateTime start, DateTime? end) async {
+    await _update(id, {'date_debut': isoDate(start), 'date_fin': end == null ? null : isoDate(end)});
+    await _syncPeriod(id);
+  }
+
+  // ---- daily follow-up ("Mon suivi du jour"), one row per day
+
+  DayLog _dayFromRow(Map<String, Object?> r) => DayLog(
+    day: parseIsoDate(r['date_jour']! as String),
+    flow: r['flux'] as String?,
+    pain: r['douleur'] as int?,
+    mood: r['humeur'] as int?,
+    symptoms: _symptoms(r['symptomes'] as String?),
+  );
+
+  /// The days noted, most recent first; [from]–[to] included when given.
+  Future<List<DayLog>> dayLogs({DateTime? from, DateTime? to}) async {
+    final where = [if (from != null) 'date_jour >= ?', if (to != null) 'date_jour <= ?'];
+    final rows = await _db.query(
+      'cycle_jour',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: [if (from != null) isoDate(from), if (to != null) isoDate(to)],
+      orderBy: 'date_jour DESC',
+    );
+    return rows.map(_dayFromRow).toList();
+  }
+
+  Future<DayLog?> dayLog(DateTime day) async {
+    final rows = await _db.query('cycle_jour', where: 'date_jour = ?', whereArgs: [isoDate(day)]);
+    return rows.isEmpty ? null : _dayFromRow(rows.first);
+  }
+
+  /// Saves (or corrects) the follow-up of one day; an empty one is removed.
+  /// The period of that day then takes its flow, pain, mood and symptoms.
+  Future<void> saveDay(DayLog log) async {
+    final day = isoDate(log.day);
+    if (log.isEmpty) {
+      await _db.delete('cycle_jour', where: 'date_jour = ?', whereArgs: [day]);
+    } else {
+      final existing = await _db.query(
+        'cycle_jour',
+        columns: ['created_at'],
+        where: 'date_jour = ?',
+        whereArgs: [day],
+      );
+      await _db.insert('cycle_jour', {
+        'date_jour': day,
+        'flux': log.flow,
+        'douleur': log.pain,
+        'humeur': log.mood,
+        'symptomes': _symptomsJson(log.symptoms),
+        'created_at': existing.isEmpty ? _now() : existing.first['created_at'],
+        'updated_at': _now(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    final period = periodOn(await periods(), log.day, _clock.now());
+    if (period != null) await _syncPeriod(period.id);
+  }
+
+  Future<void> deleteDay(DateTime day) => saveDay(DayLog(day: day));
+
+  /// A period with daily follow-ups takes from them: the heaviest flow, the
+  /// strongest pain, the last mood, every symptom felt. Without any, what was
+  /// noted on the period itself stays.
+  Future<void> _syncPeriod(String id) async {
+    final p = (await periods()).where((e) => e.id == id).firstOrNull;
+    if (p == null) return;
+    final days = await dayLogs(from: p.start, to: p.end ?? dateOnly(_clock.now()));
+    if (days.isEmpty) return;
+    final pains = days.map((d) => d.pain).whereType<int>();
+    await setDetails(
+      id,
+      intensity: heaviestFlow(days),
+      pain: pains.isEmpty ? null : pains.reduce((a, b) => a > b ? a : b),
+      mood: days.map((d) => d.mood).whereType<int>().firstOrNull,
+      symptoms: {for (final d in days) ...d.symptoms},
+    );
+  }
 
   // ---- settings (profile database only, like the periods)
 

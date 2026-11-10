@@ -237,4 +237,33 @@ void main() {
     final today = DateTime(2026, 10, 2);
     expect(calendarMarks(periods: const [], summary: calc.summarise(const [], today), today: today), isEmpty);
   });
+
+  group('daily follow-up', () {
+    test('the heaviest real flow of the days; spotting never counts as a flow', () {
+      DayLog d(String? flow) => DayLog(day: DateTime(2026, 11, 1), flow: flow);
+      expect(heaviestFlow([d('faible'), d('forte'), d('moyenne')]), 'forte');
+      expect(heaviestFlow([d(spottingFlow), d(null)]), isNull);
+      expect(heaviestFlow([d(spottingFlow), d('faible')]), 'faible');
+    });
+
+    test('the period of a day: an ongoing one runs until today', () {
+      final periods = [
+        Period(id: 'a', start: DateTime(2026, 10, 1), end: DateTime(2026, 10, 5)),
+        Period(id: 'b', start: DateTime(2026, 11, 2)),
+      ];
+      final today = DateTime(2026, 11, 4);
+      expect(periodOn(periods, DateTime(2026, 10, 5), today)?.id, 'a');
+      expect(periodOn(periods, DateTime(2026, 10, 6), today), isNull);
+      expect(periodOn(periods, DateTime(2026, 11, 4), today)?.id, 'b');
+    });
+
+    test('copyWith clears a choice with null and keeps the others', () {
+      final log = DayLog(day: DateTime(2026, 11, 1), flow: 'faible', pain: 2, mood: 3);
+      final cleared = log.copyWith(pain: null);
+      expect(cleared.pain, isNull);
+      expect(cleared.flow, 'faible');
+      expect(cleared.mood, 3);
+      expect(DayLog(day: DateTime(2026, 11, 1)).isEmpty, isTrue);
+    });
+  });
 }
