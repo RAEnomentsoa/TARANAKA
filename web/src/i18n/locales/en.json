@@ -18,7 +18,9 @@
     "conflicts": "Sync conflicts",
     "stats": "Statistics",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "agents": "My agents",
+    "accessRequests": "Access requests"
   },
   "user": {
     "signedInAs": "Signed in: {name}",
@@ -65,7 +67,9 @@
       "totpFormat": "The code must be exactly 6 digits.",
       "required": "This field is required.",
       "noWebAccess": "Your profile has no access to this dashboard. Community health workers use the mobile app."
-    }
+    },
+    "noAccount": "No account yet?",
+    "requestAccess": "Request access"
   },
   "access": {
     "title": "Access denied",
@@ -456,5 +460,117 @@
   "contact": {
     "call": "Call {name} on {phone}",
     "noPhone": "No phone number recorded"
+  },
+  "accessRequest": {
+    "title": "Request access",
+    "intro": "For nurses and doctors of CSBs, CRENAS, CRENI and CRENAM, and for supervisors. An administrator checks each request before opening the account.",
+    "agentsNote": "Community health worker? Your supervisor creates your account: please ask them.",
+    "sections": {
+      "role": "Your role",
+      "identity": "Who are you?",
+      "login": "Your sign-in"
+    },
+    "profileHints": {
+      "agent_csb": "Receives the referrals of their centre and updates the records.",
+      "superviseur": "Sees anonymous statistics and manages the community health workers of their region."
+    },
+    "fields": {
+      "region": "Region",
+      "supervisedRegion": "Supervised region",
+      "centre": "Health centre",
+      "fonction": "Job title",
+      "nom": "Last name",
+      "prenom": "First name",
+      "phone": "Phone",
+      "email": "Email address",
+      "pinConfirm": "Confirm the PIN",
+      "message": "Message to the administrator"
+    },
+    "hints": {
+      "nationalRegion": "Leave “National” if you follow the whole country or a programme.",
+      "phone": "The administrator will call you to check your request.",
+      "identifiant": "What you will type to sign in, for example firstname.centre.",
+      "message": "For example your department or the name of your manager."
+    },
+    "allRegions": "All regions",
+    "national": "National",
+    "chooseCentre": "Choose your centre",
+    "afterSubmit": "Your account stays closed until it is approved. Then, at your first sign-in, you will turn on two-factor authentication.",
+    "submit": "Send the request",
+    "sentTitle": "Request sent",
+    "sentBody": "An administrator will check your request. They may call you on the number you gave.",
+    "sentNext": "Once the request is approved, sign in with the identifier and PIN you chose.",
+    "backToLogin": "Back to sign-in",
+    "errors": {
+      "email": "Invalid email address.",
+      "pin": "The PIN must have 4 to 6 digits.",
+      "pinMismatch": "The two PINs do not match.",
+      "throttled": "Too many requests from this connection. Try again in an hour."
+    }
+  },
+  "accessRequests": {
+    "title": "Access requests",
+    "intro": "Check who the person is (for example by calling their centre) before approving: the profile and centre decide which records they will see.",
+    "filterLabel": "Show requests",
+    "statuses": {
+      "en_attente": "Pending",
+      "approuvee": "Approved",
+      "refusee": "Refused"
+    },
+    "empty": {
+      "en_attente": "No pending request",
+      "approuvee": "No approved request",
+      "refusee": "No refused request"
+    },
+    "place": "Centre or region",
+    "sentOn": "Sent on",
+    "handledOn": {
+      "approuvee": "Approved on",
+      "refusee": "Refused on"
+    },
+    "reason": "Reason",
+    "reasonHint": "For the record: the person does not receive a message.",
+    "approve": "Approve",
+    "refuse": "Refuse",
+    "approveTitle": "Approve {name}'s request",
+    "refuseTitle": "Refuse {name}'s request",
+    "checkFirst": "The account will open with this profile and centre. Correct them if the request is wrong.",
+    "profile": "Profile",
+    "approveSubmit": "Open the account",
+    "refuseSubmit": "Refuse the request",
+    "approved": "Account opened for {name}.",
+    "refused": "{name}'s request refused."
+  },
+  "agents": {
+    "title": "My community health workers",
+    "intro": "Create the accounts of the workers in your region and reset a forgotten PIN. You only see who they are, never health records.",
+    "create": "New worker",
+    "createTitle": "Create a community health worker account",
+    "createIntro": "The worker will use this identifier and PIN in the mobile app, in agent mode.",
+    "identifiantHint": "For example their phone number or firstname.village. It must be unique.",
+    "firstPin": "Starting PIN",
+    "createSubmit": "Create the account",
+    "resetPin": "New PIN",
+    "resetTitle": "New PIN for {name}",
+    "resetIntro": "The account is unblocked and its sessions are closed. The worker signs in again with this PIN; their synced data comes back at sign-in.",
+    "newPin": "New PIN",
+    "resetSubmit": "Save the PIN",
+    "handover": {
+      "createdTitle": "Account created for {name}",
+      "resetTitle": "New PIN saved for {name}",
+      "note": "Give this to the worker in person. The PIN will not be shown again.",
+      "done": "Done"
+    },
+    "empty": "No worker yet",
+    "emptyHint": "Create the first account with “New worker”.",
+    "noMatch": "No worker matches the search",
+    "search": "Search (name, identifier, phone)",
+    "count": "No workers | 1 worker | {n} workers",
+    "name": "Name",
+    "createdOn": "Created on",
+    "state": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Deactivated"
   }
 }

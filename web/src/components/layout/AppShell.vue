@@ -35,6 +35,8 @@ const NAV = [
   { name: 'referrals', labelKey: 'nav.referrals', permission: 'referrals:read' },
   { name: 'conflicts', labelKey: 'nav.conflicts', permission: 'conflicts:resolve' },
   { name: 'stats', labelKey: 'nav.stats', permission: 'stats:read' },
+  { name: 'agents', labelKey: 'nav.agents', permission: 'agents:manage' },
+  { name: 'access-requests', labelKey: 'nav.accessRequests', permission: 'access-requests:review' },
 ]
 
 const items = computed(() => NAV.filter((item) => auth.can(item.permission)))

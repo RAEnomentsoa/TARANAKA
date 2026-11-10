@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import CredentialsForm from '@/components/auth/CredentialsForm.vue'
 import TotpForm from '@/components/auth/TotpForm.vue'
 import BrandMark from '@/components/layout/BrandMark.vue'
@@ -127,6 +127,11 @@ async function back() {
           @back="back"
         />
         <CredentialsForm v-else ref="credentials" :busy="busy" @submit="onCredentials" />
+
+        <p v-if="!onTotpStep" class="login__request">
+          {{ t('login.noAccount') }}
+          <RouterLink :to="{ name: 'access-request' }">{{ t('login.requestAccess') }}</RouterLink>
+        </p>
       </div>
     </main>
   </div>
@@ -252,6 +257,18 @@ async function back() {
 
 .login__error {
   margin-bottom: var(--space-4);
+}
+
+.login__request {
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.login__request a {
+  font-weight: 700;
 }
 
 @media (max-width: 56rem) {

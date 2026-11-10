@@ -37,12 +37,16 @@ Après 7 jours hors ligne, le `access` a expiré mais le `refresh` reste valable
 | POST | `/api/auth/2fa/setup/`, `/activate/`, `/disable/` | Oui | Mettre en place, activer, désactiver la double authentification |
 | GET | `/api/auth/my-data/` | Oui | Mes données (droit d'accès, loi 2014-038) |
 | POST | `/api/auth/my-data/erase/` | Oui | Effacer mes données (droit à l'effacement, bénéficiaires) |
+| POST | `/api/auth/access-request/` | Non | Demander un compte web (infirmier, médecin, superviseur) |
+| GET | `/api/auth/access-request/options/` | Non | Régions et centres pour le formulaire de demande |
 
 ---
 
 ## POST `/api/auth/login/`
 
 **Ce qu'il fait :** vérifie l'identifiant et le PIN, puis renvoie les tokens et les informations de l'utilisateur. Chaque tentative est enregistrée dans `journal_audit`.
+
+**Majuscules :** l'identifiant ne tient pas compte de la casse. `Rasoa`, `rasoa` et `RASOA` ouvrent le même compte, et deux comptes (ou une demande d'accès en attente) ne peuvent pas avoir des identifiants qui ne diffèrent que par la casse (contrainte en base `utilisateur_identifiant_insensible_casse`). L'identifiant est gardé tel qu'il a été saisi.
 
 **Ce dont il a besoin :**
 
@@ -415,6 +419,39 @@ Un mauvais PIN répond `400` (`pin_incorrect`) et compte comme un échec. `200` 
 
 ---
 
+## Demande d'accès (comptes web)
+
+Décision D15 (`docs/DECISIONS.md`). Une personne demande un compte web depuis la page de connexion du tableau de bord. **Aucun compte n'existe avant qu'un admin approuve** : la demande n'ouvre aucun accès.
+
+**`GET /api/auth/access-request/options/`** (public) : `{"regions": [{"id", "nom"}], "centres": [{"id", "name", "type_centre", "region_id"}]}`. Noms et types seulement, aucune donnée personnelle.
+
+**`POST /api/auth/access-request/`** (public, 5 demandes par heure et par adresse, `429` au-delà) :
+
+```json
+{
+  "nom": "Rakoto", "prenom": "Hery", "phone": "034 00 000 01", "email": "",
+  "identifiant": "hery.crenas", "pin": "2468",
+  "profil_demande": "agent_csb", "csb_id": 3, "region_id": null,
+  "fonction": "Infirmier", "message": ""
+}
+```
+
+- `profil_demande` : `agent_csb` ou `superviseur` seulement. Un ASC est créé par son superviseur (spec §2), une bénéficiaire n'a pas besoin de compte, un admin ne se déclare pas.
+- `agent_csb` : `csb_id` obligatoire ; la région est celle du centre. `superviseur` : `region_id` facultatif (vide = national), pas de centre.
+- `phone` obligatoire (l'admin appelle pour vérifier), `email` facultatif.
+- `identifiant` refusé s'il est déjà pris par un compte ou par une autre demande en attente. `pin` : 4 à 6 chiffres, gardé haché, jamais renvoyé, effacé quand la demande est traitée.
+- Réponse `201` : la demande avec `statut: "en_attente"`. Journal : `demande_acces_creee`.
+
+**`/api/access-requests/`** (admin seulement) : `GET` liste, filtres `?statut=en_attente|approuvee|refusee` et `?profil_demande=`. Chaque demande donne aussi `region_nom`, `csb_nom`, `csb_type`, `traitee_par`, `date_traitement`, `utilisateur_id`. Jamais le PIN.
+
+- **`POST /api/access-requests/{id}/approve/`** : crée le compte avec le PIN choisi dans la demande. Corps facultatif pour corriger ce qui a été demandé : `{"profil_demande": "superviseur", "region_id": 2, "csb_id": null}`. Journal : `create` (compte) et `demande_acces_approuvee`. Le compte doit ensuite activer la double authentification (`TOTP_OBLIGATOIRE`).
+- **`POST /api/access-requests/{id}/refuse/`** : `{"motif": "..."}` (facultatif, pour la trace ; la personne ne reçoit pas de message). Aucun compte créé ; l'identifiant redevient libre. Journal : `demande_acces_refusee`.
+- Une demande déjà traitée répond `400` (`statut`).
+
+Les demandes apparaissent aussi dans `/admin/` (« Demandes d'accès »), en lecture seule, avec les actions « Approuver » et « Refuser » qui passent par le même code.
+
+---
+
 ## Profils
 
 | `code` | `libelle` |
@@ -467,6 +504,8 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 | `/api/who-reference/` | GET | Courbes de croissance OMS 2006 (tables chargées) |
 | `/api/audit/` | GET | Journal d'audit (admin) |
 | `/api/profiles/{id}/reset-pin/` | POST | Réinitialiser le PIN (superviseur, admin) |
+| `/api/access-requests/` | GET | Demandes d'accès aux comptes web (admin) |
+| `/api/access-requests/{id}/approve/`, `/refuse/` | POST | Approuver (crée le compte) ou refuser une demande (admin) |
 
 Le fichier OpenAPI complet est dans `docs/openapi.yaml` à la racine du dépôt.
 
@@ -492,6 +531,7 @@ L = lecture, É = écriture (création, modification), — = refusé (`403`). Le
 | Configuration clinique | L (publiées) | L (publiées) | L (publiées) | L (publiées) | L É, publication |
 | Statistiques | — | — | — | L (sa région) | L |
 | Journal d'audit | — | — | — | — | L |
+| Demandes d'accès | — | — | — | — | L, approbation, refus |
 | Double authentification (`/auth/2fa/`) | — | — | Oui | Oui | Oui, et réinitialisation pour un autre compte |
 | Mes données (`/auth/my-data/`) | L, effacement | L | L | L | L, et export ou effacement d'une bénéficiaire sur demande |
 | `/sync/push/`, `/sync/pull/` | Selon les droits ci-dessus, table par table | | | | |

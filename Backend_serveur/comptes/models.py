@@ -7,9 +7,11 @@ from django.contrib.auth.models import (
 )
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.functions import Lower
 
 
 MESSAGE_CSB_OBLIGATOIRE = "Le CSB est obligatoire pour un agent de CSB."
+MESSAGE_IDENTIFIANT_UTILISE = "Cet identifiant est déjà utilisé."
 
 
 class CodeProfile(models.TextChoices):
@@ -47,6 +49,11 @@ class UserManager(BaseUserManager):
     def get_queryset(self):
         return super().get_queryset().select_related("profile")
 
+    def get_by_natural_key(self, identifiant):
+        # "Rasoa" and "rasoa" are the same account (Django admin login,
+        # createsuperuser), as for the API login.
+        return self.get(identifiant__iexact=identifiant)
+
     def create_user(self, identifiant, password=None, **extra_fields):
         if not identifiant:
             raise ValueError("L'identifiant est obligatoire.")
@@ -74,7 +81,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     identifiant = models.CharField(
         max_length=50,
         unique=True,
-        error_messages={"unique": "Cet identifiant est déjà utilisé."},
+        error_messages={"unique": MESSAGE_IDENTIFIANT_UTILISE},
     )
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
@@ -124,6 +131,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = "Utilisateur"
         verbose_name_plural = "Utilisateurs"
         ordering = ["nom", "prenom"]
+        constraints = [
+            # Usernames ignore case: a phone keyboard often capitalises the
+            # first letter, and "Rasoa" must not become a second account.
+            models.UniqueConstraint(
+                Lower("identifiant"),
+                name="utilisateur_identifiant_insensible_casse",
+                violation_error_message=MESSAGE_IDENTIFIANT_UTILISE,
+            ),
+        ]
 
     def __str__(self):
         return f"{self.prenom} {self.nom} ({self.identifiant})"
@@ -136,3 +152,94 @@ class User(AbstractBaseUser, PermissionsMixin):
             and not self.csb_id
         ):
             raise ValidationError({"csb": MESSAGE_CSB_OBLIGATOIRE})
+
+
+# Profiles a person may ask for with the public access request (D15). ASCs
+# are created by their supervisor (spec §2), beneficiaries use the phone
+# without an account, and an admin is never self-declared.
+PROFILS_DEMANDE_ACCES = (CodeProfile.AGENT_CSB, CodeProfile.SUPERVISEUR)
+
+
+class StatutDemande(models.TextChoices):
+    EN_ATTENTE = "en_attente", "En attente"
+    APPROUVEE = "approuvee", "Approuvée"
+    REFUSEE = "refusee", "Refusée"
+
+
+class DemandeAcces(models.Model):
+    """A request for a web account, made from the login page (D15).
+
+    No account exists until an admin approves: the person can't log in and
+    sees nothing. The admin checks who they are, corrects the profile, centre
+    or region if needed, then approves (the account is created with the PIN
+    chosen in the request) or refuses. The PIN is kept hashed, and only until
+    the request is handled.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nom = models.CharField(max_length=100)
+    prenom = models.CharField(max_length=100)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20)
+    identifiant = models.CharField(max_length=50)
+    pin_hash = models.CharField(max_length=128, blank=True)
+    profil_demande = models.CharField(
+        max_length=30,
+        choices=[(code.value, code.label) for code in PROFILS_DEMANDE_ACCES],
+    )
+    region = models.ForeignKey(
+        "referentiel.Region",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="demandes_acces",
+    )
+    csb = models.ForeignKey(
+        "referentiel.CSB",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="demandes_acces",
+    )
+    fonction = models.CharField(max_length=150, blank=True)
+    message = models.TextField(blank=True, max_length=1000)
+    statut = models.CharField(
+        max_length=12,
+        choices=StatutDemande.choices,
+        default=StatutDemande.EN_ATTENTE,
+    )
+    motif_refus = models.TextField(blank=True, max_length=1000)
+    traitee_par = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="demandes_traitees",
+    )
+    date_traitement = models.DateTimeField(null=True, blank=True)
+    utilisateur = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="demande_acces",
+    )
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "demande_acces"
+        verbose_name = "Demande d'accès"
+        verbose_name_plural = "Demandes d'accès"
+        ordering = ["-date_creation"]
+        constraints = [
+            # Two pending requests can't reserve the same identifiant.
+            models.UniqueConstraint(
+                Lower("identifiant"),
+                condition=models.Q(statut="en_attente"),
+                name="demande_acces_identifiant_en_attente_unique",
+                violation_error_message=MESSAGE_IDENTIFIANT_UTILISE,
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.prenom} {self.nom} ({self.identifiant}) – {self.get_statut_display()}"
