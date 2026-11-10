@@ -15,10 +15,21 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.db import connection
+from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+
+def sante(request):
+    """Health check for the host (Railway): the app answers and the database too."""
+    with connection.cursor() as curseur:
+        curseur.execute("SELECT 1")
+    return JsonResponse({"statut": "ok"})
+
+
 urlpatterns = [
+    path('health/', sante, name='health'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('comptes.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
