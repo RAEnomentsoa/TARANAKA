@@ -22,7 +22,9 @@ const max = computed(() => Math.max(1, ...props.items.map((i) => (i.value.hidden
  * @returns {string}
  */
 function width(value) {
-  return value.hidden ? '2.5rem' : `${Math.max(0.5, (value.value / max.value) * 100)}%`
+  if (value.hidden) return '2.5rem'
+  // Zero draws nothing: a stub would read as "a few cases".
+  return value.value === 0 ? '0' : `${Math.max(1.5, (value.value / max.value) * 100)}%`
 }
 </script>
 
@@ -78,11 +80,13 @@ function width(value) {
   height: 1rem;
   border-radius: 0 4px 4px 0;
   background: var(--primary);
+  transform-origin: left center;
+  animation: grow-x 520ms var(--easing) backwards;
 }
 
 .bars__bar--hidden {
-  background: transparent;
-  border: 1px dashed var(--field-border);
+  background: repeating-linear-gradient(45deg, var(--sky-100) 0 3px, var(--white) 3px 6px);
+  border: 1.5px dashed var(--field-border);
 }
 
 .bars__value {

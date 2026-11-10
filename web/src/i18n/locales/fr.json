@@ -4,7 +4,8 @@
     "tagline": "Tableau de bord des centres de santé",
     "skipToContent": "Aller au contenu principal",
     "loading": "Chargement…",
-    "pageLoaded": "Page chargée : {title}"
+    "pageLoaded": "Page chargée : {title}",
+    "logoAlt": "Logo de Taranaka : une mère enceinte et ses enfants. Femmes, grossesse, santé de l'enfant, nutrition."
   },
   "language": {
     "label": "Langue",
@@ -443,7 +444,28 @@
     "filename": "taranaka-statistiques-{start}-{end}.csv",
     "hiddenNote": "« < 5 » : chiffre masqué pour protéger l'anonymat (moins de 5 cas, ou déductible des autres chiffres).",
     "monthColumn": "Mois",
-    "exported": "Fichier CSV téléchargé."
+    "exported": "Fichier CSV téléchargé.",
+    "charts": {
+      "hiddenKey": "Masqué (< 5)",
+      "outcomesIntro": "Comment se terminent les prises en charge de la période.",
+      "cases": {
+        "title": "Les cas de malnutrition aiguë augmentent-ils ?",
+        "summaryShort": "Enfants MAS et MAM dépistés, mois par mois ({n} mois).",
+        "trend": {
+          "up": "{month} : {n} cas, {diff} de plus qu'en {previous}.",
+          "down": "{month} : {n} cas, {diff} de moins qu'en {previous}.",
+          "same": "{month} : {n} cas, autant qu'en {previous}."
+        },
+        "columnLabel": "{month} : {sam} MAS, {mam} MAM, {screenings} dépistages"
+      },
+      "arrival": {
+        "title": "Les enfants référés arrivent-ils au centre ?",
+        "introRegion": "Référencements arrivés sur le total, par région. La plus en retard en premier.",
+        "introMonth": "Référencements arrivés sur le total, par mois. Le mois le plus en retard en premier.",
+        "ofTotal": "{arrived} sur {sent}",
+        "none": "Aucun référencement"
+      }
+    }
   },
   "validation": {
     "required": "Ce champ est obligatoire."

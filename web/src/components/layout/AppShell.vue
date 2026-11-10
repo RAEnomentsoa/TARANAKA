@@ -123,7 +123,9 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
 
       <main id="main" class="main" tabindex="-1">
         <OfflineBanner />
-        <RouterView />
+        <div :key="route.path" class="page-enter">
+          <RouterView />
+        </div>
       </main>
     </div>
 

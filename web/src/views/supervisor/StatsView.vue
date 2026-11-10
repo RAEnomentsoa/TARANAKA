@@ -2,7 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { statsApi } from '@/api/stats'
+import ArrivalChart from '@/components/stats/ArrivalChart.vue'
 import BarList from '@/components/stats/BarList.vue'
+import MonthlyCasesChart from '@/components/stats/MonthlyCasesChart.vue'
 import ProtectedValue from '@/components/stats/ProtectedValue.vue'
 import StatTile from '@/components/stats/StatTile.vue'
 import StatsFilters from '@/components/stats/StatsFilters.vue'
@@ -81,6 +83,10 @@ const isEmpty = computed(() => {
 const percent = (n) => t('stats.percentValue', { n: fmt.number(n, 0) })
 /** @param {number} n */
 const hours = (n) => t('stats.hoursValue', { n: fmt.number(n, 1) })
+
+// Arrivals by region when there are several, else month by month.
+const arrivalByRegion = computed(() => (stats.value?.byRegion.length ?? 0) > 1)
+const arrivalGroups = computed(() => (arrivalByRegion.value ? stats.value.byRegion : stats.value.byMonth))
 
 const outcomeItems = computed(() =>
   OUTCOME_INDICATORS.map((key) => ({
@@ -161,6 +167,28 @@ onMounted(async () => {
           <StatTile :label="t('stats.metrics.rendez_vous_manques')" :value="stats.total.counts.rendez_vous_manques" />
         </dl>
 
+        <div class="charts">
+          <SectionPanel v-if="stats.byMonth.length" :title="t('stats.charts.cases.title')" class="charts__main">
+            <MonthlyCasesChart :months="stats.byMonth" />
+          </SectionPanel>
+
+          <SectionPanel :title="t('stats.charts.arrival.title')">
+            <p class="muted panel-intro">
+              {{ arrivalByRegion ? t('stats.charts.arrival.introRegion') : t('stats.charts.arrival.introMonth') }}
+            </p>
+            <ArrivalChart
+              :groups="arrivalGroups"
+              :caption="t('stats.charts.arrival.title')"
+              :group-header="arrivalByRegion ? t('stats.zoneColumn') : t('stats.monthColumn')"
+            />
+          </SectionPanel>
+
+          <SectionPanel :title="t('stats.outcomes')">
+            <p class="muted panel-intro">{{ t('stats.charts.outcomesIntro') }}</p>
+            <BarList :caption="t('stats.outcomes')" :label-header="t('stats.outcomeColumn')" :value-header="t('stats.casesColumn')" :items="outcomeItems" />
+          </SectionPanel>
+        </div>
+
         <SectionPanel v-if="stats.byRegion.length > 1" :title="t('stats.byZone')">
           <div class="table-scroll">
             <table class="groups stack-on-mobile">
@@ -186,36 +214,6 @@ onMounted(async () => {
             </table>
           </div>
         </SectionPanel>
-
-        <div class="two-col">
-          <SectionPanel :title="t('stats.outcomes')">
-            <BarList :caption="t('stats.outcomes')" :label-header="t('stats.outcomeColumn')" :value-header="t('stats.casesColumn')" :items="outcomeItems" />
-          </SectionPanel>
-
-          <SectionPanel v-if="stats.byMonth.length" :title="t('stats.byPeriod')">
-            <div class="table-scroll">
-              <table class="stack-on-mobile">
-                <caption class="visually-hidden">{{ t('stats.byPeriod') }}</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">{{ t('stats.monthColumn') }}</th>
-                    <th scope="col" class="num">{{ t('stats.metrics.depistages') }}</th>
-                    <th scope="col" class="num">{{ t('stats.metrics.cas_mas') }}</th>
-                    <th scope="col" class="num">{{ t('stats.metrics.cas_mam') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in stats.byMonth" :key="row.key">
-                    <th scope="row">{{ row.label }}</th>
-                    <td class="num" :data-label="t('stats.metrics.depistages')"><ProtectedValue :value="row.block.counts.depistages" /></td>
-                    <td class="num" :data-label="t('stats.metrics.cas_mas')"><ProtectedValue :value="row.block.counts.cas_mas" /></td>
-                    <td class="num" :data-label="t('stats.metrics.cas_mam')"><ProtectedValue :value="row.block.counts.cas_mam" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </SectionPanel>
-        </div>
 
         <InlineAlert tone="info">
           <p>{{ t('stats.hiddenNote') }}</p>
@@ -255,9 +253,38 @@ onMounted(async () => {
   text-align: right;
 }
 
-.two-col {
+/* Wide screens: the monthly chart takes two thirds, the meters one third;
+   the outcomes go under them. One column on phones. */
+.charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+}
+
+@media (min-width: 64rem) {
+  .charts {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  .charts__main {
+    grid-row: span 2;
+  }
+}
+
+.panel-intro {
+  margin: calc(-1 * var(--space-2)) 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* The headline figures arrive one after the other. */
+.tiles > :nth-child(1) { animation-delay: 0ms; }
+.tiles > :nth-child(2) { animation-delay: 50ms; }
+.tiles > :nth-child(3) { animation-delay: 100ms; }
+.tiles > :nth-child(4) { animation-delay: 150ms; }
+.tiles > :nth-child(5) { animation-delay: 200ms; }
+.tiles > :nth-child(6) { animation-delay: 250ms; }
+
+.tiles > * {
+  animation: rise-in 360ms var(--easing) backwards;
 }
 </style>

@@ -4,7 +4,8 @@
     "tagline": "Health centre dashboard",
     "skipToContent": "Skip to main content",
     "loading": "Loading…",
-    "pageLoaded": "Page loaded: {title}"
+    "pageLoaded": "Page loaded: {title}",
+    "logoAlt": "Taranaka logo: a pregnant mother and her children. Women, pregnancy, child health, nutrition."
   },
   "language": {
     "label": "Language",
@@ -443,7 +444,28 @@
     "filename": "taranaka-statistics-{start}-{end}.csv",
     "hiddenNote": "“< 5”: figure hidden to protect anonymity (fewer than 5 cases, or deducible from the other figures).",
     "monthColumn": "Month",
-    "exported": "CSV file downloaded."
+    "exported": "CSV file downloaded.",
+    "charts": {
+      "hiddenKey": "Hidden (< 5)",
+      "outcomesIntro": "How the treatments of the period ended.",
+      "cases": {
+        "title": "Are acute malnutrition cases going up?",
+        "summaryShort": "SAM and MAM children found, month by month ({n} months).",
+        "trend": {
+          "up": "{month}: {n} cases, {diff} more than in {previous}.",
+          "down": "{month}: {n} cases, {diff} fewer than in {previous}.",
+          "same": "{month}: {n} cases, as many as in {previous}."
+        },
+        "columnLabel": "{month}: {sam} SAM, {mam} MAM, {screenings} screenings"
+      },
+      "arrival": {
+        "title": "Do referred children reach the centre?",
+        "introRegion": "Referrals that arrived out of all referrals, by region. The furthest behind first.",
+        "introMonth": "Referrals that arrived out of all referrals, by month. The furthest behind first.",
+        "ofTotal": "{arrived} of {sent}",
+        "none": "No referrals"
+      }
+    }
   },
   "validation": {
     "required": "This field is required."
