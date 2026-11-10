@@ -6,7 +6,7 @@ from decimal import Decimal
 from django.test import override_settings
 from rest_framework.test import APITestCase
 
-from comptes.models import CodeProfile, Profile, User
+from comptes.models import CodeProfile, Profile, SuiviBeneficiaire, User
 from config_clinique import services as config_services
 from nutrition.models import Enfant, Mesure
 from referencement.models import Referencement
@@ -66,6 +66,12 @@ class BaseApiTest(APITestCase):
 
     def comme(self, user):
         self.client.force_authenticate(user)
+
+    def suivre(self, agent, femme=None):
+        """D16: agent receives the whole file of femme from now on."""
+        return SuiviBeneficiaire.objects.get_or_create(
+            agent=agent, beneficiaire=femme or self.femme
+        )[0]
 
     def enfant(self, asc=None, **extra):
         valeurs = {

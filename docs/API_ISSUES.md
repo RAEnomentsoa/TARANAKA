@@ -154,12 +154,17 @@ Le backend n'a pas été modifié.
 
 | # | Sujet | Gravité | Contournement mobile |
 |---|---|---|---|
-| M1 | Une bénéficiaire ne peut pas créer d'`enfant` ni de `mesure` | **bloquant** pour la synchronisation facultative de « Mon enfant » | Les données de « Mon enfant » restent sur le téléphone. |
+| M1 | Une bénéficiaire ne peut pas créer d'`enfant` ni de `mesure` | ✅ corrigé (D16) | — |
 | M2 | Pas de code stable pour les erreurs de validation de `/sync/push/` | gênant | Le téléphone reconnaît un code de référencement déjà pris par la **clé** `code_unique` dans `erreurs`. |
 | M3 | Les centres (`/api/facilities/`) ne passent pas par `/sync/pull/` | mineur | Liste complète relue à chaque synchronisation (petite). |
 | M4 | Tables OMS non publiées pour le téléphone | mineur | Aucun z-score sur le téléphone tant que les fichiers OMS ne sont pas embarqués ; le serveur recalcule. |
 
-## M1. Une bénéficiaire ne peut pas créer d'enfant ni de mesure — bloquant (sync facultative)
+## M1. Une bénéficiaire ne peut pas créer d'enfant ni de mesure — ✅ corrigé (D16)
+
+**✅ Corrigé.** Une `beneficiaire` crée et modifie ses enfants (`mere_id` = elle,
+`asc_id` vide, région de son compte) et leurs mesures (`asc_id` vide : pesée à la
+maison, non comptée comme dépistage). Les vaccins (`vaccin_fait`) et les tétées
+(`tetee`) ont maintenant leur table, synchronisée. Voir `docs/DECISIONS.md` D16.
 
 **Constat.** `EnfantViewSet` et `MesureViewSet` n'autorisent l'écriture qu'à
 `asc` et `admin` (`nutrition/views.py`, `PROFILS`). La spec §9 permet de

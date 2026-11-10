@@ -43,6 +43,7 @@ COMPTES = (
     ("mere.lalao", CodeProfile.BENEFICIAIRE, "4445", "Razanamalala", "Lalao"),
     ("mere.fara", CodeProfile.BENEFICIAIRE, "4446", "Ravaoarisoa", "Fara"),
 )
+CODES_DEMO = {"mere.voahangy": "VHG444", "mere.lalao": "RZM445", "mere.fara": "FAR446"}
 
 
 @dataclass
@@ -174,7 +175,7 @@ def _referentiel(demo):
         )
     config = json.loads(config_services.EXEMPLE.read_text(encoding="utf-8"))
     for signe in config["signes_danger"]["grossesse"]:
-        TypeDangerGrossesse.objects.create(description=signe["fr"])
+        TypeDangerGrossesse.objects.create(code=signe["code"], description=signe["fr"])
 
 
 def _comptes(demo):
@@ -204,6 +205,8 @@ def _comptes(demo):
             region=regions.get(identifiant),
             csb=centres.get(identifiant),
             consentement=code == CodeProfile.BENEFICIAIRE,
+            # The code a mother shows to her ASC (D16), fixed for the demo.
+            code_beneficiaire=CODES_DEMO.get(identifiant),
         )
 
 

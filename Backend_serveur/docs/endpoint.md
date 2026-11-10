@@ -29,9 +29,11 @@ Après 7 jours hors ligne, le `access` a expiré mais le `refresh` reste valable
 | Méthode | Endpoint | Token d'accès requis | Rôle |
 |---|---|---|---|
 | POST | `/api/auth/login/` | Non | Se connecter avec l'identifiant et le PIN |
+| POST | `/api/auth/register-beneficiary/` | Non | Créer un compte bénéficiaire depuis le téléphone (D16) |
 | POST | `/api/auth/refresh/` | Non | Obtenir de nouveaux tokens |
 | POST | `/api/auth/logout/` | Non | Se déconnecter |
 | GET | `/api/auth/me/` | Oui | Lire l'utilisateur connecté |
+| PATCH | `/api/auth/me/` | Oui | Bénéficiaire : partager son cycle ou arrêter (D16) |
 | POST | `/api/auth/changer-pin/` | Oui | Changer le PIN |
 | GET | `/api/auth/2fa/` | Oui | État de la double authentification |
 | POST | `/api/auth/2fa/setup/`, `/activate/`, `/disable/` | Oui | Mettre en place, activer, désactiver la double authentification |
@@ -436,7 +438,7 @@ Décision D15 (`docs/DECISIONS.md`). Une personne demande un compte web depuis l
 }
 ```
 
-- `profil_demande` : `agent_csb` ou `superviseur` seulement. Un ASC est créé par son superviseur (spec §2), une bénéficiaire n'a pas besoin de compte, un admin ne se déclare pas.
+- `profil_demande` : `agent_csb` ou `superviseur` seulement. Un ASC est créé par son superviseur (spec §2), une bénéficiaire crée son compte depuis le téléphone (D16), un admin ne se déclare pas.
 - `agent_csb` : `csb_id` obligatoire ; la région est celle du centre. `superviseur` : `region_id` facultatif (vide = national), pas de centre.
 - `phone` obligatoire (l'admin appelle pour vérifier), `email` facultatif.
 - `identifiant` refusé s'il est déjà pris par un compte ou par une autre demande en attente. `pin` : 4 à 6 chiffres, gardé haché, jamais renvoyé, effacé quand la demande est traitée.
@@ -480,9 +482,19 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 | `/api/provinces/`, `/api/regions/` | GET | Listes de référence |
 | `/api/facilities/` | GET | Liste des CSB |
 | `/api/danger-types/` | GET | Liste des signes de danger |
-| `/api/cycles/` | GET, POST, PUT, PATCH, DELETE | Cycles menstruels |
+| `/api/beneficiaries/` | GET | Bénéficiaires de la zone, recherche (ASC, agent de CSB) |
+| `/api/beneficiaries/{id}/` | GET | Dossier complet d'une bénéficiaire ; la suivre |
+| `/api/beneficiaries/lookup/` | POST | Ouvrir le dossier avec le code qu'elle montre |
+| `/api/beneficiaries/{id}/unfollow/` | POST | Ne plus la suivre |
+| `/api/cycles/` | GET, POST, PUT, PATCH, DELETE | Cycles menstruels (si partagés) |
+| `/api/cycle-days/` | GET, POST, PUT, PATCH, DELETE | « Mon suivi du jour » du cycle (si partagé) |
+| `/api/women-food-logs/` | GET, POST, PUT, PATCH, DELETE | Groupes d'aliments de la femme, par jour |
 | `/api/pregnancies/` | GET, POST, PUT, PATCH, DELETE | Grossesses |
 | `/api/pregnancies/{id}/dangers/` | GET, POST, PUT, PATCH, DELETE | Signes de danger d'une grossesse |
+| `/api/care-contacts/` | GET, POST, PUT, PATCH, DELETE | Contacts CPN et postnatals faits |
+| `/api/pregnancy-checks/` | GET, POST, PUT, PATCH, DELETE | Suivi de grossesse (poids, tension, hauteur utérine…) |
+| `/api/baby-movements/` | GET, POST, PUT, PATCH, DELETE | Mouvements du bébé comptés par jour |
+| `/api/baby-movement-events/` | GET, POST, PUT, PATCH, DELETE | Chaque mouvement ressenti |
 | `/api/children/` | GET, POST, PUT, PATCH, DELETE | Enfants |
 | `/api/children/{id}/measurements/` | GET, POST, PUT, PATCH, DELETE | Mesures d'un enfant |
 | `/api/measurements/` | GET, POST, PUT, PATCH, DELETE | Toutes les mesures visibles |
@@ -492,6 +504,8 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 | `/api/appointments/` | GET, POST, PUT, PATCH, DELETE | Rendez-vous de contrôle ou de dépistage |
 | `/api/consultations/` | GET, POST, PUT, PATCH, DELETE | Consultations nutritionnelles au centre |
 | `/api/food-logs/` | GET, POST, PUT, PATCH, DELETE | Journal alimentaire (8 groupes) |
+| `/api/vaccinations/` | GET, POST, PUT, PATCH, DELETE | Doses du PEV faites |
+| `/api/feeds/` | GET, POST, PUT, PATCH, DELETE | Tétées (sein ou lait exprimé) |
 | `/api/follow-ups/` | GET | Relances : non arrivés, rendez-vous manqués, enfants à revoir |
 | `/api/sync/push/` | POST | Envoyer la file d'attente (outbox) du téléphone |
 | `/api/sync/pull/` | GET | Recevoir les changements, suppressions comprises |
@@ -503,7 +517,7 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 | `/api/stats/`, `/api/stats/export/` | GET | Statistiques agrégées et anonymes, export CSV |
 | `/api/who-reference/` | GET | Courbes de croissance OMS 2006 (tables chargées) |
 | `/api/audit/` | GET | Journal d'audit (admin) |
-| `/api/profiles/{id}/reset-pin/` | POST | Réinitialiser le PIN (superviseur, admin) |
+| `/api/profiles/{id}/reset-pin/` | POST | Réinitialiser le PIN (superviseur, admin ; ASC et agent de CSB pour une bénéficiaire) |
 | `/api/access-requests/` | GET | Demandes d'accès aux comptes web (admin) |
 | `/api/access-requests/{id}/approve/`, `/refuse/` | POST | Approuver (crée le compte) ou refuser une demande (admin) |
 
@@ -517,17 +531,20 @@ L = lecture, É = écriture (création, modification), — = refusé (`403`). Le
 
 | Ressource | `beneficiaire` | `asc` | `agent_csb` | `superviseur` | `admin` |
 |---|---|---|---|---|---|
-| Enfants, mesures | L (ses enfants) | L É (ses enfants) | L (enfants référés à son centre) | — | L É |
-| Grossesses, signes de danger | L É (les siennes) | L É (sa région) | L (référées à son centre) | — | L É |
-| Cycles | L É (les siens) | — | — | — | L É |
-| Journal alimentaire | L É (ses enfants) | L É | L | — | L É |
+| Bénéficiaires (liste, dossier, code) | — | L (sa région ; toute femme par son code) | L (région de son centre ; toute femme par son code) | — | L |
+| Enfants, mesures | L É (ses enfants) | L É (ses enfants, ceux des femmes suivies) | L (référés à son centre, ceux des femmes suivies) | — | L É |
+| Grossesses, signes de danger, contacts CPN, suivi de grossesse | L É (les siennes) | L É (femmes suivies) | L (référées à son centre, femmes suivies) | — | L É |
+| Mouvements du bébé, alimentation de la femme | L É (les siens) | L (femmes suivies) | L (femmes suivies) | — | L É |
+| Cycles, suivi du jour du cycle | L É (les siens, si partage activé) | L (femmes suivies qui partagent) | L (femmes suivies qui partagent) | — | L É |
+| Journal alimentaire, vaccins | L É (ses enfants) | L É | L | — | L É |
+| Tétées | L É (ses enfants) | L | L | — | L É |
 | Référencements | L | L, création | L, statut (sauf sortie : agent du centre seulement) | — | L É, statut sauf sortie |
 | File entrante | — | — | L | — | L |
 | Rendez-vous | L | L É | L É (dans son centre) | — | L É |
 | Consultations | L | L | L É (son centre) | — | L É |
 | Relances | — | L | L | — | L |
 | Conflits | L (les siens) | L (les siens) | L, arbitrage | — | L, arbitrage |
-| Comptes | L (le sien) | L, création de bénéficiaires | — | L et création d'ASC de sa zone, réinitialisation du PIN | L É |
+| Comptes | L (le sien) | L, création de bénéficiaires, PIN d'une bénéficiaire | PIN d'une bénéficiaire de sa zone | L et création d'ASC de sa zone, réinitialisation du PIN | L É |
 | Configuration clinique | L (publiées) | L (publiées) | L (publiées) | L (publiées) | L É, publication |
 | Statistiques | — | — | — | L (sa région) | L |
 | Journal d'audit | — | — | — | — | L |
@@ -700,11 +717,87 @@ Chaque liste a le même format paginé. Voici le contenu de `results`.
 [{ "id": 1, "description": "Saignement" }]
 ```
 
+## Bénéficiaire connectée (D16)
+
+### POST `/api/auth/register-beneficiary/`
+
+**Public.** Crée le compte depuis le téléphone, sans validation admin (30 par heure et par adresse). Le consentement est obligatoire. Le serveur choisit l'identifiant et le code : le téléphone les garde et les affiche (« Mon code »).
+
+```json
+{
+  "prenom": "Voahangy",
+  "nom": "",
+  "phone": "034 00 000 09",
+  "region_id": 1,
+  "pin": "4821",
+  "consentement": true,
+  "partage_cycle": false
+}
+```
+
+`201` : connectée tout de suite.
+
+```json
+{
+  "access": "eyJ...",
+  "refresh": "eyJ...",
+  "utilisateur": {
+    "id": "016db879-1264-425f-873d-1ef748463800",
+    "identifiant": "voahangy.4821",
+    "nom": "",
+    "prenom": "Voahangy",
+    "profile": { "code": "beneficiaire", "libelle": "Bénéficiaire" },
+    "region_id": 1,
+    "csb_id": null,
+    "code_beneficiaire": "K7QM4Z",
+    "partage_cycle": false
+  }
+}
+```
+
+`400` si `consentement` n'est pas `true`, sans `region_id`, ou avec un PIN de moins de 4 chiffres. Elle se reconnecte ensuite avec `/api/auth/login/` (identifiant et PIN). Un ASC peut aussi inscrire une femme sans téléphone avec `POST /api/profiles/` (`identifiant` facultatif : il est alors généré, comme le code) ; il la suit alors.
+
+### PATCH `/api/auth/me/`
+
+**Bénéficiaire seulement** (`403` sinon). `{"partage_cycle": true}` autorise l'envoi du cycle. `{"partage_cycle": false}` arrête le partage et **efface du serveur** ses cycles et suivis du jour. Réponse : `{"utilisateur": {...}, "lignes_supprimees": 2}`.
+
+### GET `/api/beneficiaries/`
+
+**ASC, agent de CSB, admin.** Les bénéficiaires de la zone (ASC : sa région ; agent : la région de son centre) et celles déjà suivies. `?q=` cherche dans le prénom, le nom, le téléphone, l'identifiant et le code (tirets et casse ignorés). Pas de donnée de santé dans la liste :
+
+```json
+{
+  "id": "016db879-1264-425f-873d-1ef748463800",
+  "prenom": "Voahangy",
+  "nom": "Rakotomalala",
+  "phone": "034 00 000 09",
+  "region_id": 1,
+  "code_beneficiaire": "K7QM4Z",
+  "suivie": false,
+  "grossesse_en_cours": true,
+  "nb_enfants": 1
+}
+```
+
+### GET `/api/beneficiaries/{id}/` et POST `/api/beneficiaries/lookup/`
+
+**Ouvrir le dossier.** `GET` pour une femme de la liste ; `POST lookup/` avec `{"code": "K7Q-M4Z"}` pour une femme de n'importe quelle région, qui montre son code (`404` si le code est inconnu). Les deux :
+
+- font **suivre** la femme : la prochaine `/api/sync/pull/` de l'agent contient tout son dossier ;
+- sont journalisés (`consultation_dossier`, et `suivi_beneficiaire` la première fois) ;
+- renvoient le dossier complet : `beneficiaire`, `grossesses`, `signes_danger`, `contacts_soin`, `suivis_grossesse`, `mouvements_bebe`, `mouvements_evenements`, `alimentations`, `cycles`, `cycle_jours`, `enfants`, `mesures`, `journaux_alimentaires`, `vaccins`, `tetees`, `rendez_vous`, `referencements`. Chaque ligne a la forme de son endpoint. `cycles` et `cycle_jours` restent vides si elle ne partage pas son cycle.
+
+Une femme est aussi suivie quand l'ASC enregistre sa grossesse ou un de ses enfants, ou l'inscrit. Un compte effacé ne s'ouvre plus (`404`).
+
+### POST `/api/beneficiaries/{id}/unfollow/`
+
+Ne plus suivre cette femme : ses données ne sont plus dans les prochaines synchronisations. `404` si elle n'était pas suivie.
+
 ## `/api/cycles/`
 
-**Ce qu'il fait :** gère l'historique menstruel. Les ASC et les agents de CSB n'y ont pas accès (`403`).
+**Ce qu'il fait :** gère l'historique menstruel. **Refusé (`403`) tant que la bénéficiaire n'a pas activé `partage_cycle`** (D16, option a). L'ASC et l'agent de CSB lisent le cycle des femmes qu'ils suivent et qui le partagent ; ils n'écrivent jamais.
 
-**Créer :** `POST`. Une bénéficiaire n'envoie pas `user_id`. Un admin doit l'envoyer.
+**Créer :** `POST`. Une bénéficiaire n'envoie pas `user_id`. Un admin doit l'envoyer. Champs du téléphone : `date_debut`, `date_fin`, `intensite` (`faible`, `moyenne`, `forte`), `douleur` (0 à 3), `humeur` (1 à 5), `notes`, `symptomes` (liste de codes), `irreguliere`.
 
 ```json
 {
@@ -741,7 +834,9 @@ Chaque liste a le même format paginé. Voici le contenu de `results`.
 
 **Ce qu'il fait :** gère les grossesses. `femme` donne le nom de la femme.
 
-**Créer :** `POST`. Une bénéficiaire n'envoie pas `user_id`. Un ASC doit envoyer une bénéficiaire de sa région. `user_id` ne peut plus changer ensuite.
+**Créer :** `POST`. Une bénéficiaire n'envoie pas `user_id`. Un ASC doit envoyer une bénéficiaire de sa région (il la suit ensuite). `user_id` ne peut plus changer ensuite.
+
+Champs du téléphone : `ddr`, `dpa`, `dpa_saisie`, `terme_confirme_date`, `terme_confirme_jours`, `date_accouchement`, `mode_allaitement`, `terminee`. Au moins une date est obligatoire (`ddr`, `dpa`, `dpa_saisie`, `terme_confirme_date` ou `date_accouchement`). Avec `ddr` seule, `dpa` = `ddr` + 280 jours.
 
 ```json
 {
@@ -782,6 +877,8 @@ Chaque liste a le même format paginé. Voici le contenu de `results`.
 ## `/api/pregnancies/{id}/dangers/`
 
 **Ce qu'il fait :** enregistre un signe de danger. **Un signe de danger avec un type valide est toujours enregistré**, avec ou sans référencement.
+
+Le téléphone envoie `code` (code du signe dans la configuration, par exemple `saignement_vaginal`) et `periode`. Le serveur trouve le type à partir du code ; un code qu'il ne connaît pas est gardé tel quel (`type_danger_grossesse_id` vide). Il faut `code` ou `type_danger_grossesse_id`.
 
 | Qui enregistre | `csb_id` | Résultat |
 |---|---|---|
@@ -844,7 +941,9 @@ Seuls un `type_danger_grossesse_id` absent ou inconnu et une date illisible sont
 
 ## `/api/children/`
 
-**Ce qu'il fait :** gère les enfants. Un ASC n'envoie pas `asc_id` : c'est lui. Un admin doit l'envoyer. `mere_id` doit être une bénéficiaire de la région de l'ASC. `grossesse_id` doit être une grossesse de cette mère.
+**Ce qu'il fait :** gère les enfants. Un ASC n'envoie pas `asc_id` : c'est lui. Un admin doit l'envoyer. `mere_id` doit être une bénéficiaire de la région de l'ASC (il la suit ensuite). `grossesse_id` doit être une grossesse de cette mère. `region_id` est facultatif : région de la mère, sinon de l'ASC. `poids_naissance_kg` est facultatif.
+
+**Une bénéficiaire** (D16, M1 corrigé) crée ses propres enfants : `mere_id` est elle, `asc_id` reste vide. Ses mesures n'ont pas d'`asc_id` : ce sont des pesées à la maison, **non comptées comme dépistages** dans les statistiques.
 
 **Créer :** `POST`
 
@@ -1118,7 +1217,24 @@ Réponse : les mêmes champs, plus `id`, `csb_id`, `statut` (`prevu`, `honore`, 
 
 ## `/api/food-logs/`
 
-**Ce qu'il fait :** le journal alimentaire d'un enfant de 6 à 23 mois, un par jour : `enfant_id`, `date_jour`, `type_allaitement`, `g1_lait_maternel` … `g8_autres_fruits_legumes`, `notes`. En lecture : `score_diversite` (nombre de groupes) et `diversite_minimale_atteinte` (seuil de la configuration, `null` sans configuration).
+**Ce qu'il fait :** le journal alimentaire d'un enfant de 6 à 23 mois, un par jour : `enfant_id`, `date_jour`, `type_allaitement`, `g1_lait_maternel` … `g8_autres_fruits_legumes`, `notes`, et comme sur le téléphone `aliments` (codes), `repas`, `laits`, `tetees`, `autres_recus` (codes). Le téléphone envoie aussi les groupes `g1` … `g8` cochés. En lecture : `score_diversite` (nombre de groupes) et `diversite_minimale_atteinte` (seuil de la configuration, `null` sans configuration).
+
+## Tables du mode personnel (D16)
+
+Toutes ont les champs de synchronisation habituels (`id` UUID créé par le téléphone, `version`, `created_at`, `updated_at`, `device_id`, `deleted_at`) et passent par `/api/sync/push/` et `/api/sync/pull/` sous le nom entre parenthèses.
+
+| Endpoint (table) | Champs | Une par… |
+|---|---|---|
+| `/api/cycle-days/` (`cycle_jour`) | `date_jour`, `flux`, `douleur` (0–3), `humeur` (1–5), `symptomes` | femme et jour ; seulement si `partage_cycle` |
+| `/api/women-food-logs/` (`alimentation_femme`) | `date_jour`, `groupes` (codes) | femme et jour |
+| `/api/care-contacts/` (`contact_soin`) | `grossesse_id`, `type`, `numero`, `date_faite` | grossesse, type et numéro |
+| `/api/pregnancy-checks/` (`suivi_grossesse`) | `grossesse_id`, `date_jour`, `poids_kg`, `tension_sys`, `tension_dia`, `hauteur_uterine_cm`, `hemoglobine_g_dl`, `glycemie_g_l`, `glycemie_a_jeun`, `temperature_c`, `source`, `notes` | — |
+| `/api/baby-movements/` (`mouvement_bebe`) | `grossesse_id`, `date_jour`, `mouvements` | grossesse et jour |
+| `/api/baby-movement-events/` (`mouvement_evenement`) | `grossesse_id`, `horodatage`, `type` | — |
+| `/api/vaccinations/` (`vaccin_fait`) | `enfant_id`, `code`, `date_faite`, `centre`, `professionnel`, `confirme_carnet` | enfant et dose |
+| `/api/feeds/` (`tetee`) | `enfant_id`, `horodatage`, `type`, `duree_min`, `quantite_ml` | — |
+
+Une deuxième ligne pour le même jour (ou la même dose) est refusée (`400`). Une bénéficiaire n'envoie pas `user_id`. La suppression d'une grossesse ou d'un enfant masque aussi ses lignes liées.
 
 ## GET `/api/follow-ups/`
 

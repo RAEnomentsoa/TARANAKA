@@ -6,20 +6,31 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 
 from comptes.models import CodeProfile
 from comptes.permissions import PROFILS_DOSSIERS, acces
+from comptes.services import suivre
 from synchro.views import SyncViewSet
 
 from . import services
-from .filters import ConsultationFilter, EnfantFilter, JournalAlimentaireFilter, MesureFilter
+from .filters import (
+    ConsultationFilter,
+    EnfantFilter,
+    JournalAlimentaireFilter,
+    MesureFilter,
+    TeteeFilter,
+    VaccinFaitFilter,
+)
 from .serializers import (
     ConsultationSerializer,
     EnfantSerializer,
     JournalAlimentaireSerializer,
     MesureSerializer,
+    TeteeSerializer,
+    VaccinFaitSerializer,
 )
 
+# M1 (D16): the mother writes her own children and their weighings too.
 PROFILS = acces(
     lecture=PROFILS_DOSSIERS,
-    ecriture=(CodeProfile.ASC, CodeProfile.ADMIN),
+    ecriture=(CodeProfile.BENEFICIAIRE, CodeProfile.ASC, CodeProfile.ADMIN),
 )
 
 
@@ -30,6 +41,11 @@ class EnfantViewSet(SyncViewSet):
 
     def visibles(self):
         return services.enfants_visibles(self.request.user)
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        # An ASC who registers a woman's child follows her from then on (D16).
+        suivre(self.request.user, serializer.instance.mere, self.contexte(), "enfant")
 
     def perform_update(self, serializer):
         serializer.instance = services.modifier_enfant(
@@ -117,3 +133,28 @@ class ConsultationViewSet(SyncViewSet):
 
     def visibles(self):
         return services.consultations_visibles(self.request.user)
+
+
+class VaccinFaitViewSet(SyncViewSet):
+    """/vaccinations/: the PEV doses given to the child."""
+
+    serializer_class = VaccinFaitSerializer
+    filterset_class = VaccinFaitFilter
+    profils_par_action = PROFILS
+
+    def visibles(self):
+        return services.vaccins_visibles(self.request.user)
+
+
+class TeteeViewSet(SyncViewSet):
+    """/feeds/: each feed, at the breast or expressed milk."""
+
+    serializer_class = TeteeSerializer
+    filterset_class = TeteeFilter
+    profils_par_action = acces(
+        lecture=PROFILS_DOSSIERS,
+        ecriture=(CodeProfile.BENEFICIAIRE, CodeProfile.ADMIN),
+    )
+
+    def visibles(self):
+        return services.tetees_visibles(self.request.user)

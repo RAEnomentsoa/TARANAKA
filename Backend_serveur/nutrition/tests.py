@@ -47,7 +47,8 @@ class AccesEnfantsTest(BaseApiTest):
         self.comme(self.asc_meme_region)
         self.assertEqual(self.client.get(enfant_url(self.le_mien)).status_code, 404)
 
-    def test_beneficiaire_lit_ses_enfants_sans_pouvoir_les_modifier(self):
+    def test_beneficiaire_ecrit_ses_propres_enfants(self):
+        """M1 (D16): the mother registers and corrects her children herself."""
         self.comme(self.femme)
         self.assertEqual(self.ids(self.client.get(ENFANTS)), {str(self.le_mien.pk)})
         self.assertEqual(self.client.get(enfant_url(self.le_sien)).status_code, 404)
@@ -56,9 +57,28 @@ class AccesEnfantsTest(BaseApiTest):
             {"nom": "X", "version": 1},
             format="json",
         )
-        self.assertEqual(reponse.status_code, 403)
-        self.assertEqual(self.client.post(ENFANTS, {}, format="json").status_code, 403)
-        self.assertEqual(self.client.delete(enfant_url(self.le_mien)).status_code, 403)
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        bebe = {
+            "nom": "Bebe",
+            "sexe": "F",
+            "date_naissance": "2026-06-01",
+            "poids_naissance_kg": "3.10",
+        }
+        # Never another woman's child.
+        reponse = self.client.post(
+            ENFANTS, {**bebe, "mere_id": str(self.autre_femme.pk)}, format="json"
+        )
+        self.assertEqual(reponse.status_code, 400)
+        self.assertIn("mere_id", reponse.data)
+        reponse = self.client.post(ENFANTS, bebe, format="json")
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertEqual(reponse.data["mere_id"], self.femme.pk)
+        self.assertIsNone(reponse.data["asc_id"])
+        self.assertEqual(reponse.data["region_id"], self.region.pk)
+        self.assertEqual(reponse.data["poids_naissance_kg"], "3.10")
+        self.assertEqual(self.client.patch(
+            enfant_url(self.le_sien), {"nom": "Y", "version": 1}, format="json"
+        ).status_code, 404)
 
     def test_agent_ne_voit_que_les_enfants_references_a_son_csb(self):
         self.referencement(enfant=self.le_mien, csb=self.csb)
@@ -600,12 +620,16 @@ class AccesMesuresTest(BaseApiTest):
         reponse = self.client.get(f"{ENFANTS}{self.le_mien.pk}/measurements/")
         self.assertEqual(self.ids(reponse), {str(self.ma_mesure.pk)})
 
-    def test_beneficiaire_lit_sans_ecrire(self):
+    def test_beneficiaire_pese_son_enfant_sans_asc(self):
+        """M1 (D16): a weighing at home has no ASC, so it is not a screening."""
         self.comme(self.femme)
         self.assertEqual(self.ids(self.client.get(MESURES)), {str(self.ma_mesure.pk)})
+        reponse = self.client.post(MESURES, self.donnees(self.le_mien), format="json")
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        self.assertIsNone(reponse.data["asc_id"])
         self.assertEqual(
-            self.client.post(MESURES, self.donnees(self.le_mien), format="json").status_code,
-            403,
+            self.client.post(MESURES, self.donnees(self.le_sien), format="json").status_code,
+            400,
         )
 
     def test_agent_lit_les_mesures_liees_a_son_csb(self):

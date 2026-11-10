@@ -649,6 +649,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Utilisateur'
           description: ''
+    patch:
+      operationId: auth_me_partial_update
+      description: |-
+        Beneficiary: share her cycle or stop (D16 option a). Stopping
+        deletes her cycle rows from the server.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMePatchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMePatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMePatchRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartageCycleReponse'
+          description: ''
   /api/auth/my-data/:
     get:
       operationId: auth_my_data_retrieve
@@ -718,6 +745,665 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+  /api/auth/register-beneficiary/:
+    post:
+      operationId: auth_register_beneficiary_create
+      description: |-
+        POST /api/auth/register-beneficiary/: public (D16). The account is
+        created at once (no admin approval) and the person is logged in.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InscriptionBeneficiaireRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InscriptionBeneficiaireRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InscriptionBeneficiaireRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InscriptionReponse'
+          description: ''
+  /api/baby-movement-events/:
+    get:
+      operationId: baby_movement_events_list
+      description: '/baby-movement-events/: each movement felt.'
+      parameters:
+      - in: query
+        name: grossesse
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - baby-movement-events
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMouvementEvenementList'
+          description: ''
+    post:
+      operationId: baby_movement_events_create
+      description: '/baby-movement-events/: each movement felt.'
+      tags:
+      - baby-movement-events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MouvementEvenementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MouvementEvenementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MouvementEvenementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementEvenement'
+          description: ''
+  /api/baby-movement-events/{id}/:
+    get:
+      operationId: baby_movement_events_retrieve
+      description: '/baby-movement-events/: each movement felt.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvement du bébé.
+        required: true
+      tags:
+      - baby-movement-events
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementEvenement'
+          description: ''
+    put:
+      operationId: baby_movement_events_update
+      description: '/baby-movement-events/: each movement felt.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvement du bébé.
+        required: true
+      tags:
+      - baby-movement-events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MouvementEvenementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MouvementEvenementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MouvementEvenementRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementEvenement'
+          description: ''
+    patch:
+      operationId: baby_movement_events_partial_update
+      description: '/baby-movement-events/: each movement felt.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvement du bébé.
+        required: true
+      tags:
+      - baby-movement-events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMouvementEvenementRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMouvementEvenementRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMouvementEvenementRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementEvenement'
+          description: ''
+    delete:
+      operationId: baby_movement_events_destroy
+      description: '/baby-movement-events/: each movement felt.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvement du bébé.
+        required: true
+      tags:
+      - baby-movement-events
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/baby-movements/:
+    get:
+      operationId: baby_movements_list
+      description: '/baby-movements/: movements counted per day.'
+      parameters:
+      - in: query
+        name: grossesse
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - baby-movements
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMouvementBebeList'
+          description: ''
+    post:
+      operationId: baby_movements_create
+      description: '/baby-movements/: movements counted per day.'
+      tags:
+      - baby-movements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MouvementBebeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MouvementBebeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MouvementBebeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementBebe'
+          description: ''
+  /api/baby-movements/{id}/:
+    get:
+      operationId: baby_movements_retrieve
+      description: '/baby-movements/: movements counted per day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvements du bébé
+          (jour).
+        required: true
+      tags:
+      - baby-movements
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementBebe'
+          description: ''
+    put:
+      operationId: baby_movements_update
+      description: '/baby-movements/: movements counted per day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvements du bébé
+          (jour).
+        required: true
+      tags:
+      - baby-movements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MouvementBebeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MouvementBebeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MouvementBebeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementBebe'
+          description: ''
+    patch:
+      operationId: baby_movements_partial_update
+      description: '/baby-movements/: movements counted per day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvements du bébé
+          (jour).
+        required: true
+      tags:
+      - baby-movements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMouvementBebeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMouvementBebeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMouvementBebeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MouvementBebe'
+          description: ''
+    delete:
+      operationId: baby_movements_destroy
+      description: '/baby-movements/: movements counted per day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Mouvements du bébé
+          (jour).
+        required: true
+      tags:
+      - baby-movements
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/beneficiaries/:
+    get:
+      operationId: beneficiaries_list
+      description: |-
+        /beneficiaries/: the list of the zone, and her whole file.
+
+        Opening a file (retrieve or lookup) makes the worker follow her: their
+        next /sync/pull/ carries her data.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Prénom, nom, téléphone, identifiant ou code.
+      tags:
+      - beneficiaries
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBeneficiaireListeList'
+          description: ''
+  /api/beneficiaries/{id}/:
+    get:
+      operationId: beneficiaries_retrieve
+      description: |-
+        /beneficiaries/: the list of the zone, and her whole file.
+
+        Opening a file (retrieve or lookup) makes the worker follow her: their
+        next /sync/pull/ carries her data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Prénom, nom, téléphone, identifiant ou code.
+      tags:
+      - beneficiaries
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierBeneficiaire'
+          description: ''
+  /api/beneficiaries/{id}/unfollow/:
+    post:
+      operationId: beneficiaries_unfollow_create
+      description: |-
+        /beneficiaries/: the list of the zone, and her whole file.
+
+        Opening a file (retrieve or lookup) makes the worker follow her: their
+        next /sync/pull/ carries her data.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Utilisateur.
+        required: true
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Prénom, nom, téléphone, identifiant ou code.
+      tags:
+      - beneficiaries
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/beneficiaries/lookup/:
+    post:
+      operationId: beneficiaries_lookup_create
+      description: The code she shows (typed or scanned), from any region.
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Prénom, nom, téléphone, identifiant ou code.
+      tags:
+      - beneficiaries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RechercheCodeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RechercheCodeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RechercheCodeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierBeneficiaire'
+          description: ''
+  /api/care-contacts/:
+    get:
+      operationId: care_contacts_list
+      description: '/care-contacts/: the CPN and postnatal contacts attended.'
+      parameters:
+      - in: query
+        name: grossesse
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - care-contacts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContactSoinList'
+          description: ''
+    post:
+      operationId: care_contacts_create
+      description: '/care-contacts/: the CPN and postnatal contacts attended.'
+      tags:
+      - care-contacts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactSoinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContactSoinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContactSoinRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSoin'
+          description: ''
+  /api/care-contacts/{id}/:
+    get:
+      operationId: care_contacts_retrieve
+      description: '/care-contacts/: the CPN and postnatal contacts attended.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Contact de soin.
+        required: true
+      tags:
+      - care-contacts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSoin'
+          description: ''
+    put:
+      operationId: care_contacts_update
+      description: '/care-contacts/: the CPN and postnatal contacts attended.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Contact de soin.
+        required: true
+      tags:
+      - care-contacts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactSoinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContactSoinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContactSoinRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSoin'
+          description: ''
+    patch:
+      operationId: care_contacts_partial_update
+      description: '/care-contacts/: the CPN and postnatal contacts attended.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Contact de soin.
+        required: true
+      tags:
+      - care-contacts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedContactSoinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedContactSoinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedContactSoinRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSoin'
+          description: ''
+    delete:
+      operationId: care_contacts_destroy
+      description: '/care-contacts/: the CPN and postnatal contacts attended.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Contact de soin.
+        required: true
+      tags:
+      - care-contacts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/children/:
     get:
       operationId: children_list
@@ -725,6 +1411,11 @@ paths:
       parameters:
       - in: query
         name: asc
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: mere
         schema:
           type: string
           format: uuid
@@ -1664,11 +2355,192 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/cycle-days/:
+    get:
+      operationId: cycle_days_list
+      description: '/cycle-days/: "Mon suivi du jour", shared like the cycle.'
+      parameters:
+      - in: query
+        name: date_max
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_min
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: femme
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - cycle-days
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCycleJourList'
+          description: ''
+    post:
+      operationId: cycle_days_create
+      description: '/cycle-days/: "Mon suivi du jour", shared like the cycle.'
+      tags:
+      - cycle-days
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CycleJourRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CycleJourRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CycleJourRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleJour'
+          description: ''
+  /api/cycle-days/{id}/:
+    get:
+      operationId: cycle_days_retrieve
+      description: '/cycle-days/: "Mon suivi du jour", shared like the cycle.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi du jour (cycle).
+        required: true
+      tags:
+      - cycle-days
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleJour'
+          description: ''
+    put:
+      operationId: cycle_days_update
+      description: '/cycle-days/: "Mon suivi du jour", shared like the cycle.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi du jour (cycle).
+        required: true
+      tags:
+      - cycle-days
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CycleJourRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CycleJourRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CycleJourRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleJour'
+          description: ''
+    patch:
+      operationId: cycle_days_partial_update
+      description: '/cycle-days/: "Mon suivi du jour", shared like the cycle.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi du jour (cycle).
+        required: true
+      tags:
+      - cycle-days
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCycleJourRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCycleJourRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCycleJourRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleJour'
+          description: ''
+    delete:
+      operationId: cycle_days_destroy
+      description: '/cycle-days/: "Mon suivi du jour", shared like the cycle.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi du jour (cycle).
+        required: true
+      tags:
+      - cycle-days
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/cycles/:
     get:
       operationId: cycles_list
-      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      description: '/cycles/: only if she shares her cycle (D16 option a).'
       parameters:
+      - in: query
+        name: femme
+        schema:
+          type: string
+          format: uuid
       - name: page
         required: false
         in: query
@@ -1693,7 +2565,7 @@ paths:
           description: ''
     post:
       operationId: cycles_create
-      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      description: '/cycles/: only if she shares her cycle (D16 option a).'
       tags:
       - cycles
       requestBody:
@@ -1720,7 +2592,7 @@ paths:
   /api/cycles/{id}/:
     get:
       operationId: cycles_retrieve
-      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      description: '/cycles/: only if she shares her cycle (D16 option a).'
       parameters:
       - in: path
         name: id
@@ -1742,7 +2614,7 @@ paths:
           description: ''
     put:
       operationId: cycles_update
-      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      description: '/cycles/: only if she shares her cycle (D16 option a).'
       parameters:
       - in: path
         name: id
@@ -1776,7 +2648,7 @@ paths:
           description: ''
     patch:
       operationId: cycles_partial_update
-      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      description: '/cycles/: only if she shares her cycle (D16 option a).'
       parameters:
       - in: path
         name: id
@@ -1809,7 +2681,7 @@ paths:
           description: ''
     delete:
       operationId: cycles_destroy
-      description: Common behaviour of the synced tables. Subclasses provide visibles().
+      description: '/cycles/: only if she shares her cycle (D16 option a).'
       parameters:
       - in: path
         name: id
@@ -1928,6 +2800,177 @@ paths:
               schema:
                 $ref: '#/components/schemas/CSB'
           description: ''
+  /api/feeds/:
+    get:
+      operationId: feeds_list
+      description: '/feeds/: each feed, at the breast or expressed milk.'
+      parameters:
+      - in: query
+        name: depuis
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - feeds
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTeteeList'
+          description: ''
+    post:
+      operationId: feeds_create
+      description: '/feeds/: each feed, at the breast or expressed milk.'
+      tags:
+      - feeds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeteeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeteeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeteeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tetee'
+          description: ''
+  /api/feeds/{id}/:
+    get:
+      operationId: feeds_retrieve
+      description: '/feeds/: each feed, at the breast or expressed milk.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Tétée.
+        required: true
+      tags:
+      - feeds
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tetee'
+          description: ''
+    put:
+      operationId: feeds_update
+      description: '/feeds/: each feed, at the breast or expressed milk.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Tétée.
+        required: true
+      tags:
+      - feeds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeteeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TeteeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TeteeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tetee'
+          description: ''
+    patch:
+      operationId: feeds_partial_update
+      description: '/feeds/: each feed, at the breast or expressed milk.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Tétée.
+        required: true
+      tags:
+      - feeds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTeteeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTeteeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTeteeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tetee'
+          description: ''
+    delete:
+      operationId: feeds_destroy
+      description: '/feeds/: each feed, at the breast or expressed milk.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Tétée.
+        required: true
+      tags:
+      - feeds
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/follow-ups/:
     get:
       operationId: follow_ups_retrieve
@@ -2332,6 +3375,11 @@ paths:
         name: danger_sans_referencement
         schema:
           type: boolean
+      - in: query
+        name: femme
+        schema:
+          type: string
+          format: uuid
       - name: page
         required: false
         in: query
@@ -2370,7 +3418,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/GrossesseRequest'
-        required: true
       security:
       - jwtAuth: []
       responses:
@@ -2438,7 +3485,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/DangerCreeRequest'
-        required: true
       security:
       - jwtAuth: []
       responses:
@@ -2511,7 +3557,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/DangerGrossesseRequest'
-        required: true
       security:
       - jwtAuth: []
       responses:
@@ -2635,7 +3680,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/GrossesseRequest'
-        required: true
       security:
       - jwtAuth: []
       responses:
@@ -2691,6 +3735,172 @@ paths:
         required: true
       tags:
       - pregnancies
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pregnancy-checks/:
+    get:
+      operationId: pregnancy_checks_list
+      description: '/pregnancy-checks/: weight, blood pressure, fundal height...'
+      parameters:
+      - in: query
+        name: grossesse
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - pregnancy-checks
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSuiviGrossesseList'
+          description: ''
+    post:
+      operationId: pregnancy_checks_create
+      description: '/pregnancy-checks/: weight, blood pressure, fundal height...'
+      tags:
+      - pregnancy-checks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuiviGrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuiviGrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuiviGrossesseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuiviGrossesse'
+          description: ''
+  /api/pregnancy-checks/{id}/:
+    get:
+      operationId: pregnancy_checks_retrieve
+      description: '/pregnancy-checks/: weight, blood pressure, fundal height...'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi de grossesse.
+        required: true
+      tags:
+      - pregnancy-checks
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuiviGrossesse'
+          description: ''
+    put:
+      operationId: pregnancy_checks_update
+      description: '/pregnancy-checks/: weight, blood pressure, fundal height...'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi de grossesse.
+        required: true
+      tags:
+      - pregnancy-checks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuiviGrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuiviGrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuiviGrossesseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuiviGrossesse'
+          description: ''
+    patch:
+      operationId: pregnancy_checks_partial_update
+      description: '/pregnancy-checks/: weight, blood pressure, fundal height...'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi de grossesse.
+        required: true
+      tags:
+      - pregnancy-checks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSuiviGrossesseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSuiviGrossesseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSuiviGrossesseRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuiviGrossesse'
+          description: ''
+    delete:
+      operationId: pregnancy_checks_destroy
+      description: '/pregnancy-checks/: weight, blood pressure, fundal height...'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Suivi de grossesse.
+        required: true
+      tags:
+      - pregnancy-checks
       security:
       - jwtAuth: []
       responses:
@@ -3601,6 +4811,172 @@ paths:
               schema:
                 $ref: '#/components/schemas/PushReponse'
           description: ''
+  /api/vaccinations/:
+    get:
+      operationId: vaccinations_list
+      description: '/vaccinations/: the PEV doses given to the child.'
+      parameters:
+      - in: query
+        name: enfant
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVaccinFaitList'
+          description: ''
+    post:
+      operationId: vaccinations_create
+      description: '/vaccinations/: the PEV doses given to the child.'
+      tags:
+      - vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccinFaitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccinFaitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccinFaitRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccinFait'
+          description: ''
+  /api/vaccinations/{id}/:
+    get:
+      operationId: vaccinations_retrieve
+      description: '/vaccinations/: the PEV doses given to the child.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Vaccin fait.
+        required: true
+      tags:
+      - vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccinFait'
+          description: ''
+    put:
+      operationId: vaccinations_update
+      description: '/vaccinations/: the PEV doses given to the child.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Vaccin fait.
+        required: true
+      tags:
+      - vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VaccinFaitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VaccinFaitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VaccinFaitRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccinFait'
+          description: ''
+    patch:
+      operationId: vaccinations_partial_update
+      description: '/vaccinations/: the PEV doses given to the child.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Vaccin fait.
+        required: true
+      tags:
+      - vaccinations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVaccinFaitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVaccinFaitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVaccinFaitRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VaccinFait'
+          description: ''
+    delete:
+      operationId: vaccinations_destroy
+      description: '/vaccinations/: the PEV doses given to the child.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Vaccin fait.
+        required: true
+      tags:
+      - vaccinations
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/who-reference/:
     get:
       operationId: who_reference_retrieve
@@ -3669,6 +5045,186 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReferenceOms'
           description: ''
+  /api/women-food-logs/:
+    get:
+      operationId: women_food_logs_list
+      description: '/women-food-logs/: the woman''s food groups of the day.'
+      parameters:
+      - in: query
+        name: date_max
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_min
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: femme
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: updated_since
+        schema:
+          type: string
+          format: date-time
+      tags:
+      - women-food-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAlimentationFemmeList'
+          description: ''
+    post:
+      operationId: women_food_logs_create
+      description: '/women-food-logs/: the woman''s food groups of the day.'
+      tags:
+      - women-food-logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlimentationFemmeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlimentationFemmeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlimentationFemmeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlimentationFemme'
+          description: ''
+  /api/women-food-logs/{id}/:
+    get:
+      operationId: women_food_logs_retrieve
+      description: '/women-food-logs/: the woman''s food groups of the day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Alimentation de la
+          femme.
+        required: true
+      tags:
+      - women-food-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlimentationFemme'
+          description: ''
+    put:
+      operationId: women_food_logs_update
+      description: '/women-food-logs/: the woman''s food groups of the day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Alimentation de la
+          femme.
+        required: true
+      tags:
+      - women-food-logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlimentationFemmeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AlimentationFemmeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AlimentationFemmeRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlimentationFemme'
+          description: ''
+    patch:
+      operationId: women_food_logs_partial_update
+      description: '/women-food-logs/: the woman''s food groups of the day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Alimentation de la
+          femme.
+        required: true
+      tags:
+      - women-food-logs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlimentationFemmeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAlimentationFemmeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAlimentationFemmeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlimentationFemme'
+          description: ''
+    delete:
+      operationId: women_food_logs_destroy
+      description: '/women-food-logs/: the woman''s food groups of the day.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: Un(une) Chaîne UUID identifiant ce(cette) Alimentation de la
+          femme.
+        required: true
+      tags:
+      - women-food-logs
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     AlerteEnum:
@@ -3681,6 +5237,77 @@ components:
         * `vert` - Vert
         * `orange` - Orange
         * `rouge` - Rouge
+    AlimentationFemme:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        groupes:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 30
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_jour
+      - deleted_at
+      - device_id
+      - updated_at
+    AlimentationFemmeRequest:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        groupes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 30
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_jour
     AppetitEnum:
       enum:
       - non_teste
@@ -3703,6 +5330,50 @@ components:
         csb_id:
           type: integer
           nullable: true
+    BeneficiaireListe:
+      type: object
+      description: 'One line of the list: enough to recognise her, not her health
+        data.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        prenom:
+          type: string
+          readOnly: true
+        nom:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        region_id:
+          type: integer
+          readOnly: true
+        code_beneficiaire:
+          type: string
+          readOnly: true
+          nullable: true
+        suivie:
+          type: boolean
+          readOnly: true
+        grossesse_en_cours:
+          type: boolean
+          readOnly: true
+        nb_enfants:
+          type: integer
+          readOnly: true
+      required:
+      - code_beneficiaire
+      - grossesse_en_cours
+      - id
+      - nb_enfants
+      - nom
+      - phone
+      - prenom
+      - region_id
+      - suivie
     BlankEnum:
       enum:
       - ''
@@ -3823,6 +5494,10 @@ components:
           nullable: true
         is_active:
           type: boolean
+        code_beneficiaire:
+          type: string
+          readOnly: true
+          nullable: true
         date_creation:
           type: string
           format: date-time
@@ -3832,10 +5507,9 @@ components:
           format: date-time
           readOnly: true
       required:
+      - code_beneficiaire
       - date_creation
       - id
-      - identifiant
-      - nom
       - prenom
       - profile
       - updated_at
@@ -3849,7 +5523,6 @@ components:
           maxLength: 50
         nom:
           type: string
-          minLength: 1
           maxLength: 100
         prenom:
           type: string
@@ -3884,8 +5557,6 @@ components:
         is_active:
           type: boolean
       required:
-      - identifiant
-      - nom
       - prenom
     Config:
       type: object
@@ -4267,10 +5938,87 @@ components:
       - nom
       - phone
       - prenom
+    ContactSoin:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          maxLength: 20
+        numero:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        date_faite:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_faite
+      - deleted_at
+      - device_id
+      - grossesse_id
+      - numero
+      - type
+      - updated_at
+    ContactSoinRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          minLength: 1
+          maxLength: 20
+        numero:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        date_faite:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_faite
+      - grossesse_id
+      - numero
+      - type
     Cycle:
       type: object
-      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
-        by default.'
+      description: 'D16 option (a): nothing of the cycle reaches the server unless
+        she shares it.'
       properties:
         id:
           type: string
@@ -4287,6 +6035,25 @@ components:
           nullable: true
         intensite:
           $ref: '#/components/schemas/IntensiteEnum'
+        douleur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        humeur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        notes:
+          type: string
+        symptomes:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 30
+        irreguliere:
+          type: boolean
         symptome:
           type: string
         duree_cycle:
@@ -4327,12 +6094,108 @@ components:
       - date_debut
       - deleted_at
       - device_id
-      - intensite
       - updated_at
+    CycleJour:
+      type: object
+      description: 'D16 option (a): nothing of the cycle reaches the server unless
+        she shares it.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        flux:
+          type: string
+          maxLength: 20
+        douleur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        humeur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        symptomes:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 30
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_jour
+      - deleted_at
+      - device_id
+      - updated_at
+    CycleJourRequest:
+      type: object
+      description: 'D16 option (a): nothing of the cycle reaches the server unless
+        she shares it.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        flux:
+          type: string
+          maxLength: 20
+        douleur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        humeur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        symptomes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 30
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_jour
     CycleRequest:
       type: object
-      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
-        by default.'
+      description: 'D16 option (a): nothing of the cycle reaches the server unless
+        she shares it.'
       properties:
         id:
           type: string
@@ -4349,6 +6212,26 @@ components:
           nullable: true
         intensite:
           $ref: '#/components/schemas/IntensiteEnum'
+        douleur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        humeur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        notes:
+          type: string
+        symptomes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 30
+        irreguliere:
+          type: boolean
         symptome:
           type: string
         duree_cycle:
@@ -4370,7 +6253,6 @@ components:
           minimum: 1
       required:
       - date_debut
-      - intensite
     DangerCree:
       type: object
       description: Answer to a new danger sign, with what happened to its referral.
@@ -4384,6 +6266,13 @@ components:
           readOnly: true
         type_danger_grossesse_id:
           type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+        periode:
+          type: string
+          maxLength: 20
         date_signalement:
           type: string
           format: date-time
@@ -4427,7 +6316,6 @@ components:
       - device_id
       - grossesse_id
       - referencement_id
-      - type_danger_grossesse_id
       - updated_at
     DangerCreeRequest:
       type: object
@@ -4438,6 +6326,13 @@ components:
           format: uuid
         type_danger_grossesse_id:
           type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+        periode:
+          type: string
+          maxLength: 20
         date_signalement:
           type: string
           format: date-time
@@ -4448,11 +6343,9 @@ components:
         version:
           type: integer
           minimum: 1
-      required:
-      - type_danger_grossesse_id
     DangerGrossesse:
       type: object
-      description: Rules shared by the synced tables, also meant for the future /sync.
+      description: The phone sends the config code; the type is found from it (D16).
       properties:
         id:
           type: string
@@ -4463,6 +6356,13 @@ components:
           readOnly: true
         type_danger_grossesse_id:
           type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+        periode:
+          type: string
+          maxLength: 20
         date_signalement:
           type: string
           format: date-time
@@ -4490,17 +6390,23 @@ components:
       - deleted_at
       - device_id
       - grossesse_id
-      - type_danger_grossesse_id
       - updated_at
     DangerGrossesseRequest:
       type: object
-      description: Rules shared by the synced tables, also meant for the future /sync.
+      description: The phone sends the config code; the type is found from it (D16).
       properties:
         id:
           type: string
           format: uuid
         type_danger_grossesse_id:
           type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+        periode:
+          type: string
+          maxLength: 20
         date_signalement:
           type: string
           format: date-time
@@ -4511,8 +6417,6 @@ components:
         version:
           type: integer
           minimum: 1
-      required:
-      - type_danger_grossesse_id
     DecisionEnum:
       enum:
       - conseil
@@ -4576,7 +6480,6 @@ components:
       - date_creation
       - id
       - identifiant
-      - nom
       - phone
       - prenom
       - profil_demande
@@ -4681,7 +6584,6 @@ components:
       properties:
         nom:
           type: string
-          minLength: 1
           maxLength: 100
         prenom:
           type: string
@@ -4722,7 +6624,6 @@ components:
           maxLength: 1000
       required:
       - identifiant
-      - nom
       - phone
       - pin
       - prenom
@@ -4741,12 +6642,42 @@ components:
           items:
             type: object
             additionalProperties: {}
+        cycle_jours:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        alimentations:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
         grossesses:
           type: array
           items:
             type: object
             additionalProperties: {}
         signes_danger:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        contacts_soin:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        suivis_grossesse:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mouvements_bebe:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mouvements_evenements:
           type: array
           items:
             type: object
@@ -4762,6 +6693,16 @@ components:
             type: object
             additionalProperties: {}
         journaux_alimentaires:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        vaccins:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        tetees:
           type: array
           items:
             type: object
@@ -4790,6 +6731,112 @@ components:
       - compte
       - genere_le
       - journal
+    DossierBeneficiaire:
+      type: object
+      description: Her whole file. cycles and cycle_jours stay empty unless she shares
+        her cycle.
+      properties:
+        beneficiaire:
+          type: object
+          additionalProperties: {}
+        grossesses:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        signes_danger:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        contacts_soin:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        suivis_grossesse:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mouvements_bebe:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mouvements_evenements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        alimentations:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        cycles:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        cycle_jours:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        enfants:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        mesures:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        journaux_alimentaires:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        vaccins:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        tetees:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        rendez_vous:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        referencements:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - alimentations
+      - beneficiaire
+      - contacts_soin
+      - cycle_jours
+      - cycles
+      - enfants
+      - grossesses
+      - journaux_alimentaires
+      - mesures
+      - mouvements_bebe
+      - mouvements_evenements
+      - referencements
+      - rendez_vous
+      - signes_danger
+      - suivis_grossesse
+      - tetees
+      - vaccins
     EffacementAdminRequest:
       type: object
       properties:
@@ -4837,6 +6884,7 @@ components:
         asc_id:
           type: string
           format: uuid
+          nullable: true
         grossesse_id:
           type: string
           format: uuid
@@ -4848,6 +6896,11 @@ components:
           format: date
         sexe:
           $ref: '#/components/schemas/SexeEnum'
+        poids_naissance_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          nullable: true
         statut_prise_en_charge:
           $ref: '#/components/schemas/StatutPriseEnChargeEnum'
         version:
@@ -4875,7 +6928,6 @@ components:
       - deleted_at
       - device_id
       - nom
-      - region_id
       - sexe
       - updated_at
     EnfantARevoir:
@@ -4924,6 +6976,7 @@ components:
         asc_id:
           type: string
           format: uuid
+          nullable: true
         grossesse_id:
           type: string
           format: uuid
@@ -4935,6 +6988,11 @@ components:
           format: date
         sexe:
           $ref: '#/components/schemas/SexeEnum'
+        poids_naissance_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          nullable: true
         statut_prise_en_charge:
           $ref: '#/components/schemas/StatutPriseEnChargeEnum'
         version:
@@ -4943,7 +7001,6 @@ components:
       required:
       - date_naissance
       - nom
-      - region_id
       - sexe
     Femme:
       type: object
@@ -4976,9 +7033,33 @@ components:
         ddr:
           type: string
           format: date
+          nullable: true
         dpa:
           type: string
           format: date
+          nullable: true
+        dpa_saisie:
+          type: string
+          format: date
+          nullable: true
+        terme_confirme_date:
+          type: string
+          format: date
+          nullable: true
+        terme_confirme_jours:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        date_accouchement:
+          type: string
+          format: date
+          nullable: true
+        mode_allaitement:
+          type: string
+          maxLength: 20
+        terminee:
+          type: boolean
         version:
           type: integer
           minimum: 1
@@ -5000,10 +7081,8 @@ components:
           nullable: true
       required:
       - created_at
-      - ddr
       - deleted_at
       - device_id
-      - dpa
       - femme
       - updated_at
     GrossesseRequest:
@@ -5020,15 +7099,36 @@ components:
         ddr:
           type: string
           format: date
+          nullable: true
         dpa:
           type: string
           format: date
+          nullable: true
+        dpa_saisie:
+          type: string
+          format: date
+          nullable: true
+        terme_confirme_date:
+          type: string
+          format: date
+          nullable: true
+        terme_confirme_jours:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        date_accouchement:
+          type: string
+          format: date
+          nullable: true
+        mode_allaitement:
+          type: string
+          maxLength: 20
+        terminee:
+          type: boolean
         version:
           type: integer
           minimum: 1
-      required:
-      - ddr
-      - dpa
     Groupe:
       type: object
       properties:
@@ -5051,6 +7151,48 @@ components:
       - indicateurs
       - libelle
       - masques
+    InscriptionBeneficiaireRequest:
+      type: object
+      description: Public registration from the phone (D16).
+      properties:
+        prenom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        nom:
+          type: string
+          maxLength: 100
+        phone:
+          type: string
+          maxLength: 20
+        region_id:
+          type: integer
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 1
+        consentement:
+          type: boolean
+        partage_cycle:
+          type: boolean
+      required:
+      - consentement
+      - pin
+      - prenom
+      - region_id
+    InscriptionReponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        utilisateur:
+          $ref: '#/components/schemas/Utilisateur'
+      required:
+      - access
+      - refresh
+      - utilisateur
     IntensiteEnum:
       enum:
       - faible
@@ -5113,6 +7255,31 @@ components:
           type: boolean
           nullable: true
           readOnly: true
+        aliments:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 100
+        repas:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        laits:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        tetees:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        autres_recus:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          maxItems: 20
         notes:
           type: string
         version:
@@ -5175,6 +7342,33 @@ components:
           type: boolean
         g8_autres_fruits_legumes:
           type: boolean
+        aliments:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 100
+        repas:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        laits:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        tetees:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        autres_recus:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
         notes:
           type: string
         version:
@@ -5281,6 +7475,7 @@ components:
         asc_id:
           type: string
           format: uuid
+          nullable: true
         date_mesure:
           type: string
           format: date
@@ -5420,6 +7615,7 @@ components:
         asc_id:
           type: string
           format: uuid
+          nullable: true
         date_mesure:
           type: string
           format: date
@@ -5498,6 +7694,141 @@ components:
         * `rouge` - Rouge
         * `orange` - Orange
         * `jaune` - Jaune
+    MouvementBebe:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        mouvements:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_jour
+      - deleted_at
+      - device_id
+      - grossesse_id
+      - mouvements
+      - updated_at
+    MouvementBebeRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        mouvements:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_jour
+      - grossesse_id
+      - mouvements
+    MouvementEvenement:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        horodatage:
+          type: string
+          format: date-time
+        type:
+          type: string
+          maxLength: 20
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - deleted_at
+      - device_id
+      - grossesse_id
+      - horodatage
+      - type
+      - updated_at
+    MouvementEvenementRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        horodatage:
+          type: string
+          format: date-time
+        type:
+          type: string
+          minLength: 1
+          maxLength: 20
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - grossesse_id
+      - horodatage
+      - type
     OedemesBilaterauxEnum:
       enum:
       - aucun
@@ -5575,6 +7906,52 @@ components:
       description: |-
         * `enfant` - Enfant
         * `grossesse` - Grossesse
+    PaginatedAlimentationFemmeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlimentationFemme'
+    PaginatedBeneficiaireListeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BeneficiaireListe'
     PaginatedCSBList:
       type: object
       required:
@@ -5690,6 +8067,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Consultation'
+    PaginatedContactSoinList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactSoin'
+    PaginatedCycleJourList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CycleJour'
     PaginatedCycleList:
       type: object
       required:
@@ -5874,6 +8297,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Mesure'
+    PaginatedMouvementBebeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MouvementBebe'
+    PaginatedMouvementEvenementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MouvementEvenement'
     PaginatedProfileList:
       type: object
       required:
@@ -5989,6 +8458,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RendezVous'
+    PaginatedSuiviGrossesseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SuiviGrossesse'
+    PaginatedTeteeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tetee'
     PaginatedTypeDangerGrossesseList:
       type: object
       required:
@@ -6012,6 +8527,63 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TypeDangerGrossesse'
+    PaginatedVaccinFaitList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/VaccinFait'
+    PartageCycleReponse:
+      type: object
+      properties:
+        utilisateur:
+          $ref: '#/components/schemas/Utilisateur'
+        lignes_supprimees:
+          type: integer
+      required:
+      - lignes_supprimees
+      - utilisateur
+    PatchedAlimentationFemmeRequest:
+      type: object
+      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
+        by default.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        groupes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 30
+        version:
+          type: integer
+          minimum: 1
     PatchedCompteRequest:
       type: object
       description: A user account. The PIN can be sent on create and is never returned.
@@ -6022,7 +8594,6 @@ components:
           maxLength: 50
         nom:
           type: string
-          minLength: 1
           maxLength: 100
         prenom:
           type: string
@@ -6117,10 +8688,71 @@ components:
         version:
           type: integer
           minimum: 1
+    PatchedContactSoinRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          minLength: 1
+          maxLength: 20
+        numero:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        date_faite:
+          type: string
+          format: date
+        version:
+          type: integer
+          minimum: 1
+    PatchedCycleJourRequest:
+      type: object
+      description: 'D16 option (a): nothing of the cycle reaches the server unless
+        she shares it.'
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        flux:
+          type: string
+          maxLength: 20
+        douleur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        humeur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        symptomes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 30
+        version:
+          type: integer
+          minimum: 1
     PatchedCycleRequest:
       type: object
-      description: 'A row that belongs to a woman: she is the logged-in beneficiaire
-        by default.'
+      description: 'D16 option (a): nothing of the cycle reaches the server unless
+        she shares it.'
       properties:
         id:
           type: string
@@ -6137,6 +8769,26 @@ components:
           nullable: true
         intensite:
           $ref: '#/components/schemas/IntensiteEnum'
+        douleur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        humeur:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        notes:
+          type: string
+        symptomes:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 30
+        irreguliere:
+          type: boolean
         symptome:
           type: string
         duree_cycle:
@@ -6158,13 +8810,20 @@ components:
           minimum: 1
     PatchedDangerGrossesseRequest:
       type: object
-      description: Rules shared by the synced tables, also meant for the future /sync.
+      description: The phone sends the config code; the type is found from it (D16).
       properties:
         id:
           type: string
           format: uuid
         type_danger_grossesse_id:
           type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+        periode:
+          type: string
+          maxLength: 20
         date_signalement:
           type: string
           format: date-time
@@ -6193,6 +8852,7 @@ components:
         asc_id:
           type: string
           format: uuid
+          nullable: true
         grossesse_id:
           type: string
           format: uuid
@@ -6204,6 +8864,11 @@ components:
           format: date
         sexe:
           $ref: '#/components/schemas/SexeEnum'
+        poids_naissance_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          nullable: true
         statut_prise_en_charge:
           $ref: '#/components/schemas/StatutPriseEnChargeEnum'
         version:
@@ -6223,9 +8888,33 @@ components:
         ddr:
           type: string
           format: date
+          nullable: true
         dpa:
           type: string
           format: date
+          nullable: true
+        dpa_saisie:
+          type: string
+          format: date
+          nullable: true
+        terme_confirme_date:
+          type: string
+          format: date
+          nullable: true
+        terme_confirme_jours:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        date_accouchement:
+          type: string
+          format: date
+          nullable: true
+        mode_allaitement:
+          type: string
+          maxLength: 20
+        terminee:
+          type: boolean
         version:
           type: integer
           minimum: 1
@@ -6260,11 +8949,44 @@ components:
           type: boolean
         g8_autres_fruits_legumes:
           type: boolean
+        aliments:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 100
+        repas:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        laits:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        tetees:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        autres_recus:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
         notes:
           type: string
         version:
           type: integer
           minimum: 1
+    PatchedMePatchRequest:
+      type: object
+      description: What a beneficiary changes about herself from the phone (D16).
+      properties:
+        partage_cycle:
+          type: boolean
     PatchedMesureRequest:
       type: object
       description: Rules shared by the synced tables, also meant for the future /sync.
@@ -6278,6 +9000,7 @@ components:
         asc_id:
           type: string
           format: uuid
+          nullable: true
         date_mesure:
           type: string
           format: date
@@ -6336,6 +9059,46 @@ components:
           $ref: '#/components/schemas/AppetitEnum'
         difficultes_allaitement:
           type: boolean
+        version:
+          type: integer
+          minimum: 1
+    PatchedMouvementBebeRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        mouvements:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        version:
+          type: integer
+          minimum: 1
+    PatchedMouvementEvenementRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        horodatage:
+          type: string
+          format: date-time
+        type:
+          type: string
+          minLength: 1
+          maxLength: 20
         version:
           type: integer
           minimum: 1
@@ -6405,6 +9168,125 @@ components:
           $ref: '#/components/schemas/StatutRendezVousEnum'
         motif:
           type: string
+        version:
+          type: integer
+          minimum: 1
+    PatchedSuiviGrossesseRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        poids_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        tension_sys:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        tension_dia:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        hauteur_uterine_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+        hemoglobine_g_dl:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+        glycemie_g_l:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          nullable: true
+        glycemie_a_jeun:
+          type: boolean
+          nullable: true
+        temperature_c:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,1})?$
+          nullable: true
+        source:
+          type: string
+          minLength: 1
+          maxLength: 20
+        notes:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+    PatchedTeteeRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        horodatage:
+          type: string
+          format: date-time
+        type:
+          type: string
+          minLength: 1
+          maxLength: 20
+        duree_min:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        quantite_ml:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+    PatchedVaccinFaitRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 30
+        date_faite:
+          type: string
+          format: date
+        centre:
+          type: string
+          maxLength: 150
+        professionnel:
+          type: string
+          maxLength: 150
+        confirme_carnet:
+          type: boolean
+          nullable: true
         version:
           type: integer
           minimum: 1
@@ -6550,6 +9432,15 @@ components:
           minItems: 1
       required:
       - operations
+    RechercheCodeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - code
     ReferenceOms:
       type: object
       properties:
@@ -7098,6 +9989,151 @@ components:
       description: |-
         * `a_valider` - À VALIDER
         * `validee` - Validée
+    SuiviGrossesse:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        poids_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        tension_sys:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        tension_dia:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        hauteur_uterine_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+        hemoglobine_g_dl:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+        glycemie_g_l:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          nullable: true
+        glycemie_a_jeun:
+          type: boolean
+          nullable: true
+        temperature_c:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,1})?$
+          nullable: true
+        source:
+          type: string
+          maxLength: 20
+        notes:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - date_jour
+      - deleted_at
+      - device_id
+      - grossesse_id
+      - updated_at
+    SuiviGrossesseRequest:
+      type: object
+      description: A row of a pregnancy's follow-up, linked by grossesse_id.
+      properties:
+        id:
+          type: string
+          format: uuid
+        grossesse_id:
+          type: string
+          format: uuid
+        date_jour:
+          type: string
+          format: date
+        poids_kg:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        tension_sys:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        tension_dia:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        hauteur_uterine_cm:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+        hemoglobine_g_dl:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,1})?$
+          nullable: true
+        glycemie_g_l:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+          nullable: true
+        glycemie_a_jeun:
+          type: boolean
+          nullable: true
+        temperature_c:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,1})?$
+          nullable: true
+        source:
+          type: string
+          minLength: 1
+          maxLength: 20
+        notes:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - date_jour
+      - grossesse_id
     TablePull:
       type: object
       properties:
@@ -7120,6 +10156,93 @@ components:
       - lignes
       - prochain_depuis
       - suite
+    Tetee:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        horodatage:
+          type: string
+          format: date-time
+        type:
+          type: string
+          maxLength: 20
+        duree_min:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        quantite_ml:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - deleted_at
+      - device_id
+      - enfant_id
+      - horodatage
+      - type
+      - updated_at
+    TeteeRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        horodatage:
+          type: string
+          format: date-time
+        type:
+          type: string
+          minLength: 1
+          maxLength: 20
+        duree_min:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        quantite_ml:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - enfant_id
+      - horodatage
+      - type
     TokenRefresh:
       type: object
       properties:
@@ -7253,6 +10376,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        identifiant:
+          type: string
+          readOnly: true
         nom:
           type: string
           readOnly: true
@@ -7271,13 +10397,108 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        code_beneficiaire:
+          type: string
+          readOnly: true
+          nullable: true
+        partage_cycle:
+          type: boolean
+          readOnly: true
       required:
+      - code_beneficiaire
       - csb_id
       - id
+      - identifiant
       - nom
+      - partage_cycle
       - prenom
       - profile
       - region_id
+    VaccinFait:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          maxLength: 30
+        date_faite:
+          type: string
+          format: date
+        centre:
+          type: string
+          maxLength: 150
+        professionnel:
+          type: string
+          maxLength: 150
+        confirme_carnet:
+          type: boolean
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        device_id:
+          type: string
+          readOnly: true
+        deleted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - code
+      - created_at
+      - date_faite
+      - deleted_at
+      - device_id
+      - enfant_id
+      - updated_at
+    VaccinFaitRequest:
+      type: object
+      description: Rules shared by the synced tables, also meant for the future /sync.
+      properties:
+        id:
+          type: string
+          format: uuid
+        enfant_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 30
+        date_faite:
+          type: string
+          format: date
+        centre:
+          type: string
+          maxLength: 150
+        professionnel:
+          type: string
+          maxLength: 150
+        confirme_carnet:
+          type: boolean
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - code
+      - date_faite
+      - enfant_id
   securitySchemes:
     jwtAuth:
       type: http

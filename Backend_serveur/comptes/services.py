@@ -1,4 +1,6 @@
 import math
+import secrets
+import unicodedata
 from datetime import timedelta
 
 from django.conf import settings
@@ -29,7 +31,14 @@ from .exceptions import (
     TotpObligatoire,
     TotpRequis,
 )
-from .models import MESSAGE_IDENTIFIANT_UTILISE, PROFILS_TOTP, CodeProfile, User
+from .models import (
+    MESSAGE_IDENTIFIANT_UTILISE,
+    PROFILS_TOTP,
+    CodeProfile,
+    Profile,
+    SuiviBeneficiaire,
+    User,
+)
 
 DUREES_BLOCAGE = {
     5: timedelta(minutes=15),
@@ -56,6 +65,152 @@ def beneficiaires_visibles(user):
     return User.objects.none()
 
 
+def zone_beneficiaires(user):
+    """The beneficiaries a health worker may find by name in their list (D16):
+    the ASC's region, the region of the agent's centre. Everywhere for an admin."""
+    beneficiaires = User.objects.filter(
+        profile__code=CodeProfile.BENEFICIAIRE,
+        efface_le__isnull=True,
+        is_active=True,
+    )
+    code = user.profile.code
+    if code == CodeProfile.ADMIN:
+        return beneficiaires
+    if code == CodeProfile.ASC and user.region_id is not None:
+        return beneficiaires.filter(region_id=user.region_id)
+    if code == CodeProfile.AGENT_CSB and user.csb_id is not None:
+        return beneficiaires.filter(region_id=user.csb.region_id)
+    return User.objects.none()
+
+
+def beneficiaires_suivies(user):
+    """Ids of the beneficiaries whose whole file this user receives (D16).
+
+    A beneficiary: herself. A health worker: the women they follow. The
+    admin is handled by each table (everything).
+    """
+    code = user.profile.code
+    if code == CodeProfile.BENEFICIAIRE:
+        return User.objects.filter(pk=user.pk).values("pk")
+    if code in (CodeProfile.ASC, CodeProfile.AGENT_CSB):
+        # Erased women stay here: the worker's phone must receive the
+        # deletions of her rows. Her file can no longer be opened.
+        return SuiviBeneficiaire.objects.filter(agent=user).values("beneficiaire_id")
+    return User.objects.none().values("pk")
+
+
+def suivre(agent, beneficiaire, contexte=None, motif=""):
+    """agent follows beneficiaire from now on. Nothing for other profiles."""
+    if agent.profile.code not in (CodeProfile.ASC, CodeProfile.AGENT_CSB):
+        return False
+    if beneficiaire is None or beneficiaire.profile.code != CodeProfile.BENEFICIAIRE:
+        return False
+    _, cree = SuiviBeneficiaire.objects.get_or_create(
+        agent=agent, beneficiaire=beneficiaire
+    )
+    if cree and contexte is not None:
+        journaliser(
+            "suivi_beneficiaire",
+            contexte.user,
+            contexte.ip,
+            cible=beneficiaire,
+            device_id=contexte.device_id,
+            motif=motif,
+        )
+    return cree
+
+
+def ne_plus_suivre(agent, beneficiaire, contexte):
+    supprimes, _ = SuiviBeneficiaire.objects.filter(
+        agent=agent, beneficiaire=beneficiaire
+    ).delete()
+    if supprimes:
+        journaliser(
+            "fin_suivi_beneficiaire",
+            contexte.user,
+            contexte.ip,
+            cible=beneficiaire,
+            device_id=contexte.device_id,
+        )
+    return bool(supprimes)
+
+
+# No 0/O, 1/I/L: the code is read aloud and typed on a small keyboard.
+ALPHABET_CODE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+LONGUEUR_CODE = 6
+
+
+def nouveau_code_beneficiaire():
+    while True:
+        code = "".join(secrets.choice(ALPHABET_CODE) for _ in range(LONGUEUR_CODE))
+        if not User.objects.filter(code_beneficiaire=code).exists():
+            return code
+
+
+def normaliser_code(code):
+    return "".join(c for c in str(code).upper() if c.isalnum())
+
+
+def nouvel_identifiant(prenom):
+    """'voahangy.4821': readable, from the first name, unique whatever the case."""
+    base = unicodedata.normalize("NFKD", prenom or "").encode("ascii", "ignore").decode()
+    base = "".join(c for c in base.lower() if c.isalnum())[:30] or "maman"
+    while True:
+        identifiant = f"{base}.{secrets.randbelow(9000) + 1000}"
+        if not User.objects.filter(identifiant__iexact=identifiant).exists():
+            return identifiant
+
+
+def inscrire_beneficiaire(donnees, contexte):
+    """Public registration from the phone (D16): no admin approval.
+
+    The account gets a generated username and code, and the person is
+    logged in straight away.
+    """
+    donnees = dict(donnees)
+    pin = donnees.pop("pin")
+    user = User(
+        identifiant=nouvel_identifiant(donnees.get("prenom")),
+        code_beneficiaire=nouveau_code_beneficiaire(),
+        profile=Profile.objects.get(code=CodeProfile.BENEFICIAIRE),
+        **donnees,
+    )
+    user.set_password(pin)
+    user = _enregistrer_compte(
+        user,
+        "inscription_beneficiaire",
+        contexte,
+        force_insert=True,
+        profil=CodeProfile.BENEFICIAIRE,
+    )
+    return user, jetons(user)
+
+
+def changer_partage_cycle(user, partage, contexte):
+    """Option (a) of D16. Turned off, her cycle data leaves the server for
+    good: only her phone keeps it, as before she shared it."""
+    from sante_femme.models import Cycle, CycleJour
+
+    with transaction.atomic():
+        user = User.objects.select_for_update(of=("self",)).get(pk=user.pk)
+        if user.partage_cycle == partage:
+            return user, 0
+        supprimes = 0
+        if not partage:
+            for modele in (Cycle, CycleJour):
+                supprimes += modele.all_objects.filter(user=user).delete()[0]
+        user.partage_cycle = partage
+        user.save(update_fields=["partage_cycle", "updated_at"])
+        journaliser(
+            "partage_cycle_active" if partage else "partage_cycle_desactive",
+            user,
+            contexte.ip,
+            device_id=contexte.device_id,
+            lignes_supprimees=supprimes,
+        )
+    return user, supprimes
+
+
 def asc_visibles(user):
     """The ASCs this user may name on a row: an ASC can only name themself."""
     code = user.profile.code
@@ -76,6 +231,11 @@ def comptes_visibles(user):
         if user.region_id is None:
             return ascs
         return ascs.filter(region_id=user.region_id)
+    if code == CodeProfile.AGENT_CSB:
+        # Only to set a new PIN for a woman at the centre (D16).
+        return zone_beneficiaires(user) | User.objects.filter(
+            pk__in=beneficiaires_suivies(user)
+        )
     return beneficiaires_visibles(user)
 
 
@@ -115,14 +275,24 @@ def creer_compte(donnees, contexte):
     donnees = dict(donnees)
     pin = donnees.pop("pin")
     user = User(**donnees)
+    beneficiaire = user.profile.code == CodeProfile.BENEFICIAIRE
+    if beneficiaire:
+        # A woman without a phone, registered by her ASC (cahier §3.2.A).
+        if not user.identifiant:
+            user.identifiant = nouvel_identifiant(user.prenom)
+        user.code_beneficiaire = user.code_beneficiaire or nouveau_code_beneficiaire()
     user.set_password(pin)
-    return _enregistrer_compte(
-        user,
-        "create",
-        contexte,
-        force_insert=True,
-        profil=user.profile.code,
-    )
+    with transaction.atomic():
+        user = _enregistrer_compte(
+            user,
+            "create",
+            contexte,
+            force_insert=True,
+            profil=user.profile.code,
+        )
+        if beneficiaire:
+            suivre(contexte.user, user, contexte, motif="inscription")
+    return user
 
 
 def modifier_compte(user, donnees, contexte):

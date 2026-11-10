@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from comptes.models import CodeProfile
+from comptes.services import beneficiaires_suivies
 from config_clinique.services import config_active
 from nutrition.models import Mesure, StatutPriseEnCharge
 from nutrition.services import enfants_visibles
@@ -73,13 +74,14 @@ def referencements_visibles(user, inclure_supprimes=False):
     if code == CodeProfile.BENEFICIAIRE:
         return referencements.filter(Q(enfant__mere=user) | Q(grossesse__user=user))
     if code == CodeProfile.ASC:
-        lien = Q(asc=user) | Q(enfant__asc=user)
-        if user.region_id is not None:
-            lien |= Q(
-                grossesse__user__region_id=user.region_id,
-                grossesse__user__profile__code=CodeProfile.BENEFICIAIRE,
-            )
-        return referencements.filter(lien)
+        # D16: also the referrals of the women the ASC follows.
+        suivies = beneficiaires_suivies(user)
+        return referencements.filter(
+            Q(asc=user)
+            | Q(enfant__asc=user)
+            | Q(grossesse__user__in=suivies)
+            | Q(enfant__mere__in=suivies)
+        )
     if code == CodeProfile.AGENT_CSB and user.csb_id is not None:
         return referencements.filter(csb_id=user.csb_id)
     return referencements.none()
@@ -108,7 +110,7 @@ def referencer_danger(danger, csb, contexte):
             "asc": contexte.user,
             "csb": csb,
             "priorite": Priorite.URGENTE,
-            "motif": f"Signe de danger : {danger.type_danger_grossesse.description}",
+            "motif": f"Signe de danger : {danger.libelle}",
         },
         contexte,
     )

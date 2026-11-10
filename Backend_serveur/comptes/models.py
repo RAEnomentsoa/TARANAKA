@@ -83,12 +83,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         unique=True,
         error_messages={"unique": MESSAGE_IDENTIFIANT_UTILISE},
     )
-    nom = models.CharField(max_length=100)
+    # A beneficiary may give only a first name or a nickname (spec §3).
+    nom = models.CharField(max_length=100, blank=True)
     prenom = models.CharField(max_length=100)
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
     password = models.CharField("PIN (haché)", max_length=128, db_column="pin_hash")
     consentement = models.BooleanField(default=False)
+    # Beneficiary only (D16). Short code she shows to a health worker (typed or
+    # as a QR) so they can open her file.
+    code_beneficiaire = models.CharField(
+        max_length=8, unique=True, null=True, blank=True
+    )
+    # Option (a) of D16: the cycle stays on her phone unless she shares it.
+    partage_cycle = models.BooleanField(default=False)
     date_creation = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     profile = models.ForeignKey(
@@ -155,8 +163,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 # Profiles a person may ask for with the public access request (D15). ASCs
-# are created by their supervisor (spec §2), beneficiaries use the phone
-# without an account, and an admin is never self-declared.
+# are created by their supervisor (spec §2), beneficiaries register from the
+# phone (D16), and an admin is never self-declared.
 PROFILS_DEMANDE_ACCES = (CodeProfile.AGENT_CSB, CodeProfile.SUPERVISEUR)
 
 
@@ -177,7 +185,8 @@ class DemandeAcces(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nom = models.CharField(max_length=100)
+    # A beneficiary may give only a first name or a nickname (spec §3).
+    nom = models.CharField(max_length=100, blank=True)
     prenom = models.CharField(max_length=100)
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=20)
@@ -243,3 +252,37 @@ class DemandeAcces(models.Model):
 
     def __str__(self):
         return f"{self.prenom} {self.nom} ({self.identifiant}) – {self.get_statut_display()}"
+
+
+class SuiviBeneficiaire(models.Model):
+    """A health worker follows a beneficiary (D16): from then on, their pulls
+    carry her whole file. Created when the worker opens her file, registers
+    her, or records something for her."""
+
+    id = models.BigAutoField(primary_key=True)
+    agent = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="beneficiaires_suivies",
+    )
+    beneficiaire = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="suivie_par",
+    )
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "suivi_beneficiaire"
+        verbose_name = "Bénéficiaire suivie"
+        verbose_name_plural = "Bénéficiaires suivies"
+        ordering = ["-date_creation"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["agent", "beneficiaire"],
+                name="suivi_beneficiaire_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.agent} suit {self.beneficiaire}"

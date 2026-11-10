@@ -28,8 +28,59 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "nom", "prenom", "profile", "region_id", "csb_id")
+        fields = (
+            "id",
+            "identifiant",
+            "nom",
+            "prenom",
+            "profile",
+            "region_id",
+            "csb_id",
+            "code_beneficiaire",
+            "partage_cycle",
+        )
         read_only_fields = fields
+
+
+class MePatchSerializer(serializers.Serializer):
+    """What a beneficiary changes about herself from the phone (D16)."""
+
+    partage_cycle = serializers.BooleanField()
+
+
+class InscriptionBeneficiaireSerializer(serializers.ModelSerializer):
+    """Public registration from the phone (D16)."""
+
+    region_id = serializers.PrimaryKeyRelatedField(
+        source="region", queryset=Region.objects.all()
+    )
+    pin = serializers.CharField(
+        write_only=True, trim_whitespace=False, validators=[valider_pin]
+    )
+    consentement = serializers.BooleanField()
+
+    class Meta:
+        model = User
+        fields = ("prenom", "nom", "phone", "region_id", "pin", "consentement", "partage_cycle")
+        extra_kwargs = {"nom": {"required": False}, "partage_cycle": {"required": False}}
+
+    def validate_consentement(self, valeur):
+        if not valeur:
+            raise serializers.ValidationError(
+                "Le consentement est obligatoire pour créer un compte."
+            )
+        return valeur
+
+
+class InscriptionReponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    utilisateur = UtilisateurSerializer()
+
+
+class PartageCycleReponseSerializer(serializers.Serializer):
+    utilisateur = UtilisateurSerializer()
+    lignes_supprimees = serializers.IntegerField()
 
 
 class CompteSerializer(serializers.ModelSerializer):
@@ -78,10 +129,13 @@ class CompteSerializer(serializers.ModelSerializer):
             "region_id",
             "csb_id",
             "is_active",
+            "code_beneficiaire",
             "date_creation",
             "updated_at",
         )
-        read_only_fields = ("id", "date_creation", "updated_at")
+        read_only_fields = ("id", "code_beneficiaire", "date_creation", "updated_at")
+        # Generated for a beneficiary when left out (D16).
+        extra_kwargs = {"identifiant": {"required": False}}
 
     @property
     def utilisateur(self):
@@ -124,6 +178,7 @@ class CompteSerializer(serializers.ModelSerializer):
     def _completer_creation(self, attrs):
         if "pin" not in attrs:
             raise serializers.ValidationError({"pin": ["Ce champ est obligatoire."]})
+        self._verifier_identifiant(attrs)
         if self.utilisateur.profile.code == CodeProfile.ASC:
             if self.utilisateur.region_id is None:
                 raise serializers.ValidationError(
@@ -140,6 +195,19 @@ class CompteSerializer(serializers.ModelSerializer):
         elif "profile" not in attrs:
             raise serializers.ValidationError(
                 {"profile_code": ["Ce champ est obligatoire."]}
+            )
+
+    def _verifier_identifiant(self, attrs):
+        if attrs.get("identifiant"):
+            return
+        code = self.utilisateur.profile.code
+        profil = attrs.get("profile")
+        beneficiaire = code == CodeProfile.ASC or (
+            profil is not None and profil.code == CodeProfile.BENEFICIAIRE
+        )
+        if not beneficiaire:
+            raise serializers.ValidationError(
+                {"identifiant": ["Ce champ est obligatoire."]}
             )
 
     def _verifier_profil(self, attrs):
@@ -241,11 +309,19 @@ class DonneesPersonnellesSerializer(serializers.Serializer):
     genere_le = serializers.DateTimeField()
     compte = serializers.DictField()
     cycles = serializers.ListField(child=serializers.DictField(), required=False)
+    cycle_jours = serializers.ListField(child=serializers.DictField(), required=False)
+    alimentations = serializers.ListField(child=serializers.DictField(), required=False)
     grossesses = serializers.ListField(child=serializers.DictField(), required=False)
     signes_danger = serializers.ListField(child=serializers.DictField(), required=False)
+    contacts_soin = serializers.ListField(child=serializers.DictField(), required=False)
+    suivis_grossesse = serializers.ListField(child=serializers.DictField(), required=False)
+    mouvements_bebe = serializers.ListField(child=serializers.DictField(), required=False)
+    mouvements_evenements = serializers.ListField(child=serializers.DictField(), required=False)
     enfants = serializers.ListField(child=serializers.DictField(), required=False)
     mesures = serializers.ListField(child=serializers.DictField(), required=False)
     journaux_alimentaires = serializers.ListField(child=serializers.DictField(), required=False)
+    vaccins = serializers.ListField(child=serializers.DictField(), required=False)
+    tetees = serializers.ListField(child=serializers.DictField(), required=False)
     referencements = serializers.ListField(child=serializers.DictField(), required=False)
     rendez_vous = serializers.ListField(child=serializers.DictField(), required=False)
     consultations = serializers.ListField(child=serializers.DictField(), required=False)
@@ -418,3 +494,56 @@ class OptionCentreSerializer(serializers.ModelSerializer):
 class OptionsDemandeSerializer(serializers.Serializer):
     regions = OptionRegionSerializer(many=True)
     centres = OptionCentreSerializer(many=True)
+
+
+# ---------- Beneficiaries seen by health workers (D16) ----------
+
+
+class BeneficiaireListeSerializer(serializers.ModelSerializer):
+    """One line of the list: enough to recognise her, not her health data."""
+
+    region_id = serializers.IntegerField(read_only=True)
+    suivie = serializers.BooleanField(read_only=True)
+    grossesse_en_cours = serializers.BooleanField(read_only=True)
+    nb_enfants = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "prenom",
+            "nom",
+            "phone",
+            "region_id",
+            "code_beneficiaire",
+            "suivie",
+            "grossesse_en_cours",
+            "nb_enfants",
+        )
+        read_only_fields = fields
+
+
+class RechercheCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=20)
+
+
+class DossierBeneficiaireSerializer(serializers.Serializer):
+    """Her whole file. cycles and cycle_jours stay empty unless she shares her cycle."""
+
+    beneficiaire = serializers.DictField()
+    grossesses = serializers.ListField(child=serializers.DictField())
+    signes_danger = serializers.ListField(child=serializers.DictField())
+    contacts_soin = serializers.ListField(child=serializers.DictField())
+    suivis_grossesse = serializers.ListField(child=serializers.DictField())
+    mouvements_bebe = serializers.ListField(child=serializers.DictField())
+    mouvements_evenements = serializers.ListField(child=serializers.DictField())
+    alimentations = serializers.ListField(child=serializers.DictField())
+    cycles = serializers.ListField(child=serializers.DictField())
+    cycle_jours = serializers.ListField(child=serializers.DictField())
+    enfants = serializers.ListField(child=serializers.DictField())
+    mesures = serializers.ListField(child=serializers.DictField())
+    journaux_alimentaires = serializers.ListField(child=serializers.DictField())
+    vaccins = serializers.ListField(child=serializers.DictField())
+    tetees = serializers.ListField(child=serializers.DictField())
+    rendez_vous = serializers.ListField(child=serializers.DictField())
+    referencements = serializers.ListField(child=serializers.DictField())

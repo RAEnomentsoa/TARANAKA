@@ -78,6 +78,8 @@ class CSB(models.Model):
 
 class TypeDangerGrossesse(models.Model):
     id = models.AutoField(primary_key=True)
+    # Code of the clinical config (signes_danger.grossesse), as sent by the phone.
+    code = models.CharField(max_length=50, unique=True, null=True, blank=True)
     description = models.TextField()
 
     class Meta:

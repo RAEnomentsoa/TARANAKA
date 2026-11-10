@@ -212,6 +212,7 @@ class PushTest(BaseSyncTest):
 
     def test_signe_de_danger_cree_le_referencement(self):
         grossesse = self.grossesse()
+        self.suivre(self.asc)
         resultat = self.resultats(
             self.pousser(
                 operation(
@@ -276,7 +277,24 @@ class PermissionsSyncTest(BaseSyncTest):
         )[0]
         self.assertEqual(resultat["statut"], "refuse")
 
+    def test_cycle_refuse_sans_partage(self):
+        """D16 option (a): nothing of the cycle reaches the server by default."""
+        resultat = self.resultats(
+            self.pousser(
+                operation(
+                    "cycle",
+                    "create",
+                    donnees={"date_debut": "2026-10-01", "intensite": "moyenne"},
+                ),
+                user=self.femme,
+            )
+        )[0]
+        self.assertEqual(resultat["statut"], "refuse", resultat)
+        self.assertFalse(Cycle.objects.exists())
+
     def test_beneficiaire_synchronise_son_cycle(self):
+        self.femme.partage_cycle = True
+        self.femme.save()
         resultat = self.resultats(
             self.pousser(
                 operation(
@@ -453,6 +471,8 @@ class ConflitTest(BaseSyncTest):
         self.assertEqual(reponse.status_code, 403)
 
     def test_donnees_personnelles_sans_file_web(self):
+        self.femme.partage_cycle = True
+        self.femme.save()
         cycle = Cycle.objects.create(
             user=self.femme,
             date_debut=date(2026, 10, 1),
@@ -488,7 +508,8 @@ class PullTest(BaseSyncTest):
         self.assertEqual(set(lignes), {str(garde.pk), str(supprime.pk)})
         self.assertIsNotNone(lignes[str(supprime.pk)]["deleted_at"])
         self.assertIsNone(lignes[str(garde.pk)]["deleted_at"])
-        self.assertNotIn("cycle", donnees["tables"])
+        # Nobody shares a cycle with this ASC: the table comes back empty.
+        self.assertEqual(donnees["tables"]["cycle"]["lignes"], [])
 
     def test_seulement_ce_qui_a_change(self):
         ancien = self.enfant(nom="Ancien")

@@ -11,11 +11,14 @@ from .models import (
     JournalAlimentaire,
     Mesure,
     StatutPriseEnCharge,
+    Tetee,
+    VaccinFait,
 )
 
 
 class EnfantFilter(SyncFilterSet):
     region = filters.NumberFilter(field_name="region_id")
+    mere = filters.UUIDFilter(field_name="mere_id")
     asc = filters.UUIDFilter(field_name="asc_id")
     statut_prise_en_charge = filters.ChoiceFilter(choices=StatutPriseEnCharge.choices)
     search = filters.CharFilter(field_name="nom", lookup_expr="icontains")
@@ -52,4 +55,21 @@ class ConsultationFilter(SyncFilterSet):
 
     class Meta:
         model = ConsultationNutritionnelle
+        fields = []
+
+
+class VaccinFaitFilter(SyncFilterSet):
+    enfant = filters.UUIDFilter(field_name="enfant_id")
+
+    class Meta:
+        model = VaccinFait
+        fields = []
+
+
+class TeteeFilter(SyncFilterSet):
+    enfant = filters.UUIDFilter(field_name="enfant_id")
+    depuis = filters.IsoDateTimeFilter(field_name="horodatage", lookup_expr="gte")
+
+    class Meta:
+        model = Tetee
         fields = []

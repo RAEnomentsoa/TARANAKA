@@ -25,11 +25,13 @@ L'application a **deux modes** séparés dès l'accueil. C'est la correction la 
 
 | Persona | Mode | Accès | Besoin principal |
 |---|---|---|---|
-| Adolescente / femme (rurale, faible littératie possible) | **Personnel** | Sans compte, PIN local | Suivre son cycle ou sa grossesse discrètement |
-| Parent / tuteur d'un enfant de 0 à 24 mois | **Personnel** | Sans compte, PIN local | Suivre croissance, repas, vaccins |
+| Adolescente / femme (rurale, faible littératie possible) | **Personnel** | Compte bénéficiaire créé depuis le téléphone (D16) + PIN local | Suivre son cycle ou sa grossesse discrètement |
+| Parent / tuteur d'un enfant de 0 à 24 mois | **Personnel** | Compte bénéficiaire créé depuis le téléphone (D16) + PIN local | Suivre croissance, repas, vaccins |
 | Agent communautaire (AC) | **Agent** | Compte nominatif créé par un superviseur + PIN | Dépister, référer, relancer les rendez-vous manqués |
 | Infirmier / médecin CSB, CRENAS, CRENI | **Web** | Compte nominatif, double authentification | Recevoir les référencements et mettre à jour les dossiers |
 | Superviseur (district, région, programme) | **Web** | Compte nominatif | Voir des statistiques agrégées et anonymisées |
+
+> **Modifié par D16 (`docs/DECISIONS.md`, `docs/PLAN_BENEFICIAIRE_CONNECTEE.md`).** La bénéficiaire a désormais un compte serveur, créé depuis son téléphone sans validation admin (identifiant et code générés). Le téléphone reste hors ligne d'abord : le profil marche tout de suite, le compte est créé à la première connexion. L'ASC choisit une bénéficiaire qui utilise déjà l'application (liste de sa zone ou code qu'elle montre) au lieu de créer un enfant isolé ; il peut inscrire une femme sans téléphone, avec son consentement.
 
 Rôles et permissions gérés côté serveur (RBAC). Chaque action clinique est tracée dans un journal d'audit (qui, quoi, quand, sur quel appareil).
 
@@ -169,7 +171,7 @@ Issues de sortie (à valider avec le protocole) : guéri, transféré, non-répo
 - Modèle **outbox** : chaque création ou modification est écrite localement puis placée dans une file d'envoi.
 - **Identifiant unique (UUID) généré sur le téléphone** + clé d'idempotence → aucun doublon même si l'envoi est répété.
 - Envoi automatique dès le retour du réseau (et sur bouton « Synchroniser maintenant »), en HTTPS/TLS 1.2+, par petits lots compressés, avec reprise après coupure. Option « Wi-Fi uniquement ».
-- **Ce qui est synchronisé :** données du mode agent (dépistages, référencements, suivis). Données du mode personnel **uniquement si l'utilisatrice l'active**, et jamais les données du cycle menstruel par défaut.
+- **Ce qui est synchronisé :** données du mode agent (dépistages, référencements, suivis). ~~Données du mode personnel uniquement si l'utilisatrice l'active~~ **Depuis D16 : toutes les données du mode personnel** (grossesse, CPN, suivi, mouvements, signes de danger, alimentation, enfants, pesées, repas, vaccins, tétées), avec le consentement donné à la création du compte. **Le cycle menstruel reste privé** : il n'est envoyé que si elle active le partage du cycle, et le désactiver l'efface du serveur (option a). Le personnel de santé (ASC, agent de CSB) voit le dossier complet des femmes qu'il suit.
 - Statut visible sur chaque enregistrement : **Enregistré** (gris) → **À synchroniser** (orange) → **Synchronisé** (vert) → **Conflit** (rouge).
 - **Conflits sur des données cliniques :** jamais d'écrasement automatique. Les deux versions sont conservées et envoyées dans une file « à vérifier » sur le tableau de bord web.
 - Un référencement reste marqué **« Non transmis »** jusqu'à l'accusé de réception du serveur, puis **« Reçu par le centre »** quand l'infirmier confirme.

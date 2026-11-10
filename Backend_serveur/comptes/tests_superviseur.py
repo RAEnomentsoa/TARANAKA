@@ -98,14 +98,23 @@ class SuperviseurComptesTest(BaseApiTest):
                 )
                 self.assertEqual(reponse.status_code, 404)
 
-    def test_asc_ne_reinitialise_pas(self):
+    def test_asc_reinitialise_seulement_une_beneficiaire(self):
+        """D16: the woman in front of her ASC gets a new PIN; never a colleague."""
         self.comme(self.asc)
         reponse = self.client.post(
             f"{PROFILES}{self.femme.pk}/reset-pin/",
             {"nouveau_pin": "9876"},
             format="json",
         )
-        self.assertEqual(reponse.status_code, 403)
+        self.assertEqual(reponse.status_code, 200, reponse.data)
+        self.femme.refresh_from_db()
+        self.assertTrue(self.femme.check_password("9876"))
+        reponse = self.client.post(
+            f"{PROFILES}{self.asc_meme_region.pk}/reset-pin/",
+            {"nouveau_pin": "9876"},
+            format="json",
+        )
+        self.assertEqual(reponse.status_code, 404)
 
     def test_format_du_pin(self):
         reponse = self.client.post(

@@ -6,6 +6,8 @@ from .views import (
     JournalAlimentaireViewSet,
     MesureEnfantViewSet,
     MesureViewSet,
+    TeteeViewSet,
+    VaccinFaitViewSet,
 )
 
 router = SimpleRouter()
@@ -18,5 +20,7 @@ router.register(
 router.register("measurements", MesureViewSet, basename="measurement")
 router.register("food-logs", JournalAlimentaireViewSet, basename="food-log")
 router.register("consultations", ConsultationViewSet, basename="consultation")
+router.register("vaccinations", VaccinFaitViewSet, basename="vaccination")
+router.register("feeds", TeteeViewSet, basename="feed")
 
 urlpatterns = router.urls
