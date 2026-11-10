@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// TARANAKA: only the secret of the recovery by e-mail is stored here
+// (recovery/{uid}/profiles/{profileId} = {secret, updated_at}). No health
+// data. Each Firebase account reads and writes its own documents only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /recovery/{uid}/profiles/{profileId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      allow get, delete: if isOwner();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['secret', 'updated_at'])
+        && request.resource.data.secret is string;
+    }
+  }
+}

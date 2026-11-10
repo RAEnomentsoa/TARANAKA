@@ -1,0 +1,65 @@
+name: taranaka
+description: "TARANAKA by SmartSaha – application mobile hors ligne (santé de la femme et de l'enfant, dépistage de la malnutrition)."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  cloud_firestore: ^7.1.0
+  connectivity_plus: ^7.3.2
+  crypto: ^3.0.8
+  firebase_auth: ^7.0.1
+  firebase_core: ^5.1.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_secure_storage: ^11.2.0
+  http: ^1.6.0
+  intl: ^0.20.3
+  local_auth: ^3.0.2
+  path_provider: ^2.1.6
+  sqflite_common: ^2.5.15
+  sqflite_sqlcipher: ^3.4.1
+  url_launcher: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  sqflite_common_ffi: ^2.4.5
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/config/
+    - assets/who/
+    - assets/images/
+
+# Host tests (flutter test) load the system SQLCipher library, so the tests
+# exercise real encryption. Install it with `apt install libsqlcipher-dev`.
+# The Android app does not use this: it ships SQLCipher through sqflite_sqlcipher.
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name: sqlcipher
+
+# App icon: `dart run flutter_launcher_icons` regenerates the Android mipmaps
+# (and the iOS AppIcon set once an ios/ folder exists) from logo_v1.png.
+# On Android 8+ the tool insets the foreground by 16% so the launcher's crop
+# (circle, squircle…) never cuts the logo.
+flutter_launcher_icons:
+  image_path: "assets/images/logo_v1.png"
+  android: "ic_launcher"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo_v1.png"
+  min_sdk_android: 21
+  # No ios/ folder in this project yet. After `flutter create --platforms=ios .`
+  # set this to true and rerun the command.
+  ios: false
+  remove_alpha_ios: true

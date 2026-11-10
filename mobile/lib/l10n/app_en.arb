@@ -1,0 +1,1291 @@
+{
+  "@@locale": "en",
+  "appName": "TARANAKA",
+  "language": "Language",
+  "continueLabel": "Continue",
+  "back": "Back",
+  "cancel": "Cancel",
+  "save": "Save",
+  "confirm": "Confirm",
+  "close": "Close",
+  "skip": "Skip",
+  "yes": "Yes",
+  "no": "No",
+  "loading": "Loading…",
+  "errorGeneric": "Something went wrong. Try again.",
+  "retry": "Try again",
+  "consentTitle": "Your data, your choice",
+  "consentWhatTitle": "What is saved",
+  "consentWhat": "Your cycle, your pregnancy, and your children's growth, meals and vaccines. Only what you enter.",
+  "consentWhereTitle": "How is your data protected?",
+  "consentWhere": "Your personal data is protected. You decide whether it can be shared. Without your permission, no information will be sent.",
+  "consentAgree": "I agree and continue",
+  "createProfileTitle": "Create your profile",
+  "nameLabel": "First name or nickname",
+  "nameRequired": "Write a first name or a nickname.",
+  "pinChoose": "Create your 4-digit secret code",
+  "pinConfirm": "Confirm your secret code",
+  "pinMismatch": "The two codes are different. Start again.",
+  "pinDeleteDigit": "Delete the last digit",
+  "pinDigitsEntered": "{count} of 4 digits",
+  "@pinDigitsEntered": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recoveryAnswerLabel": "Your answer",
+  "modeTitle": "Who are you using the app for?",
+  "modePersonal": "For me and my family",
+  "modePersonalHint": "Cycle, pregnancy, child.",
+  "modeAgent": "I am a health worker",
+  "modeAgentHint": "Screen, refer and follow up children.",
+  "profilesTitle": "Who is using the phone?",
+  "profileAgentBadge": "Health worker",
+  "profilePersonalBadge": "Personal",
+  "addProfile": "Add a profile",
+  "enterPin": "Enter your secret code",
+  "pinWrong": "Wrong code.",
+  "pinWrongRemaining": "Wrong code. {count} attempt(s) left before a temporary block.",
+  "@pinWrongRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pinLockedUntil": "Too many attempts. Try again in {time}.",
+  "@pinLockedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "forgotPin": "Forgot your code?",
+  "forgotPinRecovery": "Answer your secret question. You will then choose a new code; your data are kept.",
+  "forgotPinNoRecovery": "This profile has no active recovery e-mail nor secret question. It must be reset: all its data on this phone will be erased and cannot be recovered.",
+  "forgotPinAgent": "Ask your supervisor to reset your code on the server. Then delete this profile and log in again: synced data will be restored. Data not yet synced will be lost.",
+  "resetProfile": "Delete this profile and its data",
+  "resetProfileConfirm": "Permanently delete the profile “{name}” and all its data on this phone?",
+  "@resetProfileConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "answerWrong": "Wrong answer.",
+  "newPin": "New code",
+  "currentPin": "Current code",
+  "pinChanged": "Your code has been changed.",
+  "homeGreeting": "Hello {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileCycle": "My cycle",
+  "tilePregnancy": "My pregnancy",
+  "tileChild": "My child",
+  "tileAgent": "Malnutrition & care",
+  "tileAgentHint": "For health workers only (login required)",
+  "settings": "Settings",
+  "lockNow": "Lock",
+  "switchProfile": "Switch profile",
+  "changePin": "Change my code",
+  "eraseAll": "Erase all my data",
+  "eraseAllConfirm": "All the data of this profile on this phone will be permanently erased, then the profile will be deleted. Data already synced stays on the server.",
+  "erase": "Erase",
+  "configToValidate": "Sample clinical configuration – TO BE VALIDATED (v{version}). Do not use for treatment.",
+  "@configToValidate": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutTitle": "About",
+  "aboutConfig": "Clinical configuration: version {version}",
+  "@aboutConfig": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "privacyTitle": "Privacy",
+  "durationSeconds": "{count} s",
+  "@durationSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationMinutes": "{count} min",
+  "@durationMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "malagasyReviewNote": "Malagasy texts to be reviewed by native speakers.",
+  "syncSaved": "Saved",
+  "syncPending": "To sync",
+  "syncSynced": "Synced",
+  "syncConflict": "Conflict",
+  "agentLoginTitle": "Health worker login",
+  "agentLoginHelp": "Use the account and code given by your supervisor. The first login needs the Internet; after that everything works offline.",
+  "identifiantLabel": "Username",
+  "serverPinLabel": "Account code",
+  "loginButton": "Log in",
+  "loginErrorOffline": "No network. The first login needs the Internet.",
+  "loginErrorCredentials": "Wrong username or code.",
+  "loginErrorBlocked": "Account blocked after too many attempts. Try again later or call your supervisor.",
+  "loginErrorNotAgent": "This account is not a community health worker account.",
+  "loginErrorOtherAccount": "This profile is already linked to another account. Create a new profile for this health worker.",
+  "loginErrorServer": "The server answered with an error. Try again later.",
+  "agentScreen": "Screen a child",
+  "agentScreenHint": "Measure, classify, refer",
+  "agentReferrals": "My referrals",
+  "agentFollowUps": "Appointments to follow up",
+  "agentSync": "Sync",
+  "agentAccessText": "This module is for community health workers only, with a personal account created by their supervisor. Create a “health worker” profile protected by its own code.",
+  "agentAccessCreate": "Create a health worker profile",
+  "searchChild": "Search for a child (name)",
+  "newChild": "New child",
+  "noChildren": "No child found. Add one with “New child”.",
+  "childName": "Child's full name",
+  "childSex": "Sex",
+  "sexF": "Girl",
+  "sexM": "Boy",
+  "birthDate": "Date of birth",
+  "chooseDate": "Choose the date",
+  "birthDateRequired": "Choose the date of birth.",
+  "sexRequired": "Choose girl or boy.",
+  "ageMonths": "{months} months",
+  "@ageMonths": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "measureDate": "Date of the measurement",
+  "weightKg": "Weight (kg)",
+  "lengthCm": "Height (cm)",
+  "position": "Position",
+  "positionLying": "Lying down",
+  "positionStanding": "Standing",
+  "muacMm": "Mid-upper arm circumference – MUAC (mm)",
+  "muacOnlyFrom6": "MUAC is measured from 6 months.",
+  "oedema": "Bilateral oedema (both feet)",
+  "oedemaNone": "None",
+  "dangerSigns": "Danger signs",
+  "appetite": "Appetite test",
+  "appetiteNotTested": "Not tested",
+  "appetiteGood": "Good",
+  "appetitePoor": "Poor",
+  "complications": "Medical complication",
+  "feedingDifficulties": "Breastfeeding difficulties",
+  "fieldRequired": "Required",
+  "numberInvalid": "Write a number (e.g. 8.6).",
+  "computeResult": "Save and see the result",
+  "checkMeasureTitle": "Check the measurement",
+  "checkMeasureText": "A value looks unusual: {fields}. Measure again if possible.",
+  "@checkMeasureText": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "checkMeasureKeep": "The measurement is right",
+  "problemBeforeBirth": "The measurement date is before the birth.",
+  "problemFuture": "The measurement date is in the future.",
+  "problemMuacAge": "MUAC is only entered between 6 and 59 months.",
+  "problemAgeRange": "This child is older than 59 months: this screening does not apply.",
+  "resultTitle": "Screening result",
+  "classMas": "SAM – severe acute malnutrition",
+  "classMam": "MAM – moderate acute malnutrition",
+  "classNormal": "No acute malnutrition",
+  "classInfantRisk": "Infant at risk",
+  "classNone": "Not classified",
+  "urgencyRed": "Red emergency",
+  "urgencyOrange": "Orange emergency",
+  "urgencyYellow": "Yellow emergency",
+  "orientationTo": "Refer to: {centre}",
+  "@orientationTo": {
+    "placeholders": {
+      "centre": {
+        "type": "String"
+      }
+    }
+  },
+  "noReferralNeeded": "No referral: advice and next screening.",
+  "nextCheck": "Next check: {date}",
+  "@nextCheck": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "zscoresTitle": "Z-scores (WHO 2006)",
+  "zscoresMissing": "Z-scores not computed: WHO tables missing from the app ({files}). The server will compute them if it has its tables.",
+  "@zscoresMissing": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "zWfh": "Weight for height",
+  "zWfa": "Weight for age",
+  "zHfa": "Height for age",
+  "createReferral": "Create the referral sheet",
+  "done": "Finish",
+  "chooseCentre": "Choose the destination centre",
+  "noCentre": "No centre saved. Sync once to load the list.",
+  "otherCentres": "Other centres",
+  "referralTitle": "Referral sheet",
+  "notTransmitted": "Not sent — show it at the centre",
+  "transmitted": "Sent to the server",
+  "refStatusRecu": "Received by the centre",
+  "refStatusPris": "In care",
+  "refStatusSuivi": "Being followed up",
+  "refStatusSortie": "Discharged",
+  "referralCode": "Code",
+  "referralChild": "Child",
+  "referralMeasures": "Measurements",
+  "referralDestination": "Destination centre",
+  "referralAgent": "Referring health worker",
+  "referralDate": "Date and time",
+  "referralReason": "Reason",
+  "referralOldCode": "Old code, already used and replaced: {code}",
+  "@referralOldCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "copyReferral": "Copy the sheet",
+  "copied": "Copied.",
+  "noReferrals": "No referrals yet.",
+  "followNotArrived": "Not at the centre after {hours} h",
+  "@followNotArrived": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "followDue": "Children to see again",
+  "followMissed": "Missed appointments",
+  "followNone": "Nothing to follow up today.",
+  "syncNow": "Sync now",
+  "syncRunning": "Syncing…",
+  "syncLast": "Last sync: {date}",
+  "@syncLast": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syncNever": "Never synced",
+  "syncPendingCount": "{count} record(s) to sync",
+  "@syncPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncConflictCount": "{count} conflict(s): the centre will choose the right version",
+  "@syncConflictCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncWifiOnly": "Wi-Fi only",
+  "syncWifiOnlyHint": "Automatic sync waits for Wi-Fi. The button always works.",
+  "syncProblemOffline": "No network. Everything is saved on the phone and will be sent when the network is back.",
+  "syncProblemWifi": "Waiting for Wi-Fi.",
+  "syncProblemAuth": "Session expired. Log in again with your account code.",
+  "syncProblemServer": "The server refused or did not answer. Try again later.",
+  "syncDone": "Sync finished: {sent} sent, {received} received.",
+  "@syncDone": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "received": {
+        "type": "int"
+      }
+    }
+  },
+  "syncErrorsCount": "{count} item(s) refused by the server: they remain to be synced.",
+  "@syncErrorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reconnect": "Log in again",
+  "childHistory": "Measurement history",
+  "agentAccount": "Account: {name}",
+  "@agentAccount": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "configUpdated": "Clinical configuration updated (v{version}).",
+  "@configUpdated": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictExplain": "Another version exists on the server. Nothing is overwritten: the centre will choose.",
+  "measureSaved": "Measurement saved.",
+  "adviceSource": "Advice – {source}",
+  "@adviceSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "alertDisclaimer": "This alert does not replace a diagnosis.",
+  "addChild": "Add a child",
+  "noMyChildren": "Add your child to follow their growth, meals and vaccines.",
+  "birthWeight": "Birth weight (kg, optional)",
+  "childAge": "{months} months",
+  "@childAge": {
+    "placeholders": {
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "childAgeDays": "{days} days",
+  "@childAgeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "growth": "Growth",
+  "feeding": "Meals",
+  "breastfeeding": "Breastfeeding",
+  "vaccines": "Vaccines",
+  "vaccinesLate": "{count} overdue",
+  "@vaccinesLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaccinesUpToDate": "Up to date",
+  "dangerSignsChild": "Danger signs",
+  "dangerSignsHint": "Tap a sign to know what to do right away.",
+  "todayMeals": "Today's meals",
+  "todayBreastfeeding": "Breastfeeding today",
+  "addMeasure": "Add a measurement",
+  "noGrowth": "No measurement yet. Add the weight and height.",
+  "growthStatusMissing": "WHO charts unavailable: the official tables are not in the app yet. Measurements are saved; ask a health worker to interpret them.",
+  "growthChartTitle": "Child's weight (kg) by age (months)",
+  "growthChartWho": "Lines: WHO curves −3, −2, median, +2, +3",
+  "growthStatus": "Status: {status}",
+  "@growthStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteMeasure": "Delete this measurement?",
+  "delete": "Delete",
+  "exclusiveQuestion": "Today, did your baby receive only breast milk, with no water or other food?",
+  "exclusiveYes": "Yes, only breast milk",
+  "exclusiveNo": "No, something else too",
+  "exclusiveAdvice": "Up to 6 months, breast milk alone is enough: no water and no other food.",
+  "tapFoods": "Tap what the child ate today",
+  "mealsCount": "Number of meals",
+  "milkFeedsCount": "Milk feeds (other than breast milk)",
+  "decrease": "Less",
+  "increase": "More",
+  "diversityScore": "Diversity: {count}/{total} groups",
+  "@diversityScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "diversityOk": "Enough",
+  "diversityLow": "Not enough",
+  "mealsScore": "Meals: {count}/{needed}",
+  "@mealsScore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "needed": {
+        "type": "int"
+      }
+    }
+  },
+  "acceptableDiet": "Minimum acceptable diet",
+  "feedingNotInRange": "The meal diary is for children aged 6 to 23 months.",
+  "previousDay": "Previous day",
+  "nextDay": "Next day",
+  "today": "Today",
+  "saved": "Saved.",
+  "vaccineDone": "Vaccine received on {date}",
+  "@vaccineDone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineLate": "Overdue – due on {date}",
+  "@vaccineLate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineDueToday": "To do today",
+  "vaccineUpcoming": "To do – due on {date}",
+  "@vaccineUpcoming": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaccineMarkDone": "Mark as done",
+  "vaccineUndo": "Undo “done” for this vaccine?",
+  "vaccineAtAge": "At {age}",
+  "@vaccineAtAge": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "atBirth": "birth",
+  "weeksAge": "{count} weeks",
+  "@weeksAge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "carnetPhotoNote": "Photo of the health card: not available yet in this version.",
+  "alertCentre": "Your health centre",
+  "alertNoCentre": "No health centre saved. Add it to call it in one tap.",
+  "alertTitle": "Alert",
+  "contactTitle": "My health centre",
+  "contactCentreName": "Name of the health centre (CSB)",
+  "contactCentrePhone": "Phone of the centre or emergency number",
+  "contactAgentPhone": "Phone of the community health worker",
+  "contactHelp": "Used by the alert screen, even without network.",
+  "personalDataLocal": "The data of “My child” stays on this phone.",
+  "pregnancySetupTitle": "Start the pregnancy follow-up",
+  "pregnancySetupHow": "How do you know how far along you are?",
+  "byLmp": "Date of the last period",
+  "byConfirmed": "Term confirmed by a professional",
+  "confirmedExamDate": "Date of the ultrasound or consultation",
+  "confirmedWeeks": "Weeks that day",
+  "confirmedDays": "+ days",
+  "confirmedWins": "The term confirmed by a professional comes before the date of the last period.",
+  "gaInvalid": "Check the date: the pregnancy must be between 0 and 42 weeks.",
+  "startPregnancy": "Start the follow-up",
+  "gaValue": "{weeks} wk + {days} d",
+  "@gaValue": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "gaLabel": "Pregnancy age",
+  "trimesterLabel": "Trimester {n}",
+  "@trimesterLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dueDateLabel": "Expected due date: {date}",
+  "@dueDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "postpartumLabel": "Baby born on {date} · day {days}",
+  "@postpartumLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "pregnancyDangerTitle": "Danger signs: tap if you have…",
+  "postpartumDangerTitle": "After the delivery: tap if you have…",
+  "nextContact": "Next consultation",
+  "contactAnc": "ANC {n} · {weeks} wk",
+  "@contactAnc": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "contactPnc": "Postnatal visit {n} · day {days}",
+  "@contactPnc": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "contactWent": "I went",
+  "contactDone": "Done on {date}",
+  "@contactDone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactMissed": "Not done yet (planned on {date})",
+  "@contactMissed": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactNext": "Next: {date}",
+  "@contactNext": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactPlanned": "Planned on {date}",
+  "@contactPlanned": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contactUndo": "Remove “I went”?",
+  "consultations": "Consultations",
+  "antenatalTitle": "Antenatal consultations (ANC)",
+  "postnatalTitle": "Postnatal consultations",
+  "myFollowUp": "My pregnancy follow-up",
+  "notesLabel": "How I feel (optional)",
+  "noFollowUp": "Nothing yet. Add a measurement or a note.",
+  "add": "Add",
+  "babyMovements": "Baby's movements",
+  "movementsExplain": "First movements are usually felt around {from} to {to} weeks. You can note what you feel at any time. From {open} weeks, note them every day to follow their rhythm.",
+  "@movementsExplain": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "open": {
+        "type": "int"
+      }
+    }
+  },
+  "movementsToday": "Movements counted today",
+  "movementsLess": "Is your baby moving less than usual, or not at all? Contact a maternity unit immediately.",
+  "delivery": "Delivery",
+  "deliveryDate": "Date of delivery",
+  "breastfeedingMode": "Breastfeeding",
+  "bfExclusive": "Breast milk only",
+  "bfMixed": "Mixed",
+  "bfNone": "No breast milk",
+  "deliverySaved": "Delivery saved. The follow-up after delivery begins.",
+  "endPregnancy": "End this follow-up",
+  "endPregnancyConfirm": "End this pregnancy follow-up? The data stays on the phone.",
+  "womenDiet": "My meals",
+  "womenDietHint": "Tick the food groups eaten today to follow the diversity of your diet.",
+  "womenDietScore": "{count, plural, =0{No group out of {total} eaten} =1{1 group out of {total} eaten} other{{count} groups out of {total} eaten}}",
+  "@womenDietScore": {"placeholders": {"count": {"type": "int"}, "total": {"type": "int"}}},
+  "changeDates": "Correct the dates",
+  "reminderNextAnc": "Next antenatal consultation on {date}",
+  "@reminderNextAnc": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderVaccines": "{name}: {count} vaccine(s) overdue",
+  "@reminderVaccines": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "remindersTitle": "Don't forget",
+  "pregnancyLocal": "Pregnancy data stays on this phone unless you turn on sync.",
+  "periodStartedToday": "My period started today",
+  "periodEndedToday": "My period ended today",
+  "periodStartDate": "Start of period",
+  "periodEndDate": "End of period",
+  "periodOngoing": "Period since {date}",
+  "@periodOngoing": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nextPeriod": "Next period",
+  "nextPeriodOn": "Around {date}",
+  "@nextPeriodOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "nextPeriodIn": "In {count} day(s)",
+  "@nextPeriodIn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "fertileWindow": "Fertile window",
+  "fertileFromTo": "From {from} to {to}",
+  "@fertileFromTo": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "ovulationOn": "Ovulation around {date}",
+  "@ovulationOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "confidenceEstimate": "Estimate",
+  "confidenceReliable": "Reliable",
+  "confidenceEstimateHint": "Estimate: {count} regular cycles are needed for a reliable prediction.",
+  "@confidenceEstimateHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cycleStats": "My cycles",
+  "averageCycle": "Average cycle: {days} days",
+  "@averageCycle": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "averagePeriod": "Period: {days} days on average",
+  "@averagePeriod": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "cyclesCount": "{count} cycle(s) logged",
+  "@cyclesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cycleRegular": "Regular",
+  "cycleIrregular": "Irregular",
+  "signalShort": "Several cycles shorter than {days} days.",
+  "@signalShort": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLong": "Several cycles longer than {days} days.",
+  "@signalLong": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLongPeriod": "A period longer than {days} days.",
+  "@signalLongPeriod": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalHeavy": "Very heavy bleeding.",
+  "signalAmenorrhoea": "No period for more than {days} days.",
+  "@signalAmenorrhoea": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "signalLate": "Your period is {count} day(s) late. You may be pregnant: take a pregnancy test.",
+  "@signalLate": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "signalAdvice": "Advice: talk to a health worker. This is not a diagnosis.",
+  "goToPregnancy": "Open “My pregnancy”",
+  "intensity": "Flow",
+  "intensityLight": "Light",
+  "intensityMedium": "Medium",
+  "intensityHeavy": "Heavy",
+  "pain": "Pain",
+  "painLevel": "{n} out of 3",
+  "@painLevel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mood": "Mood",
+  "moodLabels": "Very bad|Bad|Neutral|Good|Very good",
+  "periodHistory": "My periods",
+  "periodDays": "{start} – {end} ({days} d)",
+  "@periodDays": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "periodNoEnd": "{start} – ongoing",
+  "@periodNoEnd": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePeriod": "Delete this period?",
+  "editPeriod": "Edit",
+  "endBeforeStart": "The end must be after the start.",
+  "clearDate": "Clear the date",
+  "monthNames": "January|February|March|April|May|June|July|August|September|October|November|December",
+  "wheelDay": "Day",
+  "wheelMonth": "Month",
+  "wheelYear": "Year",
+  "wheelHour": "Hour",
+  "wheelMinute": "Minute",
+  "now": "Now",
+  "periodAddPast": "Add a past period",
+  "periodEndOtherDay": "Choose another end date",
+  "periodEndOptional": "End of period (optional)",
+  "periodOverlap": "These dates overlap a period already logged.",
+  "byDueDate": "Expected due date",
+  "dueDateHint": "Given by a health professional. It can be in the past or in the future.",
+  "duePassed": "The expected due date has passed. If the baby is born, record the delivery.",
+  "followUpWhat": "What do you want to record?",
+  "paramWeight": "Weight",
+  "paramBloodPressure": "Blood pressure",
+  "paramFundalHeight": "Fundal height",
+  "paramHemoglobin": "Haemoglobin",
+  "paramGlucose": "Blood sugar",
+  "paramTemperature": "Temperature",
+  "bpSystolic": "Upper – systolic (mmHg)",
+  "bpDiastolic": "Lower – diastolic (mmHg)",
+  "fundalHeightCm": "Fundal height (cm)",
+  "hemoglobinGdl": "Haemoglobin (g/dL)",
+  "glucoseGl": "Blood sugar (g/L)",
+  "temperatureC": "Temperature (°C)",
+  "valueInvalid": "Check the value: {field}",
+  "@valueInvalid": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "bpOrder": "The lower pressure must be smaller than the upper one.",
+  "followUpEmpty": "Enter at least one value or a note.",
+  "deleteFollowUp": "Delete this entry?",
+  "movementType": "What you felt",
+  "movementWhen": "Date and time",
+  "moveKick": "Kicks",
+  "moveFlutter": "Flutters",
+  "moveRoll": "Rolls, turns",
+  "moveHiccup": "Hiccups (small regular jerks)",
+  "moveStretch": "Stretches, pushes",
+  "movementAdd": "Save the movement",
+  "deleteMovement": "Delete this movement?",
+  "followUpTitle": "My pregnancy follow-up",
+  "calendarTitle": "Calendar",
+  "calendarLegendPeriodDays": "Period days",
+  "calendarLegendPredicted": "Expected period",
+  "calendarLegendFertile": "Fertile window",
+  "calendarLegendOvulation": "Ovulation",
+  "weekdayShort": "Mon|Tue|Wed|Thu|Fri|Sat|Sun",
+  "calendarPrevMonth": "Previous month",
+  "calendarNextMonth": "Next month",
+  "calendarHint": "Tap a past day to log a period, or a logged period to correct it.",
+  "createProfileAction": "Create the profile",
+  "commonSymptoms": "Nausea|Vomiting|Tiredness|Back pain|Heartburn|Constipation|Headache|Leg cramps|Swollen feet or legs|Needing to pee often|Dizziness|Trouble sleeping",
+  "movementsTip": "Tip: the baby often moves after a meal or when you lie on your left side. Take a quiet moment to feel the movements.",
+  "symptomsSearchHint": "Search or write a symptom",
+  "symptomAdd": "Add “{text}”",
+  "agentLocalPinHelp": "Your account code is not 4 digits. Choose a 4-digit code to open this profile on this phone.",
+  "calendarLegendRisk": "Pregnancy possible",
+  "riskWindow": "Pregnancy still possible",
+  "riskHint": "The fertile window is the riskiest time. Just before and just after it, a pregnancy is still possible, because ovulation varies from one cycle to the next.",
+  "periodLengthLabel": "My period usually lasts",
+  "periodLengthValue": "{days} days",
+  "periodLengthHint": "Usually 3 to 8 days. This length is used for the predictions, and to close a period whose end was not noted.",
+  "lmpFromCycle": "Date taken from “My cycle”: your last period started on {date}. You can change it.",
+  "foodAdd": "Add a food",
+  "foodAddTitle": "Add a food: {group}",
+  "foodNameLabel": "Food name",
+  "foodExists": "This food is already in the list.",
+  "foodCustomHint": "Kept on this phone, for all your children. Long press to remove it.",
+  "foodRemove": "Remove “{name}” from the list?",
+  "consentControlTitle": "You stay in control",
+  "consentControl": "You can view and delete your data at any time in the settings. TARANAKA informs and supports you, without replacing a health professional.",
+  "privacyPolicyOpen": "Read the privacy policy",
+  "privacyPolicyTitle": "Privacy policy",
+  "policyIntro": "This text explains simply what TARANAKA does with your data.",
+  "policyDataTitle": "What is recorded",
+  "policyData": "Only what you enter: your cycle, your pregnancy, your children's growth, meals and vaccines. Nothing is collected without your knowledge.",
+  "policyStorageTitle": "Where your data is",
+  "policyStorage": "On this phone, encrypted and protected by your profile's code. Each profile has its own data. The app locks when the phone screen turns off, when you tap \"Lock\" or when you close it.",
+  "policySharingTitle": "Sharing",
+  "policySharing": "Nothing is sent without your agreement. Cycle tracking is never sent, unless you turn it on. For a health worker, children's screenings, referrals and follow-ups are sent to the programme's server, for their care.",
+  "policyRightsTitle": "Your rights",
+  "policyRights": "You can view your data in the app and erase it at any time: Settings → “Erase all my data”. Erasing is final on this phone; data already sent stays on the server.",
+  "policyLawTitle": "Legal framework",
+  "policyLaw": "These rules follow Malagasy law no. 2014-038 on the protection of personal data.",
+  "policyHealthTitle": "Health advice",
+  "policyHealth": "TARANAKA informs and guides. It does not replace a health professional: if in doubt, see a health worker or a health centre.",
+  "cycleIntro": "Enter the dates of your periods to track your cycle and estimate your next periods.",
+  "symptomsTitle": "Symptoms",
+  "symptomLabels": "Cramps|Headache|Fatigue|Bloating|Tender breasts|Back pain|Nausea|Spots",
+  "periodIrregular": "Irregular period",
+  "periodIrregularHint": "Earlier, later or different from usual. Predictions then stay an estimate.",
+  "calendarLogged": "Logged",
+  "calendarEstimated": "Estimated",
+  "pregnancyWeekTitle": "My pregnancy week by week",
+  "pregnancyWeekIntro": "At {weeks} weeks, find out how your baby is growing and how your body is changing.",
+  "weekValue": "{weeks} weeks",
+  "weekThis": "This week",
+  "weekBackToCurrent": "Back to this week",
+  "weekPrev": "Previous week",
+  "weekNext": "Next week",
+  "weekBaby": "Your baby",
+  "weekBody": "Your body",
+  "weekTip": "Tip",
+  "weekSee": "See my week",
+  "weekNote": "General landmarks: every pregnancy is different. If in doubt, ask a health worker.",
+  "nextAncTitle": "Next antenatal visit (ANC): {date}",
+  "nextPncTitle": "Next postnatal visit: {date}",
+  "nextAncDetail": "ANC {n} · {weeks} weeks + {days} d on that date",
+  "contactInDays": "{days, plural, =0{Today} =1{Tomorrow} other{In {days} days}}",
+  "contactMovedFrom": "Date changed by you (planned on {date})",
+  "changeContactDate": "Change the date",
+  "contactDateTitle": "Date of the visit",
+  "contactDateReset": "Back to the planned date",
+  "pregnancyDangerHeader": "Warning signs during pregnancy",
+  "postpartumDangerHeader": "Warning signs after the birth",
+  "dangerPanelHint": "Get care quickly if you have any of these symptoms.",
+  "dangerPanelHowTo": "Tap a sign to know what to do, or \"Alert\" to act right away.",
+  "dangerAlert": "Alert",
+  "dangerAlertFull": "I have this sign: open the alert",
+  "dangerWhy": "Why it matters",
+  "dangerTodo": "What to do",
+  "welcomeTitle": "Welcome to TARANAKA",
+  "welcomeTagline": "Your companion for the health of women, mothers and children.",
+  "welcomeIntro": "TARANAKA supports you at every stage of your life with reliable information and simple tools to:",
+  "welcomeCycleTitle": "Cycle tracking",
+  "welcomeCycle": "Track your menstrual cycle and better understand your reproductive health.",
+  "welcomePregnancyTitle": "Pregnancy and postpartum follow-up",
+  "welcomePregnancy": "Follow your pregnancy and postpartum with suitable advice and visit reminders.",
+  "welcomeChildTitle": "Child growth",
+  "welcomeChild": "Support your child's growth from 0 to 24 months: feeding, vaccination and development.",
+  "welcomeNutritionTitle": "Nutrition and prevention",
+  "welcomeNutrition": "Prevent and detect the risks of malnutrition with nutrition follow-up and referral to health centres.",
+  "welcomeConclusion": "TARANAKA: better informed, better supported, for healthier families.",
+  "welcomeStart": "Start",
+  "othersQuestion": "What did your baby drink or eat?",
+  "otherIntakeLabels": "Water|Infant formula|Food|Other",
+  "breastfeedingAfter6": "From 6 months: keep breastfeeding and also give other foods, several times a day.",
+  "feedsTitle": "Feeds and expressed milk",
+  "feedAdd": "Note a feed",
+  "feedTypeBreast": "At the breast",
+  "feedTypeExpressed": "Expressed breast milk",
+  "feedExpressedHint": "Expressed breast milk, given by cup or spoon, is still breast milk.",
+  "feedTime": "Feed time",
+  "feedDuration": "Duration (minutes)",
+  "feedQuantity": "Quantity (ml)",
+  "feedsNone": "No feed noted on this day.",
+  "feedsTotal": "{count} feed(s) · {minutes} min at the breast · {ml} ml of expressed milk",
+  "feedDelete": "Delete this feed?",
+  "breastFeedsLegacy": "{count} feed(s) noted on this day",
+  "minutesShort": "{n} min",
+  "mlShort": "{n} ml",
+  "bfWeekTitle": "Summary of the last 7 days",
+  "bfDayExclusive": "Exclusive breastfeeding",
+  "bfDayMixed": "Mixed feeding",
+  "bfDayNotNoted": "Not noted",
+  "daysCount": "{count, plural, =0{0 days} =1{1 day} other{{count} days}}",
+  "tipsTitle": "Practical tips",
+  "tipPositionTitle": "A good position",
+  "tipPosition": "Baby's tummy against yours, head and body in a straight line.|Bring the baby to the breast, rather than the breast to the baby.|Mouth wide open, lower lip turned out, chin against the breast.|The baby takes much of the areola, mostly from below. Feeding should not hurt.",
+  "tipDifficultiesTitle": "Common difficulties",
+  "tipDifficulties": "Pain or cracked nipples: check the position and the latch; a little milk on the nipple after the feed helps healing.|Hard, swollen breasts: feed more often, or express a little milk by hand.|Red, hot, painful breast with fever: keep breastfeeding and see a health worker quickly.|Fear of not having enough milk: the more the baby feeds, the more milk you make.",
+  "tipEnoughTitle": "Is baby getting enough milk?",
+  "tipEnough": "At least 6 well-wet nappies a day after the first week.|Regular stools, yellow after the first days.|At least 8 feeds in 24 hours, and you can hear swallowing.|The baby gains weight and seems content after feeds. If not, talk to a health worker.",
+  "emailLabel": "E-mail address (optional)",
+  "emailHelp": "Recommended: along with the secret question, it lets you get your profile back if you forget your secret code. It is shown to no one.",
+  "emailInvalid": "Wrong e-mail address. Example: name@example.mg",
+  "forgotPinChoose": "How do you want to get back in?",
+  "forgotWithQuestion": "With my secret question",
+  "forgotPinLastResort": "Without an e-mail or secret question, the profile can be reset, but its data will be erased.",
+  "biometricReason": "Open your TARANAKA profile",
+  "biometricEnableReason": "Confirm your fingerprint to turn it on",
+  "biometricUse": "Use my fingerprint",
+  "biometricUnavailable": "The fingerprint is no longer available for this profile. Enter your secret code, then turn it on again in Settings.",
+  "biometricSetting": "Unlock with my fingerprint",
+  "biometricSettingHint": "Your secret code always works too.",
+  "biometricOn": "Fingerprint turned on.",
+  "biometricOff": "Fingerprint turned off.",
+  "forgotWithEmail": "By e-mail",
+  "forgotWithEmailHint": "Get a link at {email}",
+  "forgotEmailNotActive": "The recovery by e-mail is not active yet for this profile: connect the phone to the Internet, then open Settings → Recovery by e-mail.",
+  "emailResetHelp": "We will send an e-mail to {email}. Open the link in it, choose a password, then come back here to type it.",
+  "emailResetSend": "Send the link",
+  "emailResetResend": "Send the link again",
+  "emailResetSent": "E-mail sent to {email}. Also look in the spam folder.",
+  "emailPasswordLabel": "Password chosen with the link",
+  "emailPasswordShow": "Show the password",
+  "emailPasswordHide": "Hide the password",
+  "authErrorOffline": "No Internet connection. Try again when the phone is connected.",
+  "authErrorWrongPassword": "Wrong password. Type the one you chose with the e-mail link.",
+  "authErrorTooMany": "Too many tries. Wait a few minutes before trying again.",
+  "authErrorInvalidEmail": "This e-mail address is not accepted.",
+  "authErrorNotConfigured": "The recovery by e-mail is not available for now.",
+  "authErrorNoSecret": "No recovery found for this profile with this address.",
+  "authErrorEmailInUse": "This address already has an account. Confirm it with the link sent by e-mail.",
+  "authErrorUnknown": "Something went wrong. Try again.",
+  "emailRecoveryTitle": "Recovery by e-mail",
+  "emailRecoveryActive": "On for {email}.",
+  "emailRecoveryPending": "Waiting for an Internet connection.",
+  "emailRecoveryToConfirm": "Address to confirm.",
+  "emailRecoveryOff": "Off.",
+  "emailRecoveryRetry": "Try again now",
+  "emailRecoveryConfirmHelp": "The address {email} already has an account. Send yourself the link, choose a password, then type it here.",
+  "emailRecoveryConfirm": "Confirm",
+  "emailRecoveryEnable": "Turn on",
+  "emailRecoveryHelp": "If you forget your secret code, a link sent to your e-mail address lets you choose a new one without losing your data. An Internet connection is needed. Your health data stays on this phone.",
+  "emailRecoveryDone": "Recovery by e-mail turned on.",
+  "movementQuickAdd": "+1 movement",
+  "movementQuickAdded": "Movement saved at {time}.",
+  "moveFelt": "Movement felt",
+  "movementsHiccupsToday": "Hiccups: {count} time(s) (not counted in the total)",
+  "movementsStageNotYet": "{weeks} weeks: it is normal to feel nothing yet. First movements usually come between {from} and {to} weeks.",
+  "movementsStageEarly": "{weeks} weeks: movements are still light and irregular. Note them when you feel them. From {open} weeks, take a moment every day to feel them.",
+  "movementsStageDaily": "{weeks} weeks: every day, take a quiet moment to feel your baby. There is no minimum number: a change from the usual rhythm is what should alert you.",
+  "movementsHistory": "Movement history",
+  "movementsDayCount": "{count} movement(s)",
+  "movementsDayHiccups": "hiccups {count} time(s)",
+  "movementsDayNoHour": "Total noted for the day, without time.",
+  "movementsNoHistory": "No movement saved yet.",
+  "alertReported": "You reported: {sign}.",
+  "alertGoMaternity": "Go immediately to a maternity unit or a health centre.",
+  "alertGoChild": "Take the child to a health centre immediately.",
+  "alertCallCentre": "Call my health centre",
+  "alertCallAgent": "Call the community health worker ({number})",
+  "alertCallFailed": "The call could not start. Dial {number}.",
+  "alertRoute": "Open the directions",
+  "alertAddCentre": "Add my health centre",
+  "alertAddPhone": "Add a number to call",
+  "alertInstructions": "Emergency instructions",
+  "alertClose": "Close the alert",
+  "contactDirections": "Directions (how to get there)",
+  "contactDirectionsHint": "E.g. Antsirabe road, after the market",
+  "contactCallPermission": "After saving, the phone will ask to allow calls: the alert can then call your centre in one tap.",
+  "alertEmergencyTitle": "EMERGENCY: get care immediately!",
+  "edit": "Edit",
+  "weeksValue": "{weeks} wk",
+  "weeksShort": "wk",
+  "bpSystolicShort": "Upper (systolic)",
+  "bpDiastolicShort": "Lower (diastolic)",
+  "symptomsOther": "Other symptom",
+  "quickSymptoms": "Dizziness|Tiredness|Shortness of breath|Headache|Blurred vision|Pain",
+  "glucoseFasting": "Taken fasting (in the morning, before eating)",
+  "glucoseFastingShort": "fasting",
+  "sourceQuestion": "Who took the measurement?",
+  "sourceHome": "Me, at home",
+  "sourceProfessional": "A health professional",
+  "followUpHistory": "Measurement history",
+  "followUpEvolution": "Evolution",
+  "followUpEditing": "You are correcting the measurement of {date}. Change the values, then save.",
+  "followUpCancelEdit": "Cancel the correction",
+  "followUpSaveCorrection": "Save the correction",
+  "followUpCorrected": "Measurement corrected.",
+  "flagLevelUrgent": "Urgent",
+  "flagLevelToday": "See someone today",
+  "flagLevelWatch": "To watch",
+  "flagOpenAlert": "Tap here to call your health centre.",
+  "flagBpSevere": "Very high blood pressure ({value} mmHg)",
+  "flagBpHigh": "High blood pressure ({value} mmHg)",
+  "flagBpLow": "Low blood pressure ({value} mmHg)",
+  "flagFeverHigh": "High fever ({value} °C)",
+  "flagFever": "Fever ({value} °C)",
+  "flagGlucoseLow": "Low blood sugar ({value} g/L)",
+  "flagGlucoseVeryHigh": "Very high blood sugar ({value} g/L)",
+  "flagGlucoseHighFasting": "High fasting blood sugar ({value} g/L)",
+  "flagGlucoseToCheck": "Blood sugar to check ({value} g/L)",
+  "flagAnaemiaSevere": "Severe anaemia (haemoglobin {value} g/dL)",
+  "flagAnaemia": "Anaemia (haemoglobin {value} g/dL)",
+  "flagPreEclampsiaUrgent": "High blood pressure ({value} mmHg) with headache or blurred vision",
+  "flagPreEclampsiaSigns": "Headache or blurred vision",
+  "flagBreathless": "Shortness of breath",
+  "flagDizzy": "Dizziness",
+  "adviceBpSevere": "Go to the maternity unit or health centre immediately: risk of severe pre-eclampsia for you and the baby.",
+  "adviceBpHigh": "Rest quietly for 15 minutes, then measure again. See a health worker today. If you also have a headache, blurred vision, pain in the upper belly or sudden swelling, go to the maternity unit immediately.",
+  "adviceBpLow": "Stand up slowly, drink water and eat. See a health worker if you feel faint or dizzy.",
+  "adviceFeverHigh": "Go to the health centre immediately: in pregnancy, fever can come from malaria or an infection dangerous for the baby. Drink often.",
+  "adviceFever": "See a health worker today (malaria, urine infection…). Drink often and rest. Take no medicine without a health worker's advice.",
+  "adviceGlucoseLow": "Eat or drink something sweet right away, then measure again. If you feel unwell or it happens again, go to the health centre.",
+  "adviceGlucoseVeryHigh": "See a health worker today: diabetes must be checked and followed during pregnancy.",
+  "adviceGlucoseHighFasting": "This can be pregnancy diabetes. Talk to a health worker or the health centre soon for a check.",
+  "adviceGlucoseToCheck": "Blood sugar rises after a meal. Measure again fasting (in the morning, before eating) and show it at the next visit.",
+  "adviceAnaemiaSevere": "Go to the health centre immediately: severe anaemia is dangerous in pregnancy and at birth.",
+  "adviceAnaemia": "Ask the health centre for iron and folic acid. Eat iron-rich foods: green leaves, beans, liver, meat, fish.",
+  "advicePreEclampsiaUrgent": "These are signs of pre-eclampsia. Go to the maternity unit immediately.",
+  "advicePreEclampsiaSigns": "Measure your blood pressure if you can and see a health worker today: it can be a sign of pre-eclampsia.",
+  "adviceBreathless": "Mild shortness of breath is common late in pregnancy. See a health worker today if it is strong, comes at rest or with chest pain.",
+  "adviceDizzy": "Sit down or lie on your left side, drink and eat. See a health worker if it often comes back or if you faint.",
+  "trendWeight": "Last weight: {value} kg at {weeks} weeks ({change} kg since {fromWeeks} weeks).",
+  "trendWeightOne": "Last weight: {value} kg at {weeks} weeks.",
+  "trendBp": "Last blood pressure: {value} mmHg at {weeks} weeks.",
+  "trendBpLimits": "Dashed lines: limits {value} mmHg. Above them, see a health worker.",
+  "vaccinesCountDone": "{count} received",
+  "vaccinesCountToDo": "{count} to do",
+  "vaccinesCountLate": "{count} overdue",
+  "vaccinesLateNotice": "{count} vaccine(s) overdue. Go to the health centre as soon as possible with the card: the schedule resumes where the child stopped.",
+  "vaccinesCatchUpTitle": "What to do if a vaccine is overdue?",
+  "vaccinesCatchUpSource": "General advice (WHO, to be validated by the EPI). The health worker decides the catch-up.",
+  "vaccineRemindersOn": "Reminders on: 7 days before, the day before and when overdue.",
+  "vaccineRemindersOff": "Vaccine reminders are off. Tap here to allow them.",
+  "vaccinesSectionLate": "Overdue",
+  "vaccinesSectionToDo": "Next appointments",
+  "vaccinesSectionDone": "Vaccines received",
+  "vaccinesNoneDone": "No vaccine recorded. Tap a vaccine to record it.",
+  "vaccinesSectionExpired": "No longer given at this age",
+  "vaccinesNext": "Next appointment",
+  "vaccinesNextAsap": "As soon as possible",
+  "vaccineExpired": "Time limit passed",
+  "vaccineCardConfirmed": "Confirmed by the vaccination card: {answer}",
+  "vaccineCardDownload": "Download the card",
+  "vaccineCardNote": "The paper vaccination card remains the reference. Keep it and show it at every visit.",
+  "vaccineCardSaved": "Card saved.",
+  "vaccineCardNotSaved": "The card was not saved.",
+  "vaccineCardFileTitle": "VACCINATION CARD – TARANAKA",
+  "vaccineCardFileChild": "Child: {name}, born on {date}",
+  "vaccineCardFileDate": "Exported on {date}",
+  "vaccineRecordTitle": "Record a vaccine",
+  "vaccineEditTitle": "Edit the vaccine",
+  "vaccinePlannedOn": "Planned by the schedule on {date}",
+  "vaccineRealDate": "Actual date of vaccination",
+  "vaccineCentre": "Health centre",
+  "vaccineProfessional": "Health worker",
+  "vaccineCardQuestion": "Confirmed by the vaccination card?",
+  "vaccineCardNoTip": "Ask the health centre to write it on the card at the next visit.",
+  "vaccineSameVisit": "Received the same day:",
+  "vaccineSave": "Save the vaccine",
+  "vaccineDelete": "Delete this record",
+  "vaccineDeleteConfirm": "Delete the record of {name}? The vaccine will be \"To do\" again.",
+  "vaccineDateCheck": "Check the date with the card:",
+  "vaccineSaveAnyway": "The date is correct",
+  "vaccineDateBeforeBirth": "date before birth",
+  "vaccineDateInFuture": "date in the future",
+  "vaccineDateTooEarly": "well before the planned age ({date})",
+  "vaccineDateTooSoon": "less than {weeks} weeks after the previous dose",
+  "vaccineDateAfterLimit": "after the age limit of this vaccine",
+  "vaccineReminderWeekTitle": "{name}'s vaccines in 7 days",
+  "vaccineReminderWeekBody": "On {date}: {names}. Get the card ready.",
+  "vaccineReminderDayTitle": "{name}'s vaccines tomorrow",
+  "vaccineReminderDayBody": "{names}. Don't forget the card.",
+  "vaccineReminderLateTitle": "Overdue vaccine for {name}",
+  "vaccineReminderLateBody": "{names}. Go to the health centre as soon as possible.",
+  "vaccineReminderChannel": "Vaccine reminders",
+  "vaccineReminderPublic": "You have a reminder.",
+  "emailRecoveryChange": "Change the e-mail address",
+  "moodHints": "Very sad, stressed or irritable|Sad, worried or in a bad mood|Normal mood, neither good nor bad|Calm, relaxed or content|Happy, joyful and full of energy",
+  "painLabels": "None|Light|Moderate|Strong",
+  "painHint": "0 = None, 1 = Light, 2 = Moderate, 3 = Strong",
+  "flowLightHint": "Little blood, protection barely filled.",
+  "flowMediumHint": "Usual bleeding, protection changed regularly.",
+  "flowHeavyHint": "A lot of blood, protection filled quickly.",
+  "flowSpotting": "Light blood loss (spotting)",
+  "flowSpottingHint": "A few drops or traces of blood. This is not a period.",
+  "flowOutsideHint": "Is it a real period? Tap “My period started today”.",
+  "choiceTapAgain": "Tap a choice again to undo it.",
+  "dayFollowUpTitle": "My daily log",
+  "dayFollowUpHint": "Note your flow, pain, mood and symptoms each day. Your period goes on until you say it has ended.",
+  "dayFollowUpOutsideHint": "Mood, pain or light blood loss outside your period.",
+  "daySave": "Save today's log",
+  "daySaved": "Today's log saved.",
+  "periodEndedSaved": "End of period saved.",
+  "dayLogTitle": "Log of {date}",
+  "dayHistoryTitle": "Day by day",
+  "dayHistoryHint": "Tap a day to review or correct what was noted.",
+  "dayNothing": "Nothing noted",
+  "dayPain": "Pain: {label}",
+  "dayMood": "Mood: {label}",
+  "dayDeleteConfirm": "Erase the log of this day?",
+  "daysOutsidePeriods": "Days noted outside periods",
+  "periodHistoryHint": "Tap a period to change its dates or correct the log of each day.",
+  "dangerSignsEntryHint": "Bleeding, fits, fever… See the signs and raise the alert.",
+  "bfBalance": "{count, plural, =0{No day of exclusive breastfeeding out of {total}} =1{1 day of exclusive breastfeeding out of {total}} other{{count} days of exclusive breastfeeding out of {total}}}",
+  "@bfBalance": {"placeholders": {"count": {"type": "int"}, "total": {"type": "int"}}},
+  "bfBeforeBirth": "Before birth",
+  "bfCalendarHint": "Tap a day to see or complete it.",
+  "feedEdit": "Edit the feed",
+  "feedTapToEdit": "Tap to edit",
+  "bfDifficultiesTitle": "Any difficulty right now?",
+  "bfDifficultiesHint": "Tick what applies to you: the advice below adapts.",
+  "bfDifficultyLabels": "Pain or cracked nipples|Hard, swollen breasts|Afraid of not having enough milk|Baby latches badly or falls asleep|Away from baby (work, travel)",
+  "personalTipsTitle": "Advice for you",
+  "personalTipsSubtitle": "Based on {name}'s age and what you reported.",
+  "@personalTipsSubtitle": {"placeholders": {"name": {"type": "String"}}},
+  "ptDouleur": "Pain or cracked nipples|Check the latch: mouth wide open, a large part of the areola in the mouth.|Start with the less painful breast.|After the feed, spread a little milk on the nipple and let it air-dry.|If the pain lasts more than a few days, talk to a health worker.",
+  "ptEngorgement": "Hard, swollen breasts|Breastfeed often, day and night, without limiting the time.|Before the feed, express a little milk by hand to soften the breast.|After the feed, a cool cloth eases the swelling.|Red, hot, painful breast with fever: keep breastfeeding and get care quickly.",
+  "ptPeuDeLait": "Afraid of not having enough milk|The more baby feeds, the more milk you make: offer the breast at least 8 times in 24 hours.|Keep baby skin to skin and offer both breasts at each feed.|Baby gets enough milk if they wet at least 6 nappies a day and gain weight.|Give no water nor other milk: it reduces your milk.",
+  "ptPriseDuSein": "Baby latches badly or falls asleep|Wait until the mouth is wide open, then bring baby quickly to the breast.|The chin touches the breast, the nose stays free.|If baby falls asleep, switch breasts or stroke the cheek.|If the problem goes on, ask a health worker for help.",
+  "ptRepriseTravail": "Away from baby (work, travel)|Express your milk by hand into a clean, covered container.|Expressed milk keeps up to 4 hours at room temperature, and up to 4 days in the fridge.|Give it by cup or spoon.|Breastfeed as soon as you are with baby, and at night.",
+  "ptBackToExclusive": "Back to exclusive breastfeeding|Until 6 months, breast milk is enough, even when it is hot: no water, no herbal tea.|Offer the breast more often to make more milk.|To stop another milk, get help from a health worker.",
+  "ptStageFirstWeek": "The first days|The first milk (colostrum), thick and yellow, protects baby: give it.|Breastfeed 8 to 12 times in 24 hours, day and night.|Keep baby skin to skin against you as much as possible.",
+  "ptStageFirstWeeks": "The first weeks|Breastfeed on demand, as soon as baby looks for the breast or puts hands to the mouth.|Around 3 and 6 weeks, baby may feed much more for a few days: it is normal, your milk adapts.|Let baby finish one breast before offering the other.",
+  "ptStageSettled": "Baby is growing|Keep feeding on demand, at night too.|Feeds may get shorter: baby feeds faster.|Breast milk alone is enough until 6 months.",
+  "ptStageBeforeFoods": "Soon 6 months|Keep breast milk alone until 6 months: no water nor other food before.|At 6 months, you will start other foods while breastfeeding.|If you go back to work, learn to express your milk by hand.",
+  "ptStageWithFoods": "After 6 months|Keep breastfeeding until 2 years or more.|Breastfeed before or after meals, as suits baby.|Offer varied foods several times a day.",
+  "positionsTitle": "Breastfeeding positions",
+  "positionsCommon": "In every position: tummy to tummy, baby's ear, shoulder and hip in a straight line.",
+  "posCradle": "Cradle|Seated, baby lying on your forearm, tummy against yours.",
+  "posCrossCradle": "Cross-cradle|Your opposite hand supports the neck: useful at first to guide the latch.",
+  "posRugby": "Football hold|Baby under your arm, along your side: handy after a caesarean.",
+  "posSideLying": "Side-lying|You and baby lying face to face: to rest, especially at night.",
+  "womenDietRule": "Each group is ticked only once a day, even if you ate several foods of that group.",
+  "womenDietExamples": "E.g.: {examples}",
+  "womenDietHistory": "My previous days",
+  "womenDietAverage": "On average over the days noted: {value} groups out of {total}",
+  "dietAdviceTitle": "Tip of the day",
+  "dietAdviceFruitVegetable": "Today, think of adding a fruit or a vegetable to your diet: a banana, a mango, a papaya or some greens.",
+  "dietAdviceAnimal": "If you can, add a little fish, an egg or milk: small dried fish, for example, are cheap and rich in iron.",
+  "dietAdviceProtein": "Think of voanjobory, beans or peanuts: they go well with rice and bring protein.",
+  "dietAdviceLeaves": "Dark green leaves (anamamy, ravitoto) in your side dish bring iron, important for you and your baby.",
+  "dietAdviceVaried": "Well done, you ate varied foods today. Keep it up!",
+  "secretQuestionTitle": "Your secret question",
+  "secretQuestionIntro": "If you forget your secret code, this question lets you get your profile and data back, even without Internet. Choose an answer that is easy for you to remember and hard for others to guess.",
+  "secretQuestionLabel": "Secret question",
+  "secretQuestionPick": "Choose a question",
+  "secretQuestionFirstPet": "What was the name of your first pet?",
+  "secretQuestionBirthPlace": "What is the name of the town or village where you were born?",
+  "secretQuestionPrimarySchool": "What is the name of your primary school?",
+  "secretQuestionChildhoodNickname": "What nickname did people call you as a child?",
+  "secretQuestionChildhoodFriend": "What is the first name of your best childhood friend?",
+  "secretQuestionFavouriteDish": "What was your favourite dish as a child?",
+  "secretAnswerLabel": "Your secret answer",
+  "secretAnswerHelp": "Capital letters and spaces do not matter. The answer stays encrypted on this phone and is sent to no one.",
+  "secretAnswerConfirm": "Type the answer again",
+  "secretAnswerShow": "Show the answer",
+  "secretAnswerHide": "Hide the answer",
+  "secretQuestionRequired": "Choose a secret question.",
+  "secretAnswerTooShort": "Type an answer of at least 2 letters.",
+  "secretAnswerMismatch": "The two answers are not the same. Type them again.",
+  "secretQuestionOn": "On: works without Internet",
+  "secretQuestionOff": "Not set: add it so you do not lose your data",
+  "secretQuestionSaved": "Secret question saved.",
+  "secretQuestionChange": "Change the secret question",
+  "forgotWithQuestionHint": "No Internet needed: {question}"
+}

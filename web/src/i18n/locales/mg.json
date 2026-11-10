@@ -1,0 +1,687 @@
+{
+  "app": {
+    "name": "TARANAKA",
+    "tagline": "Tabilao fanaraha-maso ho an'ny toeram-pitsaboana",
+    "skipToContent": "Mankany amin'ny votoaty lehibe",
+    "loading": "Mampiditra…",
+    "pageLoaded": "Pejy vonona : {title}",
+    "logoAlt": "Sary famantarana an'i Taranaka: reny bevohoka sy ny zanany. Vehivavy, fitondrana vohoka, fahasalaman'ny zaza, sakafo."
+  },
+  "language": {
+    "label": "Fiteny",
+    "fr": "Français",
+    "mg": "Malagasy",
+    "en": "English"
+  },
+  "nav": {
+    "label": "Fitetezana lehibe",
+    "referrals": "Fandefasana marary",
+    "conflicts": "Fifanoherana amin'ny fampifanarahana",
+    "stats": "Antontan'isa",
+    "openMenu": "Sokafy ny menio",
+    "closeMenu": "Hidio ny menio",
+    "agents": "Ireo mpiasako",
+    "accessRequests": "Fangatahana fidirana",
+    "beneficiaries": "Mpisitraka"
+  },
+  "user": {
+    "signedInAs": "Tafiditra : {name}",
+    "logout": "Hivoaka",
+    "idleLogout": "Navoaka ianao satria tsy nisy nampiasa nandritra ny {minutes} minitra."
+  },
+  "roles": {
+    "agent_csb": "Mpitsabo mpanampy / dokotera",
+    "superviseur": "Mpanara-maso",
+    "admin": "Mpitantana",
+    "asc": "Mpiasan'ny fahasalamana eny ifotony",
+    "beneficiaire": "Mpisitraka"
+  },
+  "login": {
+    "title": "Fidirana",
+    "intro": "Natokana ho an'ny mpiasan'ny CSB, CRENAS, CRENI ary ny mpanara-maso.",
+    "identifier": "Anarana fidirana",
+    "identifierHelp": "Ny laharan-telefaoninao na ny anarana fidirana nomen'ny mpanara-maso anao.",
+    "pin": "Kaody PIN",
+    "pinHelp": "Isa 4 ka hatramin'ny 6.",
+    "showPin": "Asehoy ny PIN",
+    "hidePin": "Afeno ny PIN",
+    "submit": "Manohy",
+    "submitting": "Manamarina…",
+    "stepCredentials": "Dingana 1 amin'ny 2 : anarana fidirana sy PIN",
+    "stepTotp": "Dingana 2 amin'ny 2 : kaody fanamarinana",
+    "totpTitle": "Kaody fanamarinana",
+    "totpIntro": "Sokafy ny fampiharana fanamarinana ary soraty ny kaody misy isa 6 hita ho an'ny TARANAKA.",
+    "totpCode": "Kaody misy isa 6",
+    "totpHelp": "Miova isaky ny 30 segondra ny kaody.",
+    "totpSubmit": "Hamarino ny kaody",
+    "enrollTitle": "Alefaso ny fanamarinana indroa",
+    "enrollIntro": "Mba hiarovana ny antontan-taratasin'ny marary dia tsy maintsy atao ny fanamarinana indroa. Skanéo amin'ny fampiharana fanamarinana (ohatra FreeOTP, Aegis na Google Authenticator) ity kaody QR ity, dia soraty ny kaody asehony.",
+    "enrollQrAlt": "Kaody QR hanomanana ny fampiharana fanamarinana",
+    "enrollManual": "Tsy azo skanéna ? Soraty ao amin'ny fampiharana ity lakile ity :",
+    "enrollSubmit": "Alefaso ary midira",
+    "back": "Miverina amin'ny anarana fidirana",
+    "errors": {
+      "credentials": "Diso ny anarana fidirana na ny PIN.",
+      "locked": "Voahidy ny kaonty. Andramo indray afaka {minutes} minitra.",
+      "lockedAdmin": "Voahidy ny kaonty. Antsoy ny mpitantana hanokatra azy.",
+      "throttled": "Be loatra ny fanandramana. Miandrasa iray minitra vao manandrana indray.",
+      "totpInvalid": "Diso na lany daty ny kaody. Soraty ny kaody vaovao hita.",
+      "totpFormat": "Tokony hisy isa 6 marina ny kaody.",
+      "required": "Tsy maintsy fenoina ity.",
+      "noWebAccess": "Tsy mahazo miditra amin'ity tabilao ity ny mombamomba anao. Ny fampiharana finday no ampiasain'ny mpiasan'ny fahasalamana eny ifotony."
+    },
+    "noAccount": "Mbola tsy manana kaonty?",
+    "requestAccess": "Hangataka fidirana"
+  },
+  "access": {
+    "title": "Tsy mahazo miditra",
+    "body": "Tsy mahazo miditra amin'ity tabilao ity ny mombamomba anao. Ny fampiharana finday no ampiasain'ny mpiasan'ny fahasalamana eny ifotony.",
+    "forbidden": "Tsy manana zo hanokatra ity pejy ity ianao.",
+    "backHome": "Miverina any amin'ny fandraisana"
+  },
+  "notFound": {
+    "title": "Tsy hita ny pejy",
+    "body": "Tsy mifanaraka amin'ny pejy ao amin'ny tabilao ity adiresy ity."
+  },
+  "errors": {
+    "network": "Tsy mamaly ny mpizara. Hamarino ny fifandraisana dia andramo indray.",
+    "session_expired": "Tapitra ny fotoana fidiranao. Midira indray.",
+    "unauthorized": "Tapitra ny fotoana fidiranao. Midira indray.",
+    "forbidden": "Tsy azon'ny mombamomba anao atao izany.",
+    "not_found": "Tsy misy na tsy hitan'ny toeram-pitsaboanao io zavatra io.",
+    "conflict": "Novain'olona hafa teo ity antontan-taratasy ity. Aseho ny dikany farany : hamarino dia avereno.",
+    "validation": "Misy fampahalalana diso. Ahitsio dia andramo indray.",
+    "locked": "Voahidy ny kaonty.",
+    "throttled": "Be loatra ny fangatahana. Miandrasa iray minitra.",
+    "server": "Nisy olana tao amin'ny mpizara. Andramo indray any aoriana.",
+    "unknown": "Nisy olana tsy nampoizina.",
+    "serverSays": "Hafatry ny mpizara : {detail}",
+    "retry": "Andramo indray"
+  },
+  "common": {
+    "refresh": "Havaozina",
+    "cancel": "Foanana",
+    "confirm": "Hamafisina",
+    "save": "Raketina",
+    "close": "Hidiana",
+    "back": "Miverina",
+    "seeTable": "Jereo ho tabilao ny angona",
+    "hideTable": "Afeno ny tabilao",
+    "none": "Tsy misy",
+    "unknown": "Tsy fantatra",
+    "optional": "tsy voatery",
+    "saved": "Voarakitra."
+  },
+  "duration": {
+    "minutes": "{n} min | {n} min",
+    "hours": "{n} ora | {n} ora",
+    "days": "{n} andro | {n} andro",
+    "waiting": "Miandry hatramin'ny {duration}"
+  },
+  "urgency": {
+    "label": "Hamehana",
+    "rouge": "Mena",
+    "orange": "Volomboasary",
+    "jaune": "Mavo",
+    "rougeHint": "Loza ho an'ny aina",
+    "orangeHint": "Jerena haingana",
+    "jauneHint": "Jerena"
+  },
+  "status": {
+    "label": "Toe-javatra",
+    "envoye": "Nalefa",
+    "recu": "Tonga ny marary",
+    "pris_en_charge": "Voakarakara",
+    "en_suivi": "Arahi-maso",
+    "sortie": "Nivoaka"
+  },
+  "origin": {
+    "enfant": "Zaza",
+    "grossesse": "Fitondrana vohoka"
+  },
+  "queue": {
+    "title": "Fandefasana marary tonga",
+    "intro": "Alahatra araka ny hamehana (mena, volomboasary, mavo), avy eo ny tranainy indrindra aloha.",
+    "tabs": {
+      "label": "Sivanina araka ny dingana",
+      "incoming": "Andrasana",
+      "in_care": "Am-pitsaboana",
+      "closed": "Nivoaka"
+    },
+    "count": "Tsy misy fandefasana | Fandefasana 1 | Fandefasana {n}",
+    "empty": "Tsy misy fandefasana ato amin'ity lisitra ity.",
+    "emptyHint": "Miseho eto ny fandefasana vaovao rehefa mampifanaraka ny findainy ny mpiasan'ny fahasalamana eny ifotony.",
+    "columns": {
+      "urgency": "Hamehana",
+      "code": "Kaody",
+      "patient": "Marary",
+      "reason": "Antony",
+      "waiting": "Fiandrasana",
+      "status": "Toe-javatra",
+      "actions": "Asa"
+    },
+    "open": "Sokafy ny antontan-taratasy {code}",
+    "patientChild": "Zaza",
+    "patientMother": "{prenom} {nom}",
+    "arrived": "Tonga ny marary",
+    "arrivedDone": "Voarakitra ny fahatongavan'ny marary {code}."
+  },
+  "search": {
+    "label": "Hikaroka amin'ny kaodin'ny fandefasana",
+    "placeholder": "R-0AA5-1104-03",
+    "submit": "Hikaroka",
+    "title": "Fikarohana amin'ny kaody",
+    "searching": "Mikaroka ny kaody {code}…",
+    "notFound": "Tsy misy fandefasana mitondra ny kaody {code} ho an'ny toeram-pitsaboanao.",
+    "hint": "Hita ao amin'ny taratasy entin'ny fianakaviana ny kaody. Hamarino miaraka aminy ny litera tsirairay.",
+    "required": "Soraty ny kaodin'ny fandefasana."
+  },
+  "referral": {
+    "title": "Fandefasana {code}",
+    "code": "Kaodin'ny fandefasana",
+    "origin": "Niaviana",
+    "reason": "Antony",
+    "priority": "Hamehana",
+    "facility": "Toeram-pitsaboana alefana",
+    "agent": "Mpiasan'ny fahasalamana eny ifotony",
+    "mother": "Vehivavy bevohoka",
+    "child": "Zaza",
+    "openChild": "Sokafy ny taratasin'ny zaza",
+    "progress": "Dingan'ny antontan-taratasy",
+    "stepDone": "vita",
+    "stepCurrent": "dingana ankehitriny",
+    "stepTodo": "ho avy",
+    "measurement": "Fandrefesana tamin'ny fitiliana",
+    "nextAction": "Dingana manaraka",
+    "closed": "Mihidy ity antontan-taratasy ity.",
+    "outcome": "Fivoahana",
+    "disclaimer": "Mitari-dalana ny TARANAKA fa tsy manao fitiliana aretina. Ny mpitsabo no tompon'andraikitra amin'ny fitsaboana sy ny fivoahana.",
+    "actions": {
+      "recu": "Tonga ny marary",
+      "pris_en_charge": "Raketina ny fikarakarana",
+      "en_suivi": "Ampidirina amin'ny fanaraha-maso",
+      "sortie": "Raketina ny fivoahana"
+    },
+    "confirm": {
+      "recu": "Hamafisina ve ny fahatongavan'ny marary {code} ? Hahita « Voarain'ny toeram-pitsaboana » ny mpiasan'ny fahasalamana eny ifotony amin'ny fampifanarahana manaraka.",
+      "pris_en_charge": "Hamafisina ve ny fikarakarana ny marary {code} ?",
+      "en_suivi": "Ampidirina amin'ny fanaraha-maso ve ny antontan-taratasy {code} ?"
+    },
+    "done": {
+      "recu": "Voarakitra ny fahatongavan'ny marary.",
+      "pris_en_charge": "Voarakitra ny fikarakarana.",
+      "en_suivi": "Ampidirina amin'ny fanaraha-maso ny antontan-taratasy.",
+      "sortie": "Voarakitra ny fivoahana."
+    },
+    "dischargeOnlyAgent": "Ny mpitsabo ao amin'ny toeram-pitsaboana alefana ihany no afaka mandrakitra ny fivoahana.",
+    "dates": "Daty amin'ny antontan-taratasy",
+    "late": "Mbola tsy tonga taorian'ny fotoana voafetra",
+    "lateShort": "Tara",
+    "facilityType": "{name} ({type})",
+    "stepSkipped": "tsy nolalovana",
+    "openBeneficiary": "Sokafy ny taratasin'ny mpisitraka"
+  },
+  "care": {
+    "title": "Fitsaboana sy fanaraha-maso",
+    "consultations": "Fizahana",
+    "noConsultations": "Tsy misy fizahana voarakitra.",
+    "add": "Hanampy fizahana",
+    "date": "Daty",
+    "diagnostic": "Zavatra hita",
+    "decision": "Fanapahan-kevitra",
+    "observations": "Fanamarihana",
+    "decisions": {
+      "conseil": "Torohevitra",
+      "reference": "Alefa any amin'ny toeram-pitsaboana hafa",
+      "prise_en_charge": "Fikarakarana"
+    },
+    "followUps": "Fotoana fanaraha-maso",
+    "noFollowUps": "Tsy misy fotoana voalahatra.",
+    "addFollowUp": "Handahatra fanaraha-maso",
+    "followUpDate": "Datin'ny fanaraha-maso",
+    "followUpReason": "Antony anaovana fanaraha-maso",
+    "followUpStatus": {
+      "prevu": "Voalahatra",
+      "honore": "Tonga",
+      "annule": "Nofoanana"
+    },
+    "dateInPast": "Tokony ho anio na any aoriana ny datin'ny fanaraha-maso.",
+    "dateInFuture": "Tsy azo atao any amin'ny ho avy ny daty.",
+    "consultationSaved": "Voarakitra ny fizahana.",
+    "followUpSaved": "Voalahatra ho amin'ny {date} ny fanaraha-maso.",
+    "missed": "Tsy tonga",
+    "markAttended": "Raketina fa tonga",
+    "markAttendedLabel": "Raketina fa tonga tamin'ny fanaraha-maso ny {date}",
+    "attendedSaved": "Voarakitra ny fahatongavana tamin'ny fanaraha-maso."
+  },
+  "discharge": {
+    "title": "Raketina ny fivoahana",
+    "intro": "Ny mpitsabo ao amin'ny toeram-pitsaboana alefana ihany no afaka mandrakitra fivoahana. Manidy ny antontan-taratasy ity asa ity ary tsy azo foanana.",
+    "outcome": "Fivoahana",
+    "outcomes": {
+      "gueri": "Sitrana",
+      "transfere": "Nafindra",
+      "non_repondant": "Tsy nisy fivoarana",
+      "abandon": "Nandao / very tsy hita",
+      "decede": "Maty"
+    },
+    "submit": "Hidio ny antontan-taratasy",
+    "confirm": "Hidiana amin'ny fivoahana « {outcome} » ve ny antontan-taratasy {code} ? Tsy azo averina intsony ity asa ity."
+  },
+  "child": {
+    "title": "Taratasin'ny zaza",
+    "name": "Anarana",
+    "sex": "Lahy sa vavy",
+    "sexes": {
+      "M": "Zazalahy",
+      "F": "Zazavavy"
+    },
+    "birthDate": "Daty nahaterahana",
+    "age": "Taona",
+    "ageMonths": "{n} volana | {n} volana",
+    "careStatus": "Fikarakarana",
+    "careStatuses": {
+      "aucun": "Tsy misy",
+      "suivi": "Arahi-maso",
+      "refere": "Nalefa",
+      "pris_en_charge": "Voakarakara",
+      "gueri": "Sitrana",
+      "abandon": "Nandao",
+      "transfere": "Nafindra",
+      "non_repondant": "Tsy nisy fivoarana",
+      "decede": "Maty"
+    },
+    "referrals": "Fandefasana ny zaza",
+    "noReferrals": "Tsy misy fandefasana hitan'ny toeram-pitsaboanao.",
+    "mother": "Reny",
+    "vaccines": "Vakisiny",
+    "noVaccines": "Tsy misy vakisiny voarakitra.",
+    "vaccineCode": "Vakisiny",
+    "vaccineCentre": "Toeram-pitsaboana",
+    "vaccineSource": "Loharano",
+    "vaccineConfirmed": "Voamarina tamin'ny karine",
+    "vaccineDeclared": "Nambaran'ny reny",
+    "meals": "Sakafo (diarin'ny reny)",
+    "noMeals": "Tsy misy diarin-tsakafo.",
+    "breastfeeding": "Fampinonoana",
+    "breastfeedingTypes": {
+      "exclusif": "Fampinonoana fotsiny",
+      "mixte": "Mifangaro",
+      "aucun": "Tsy misy"
+    },
+    "mealsCount": "Sakafo",
+    "diversityScore": "Karazan-tsakafo",
+    "diversityValue": "{n}/8"
+  },
+  "measurements": {
+    "title": "Tantaran'ny fandrefesana",
+    "empty": "Tsy misy fandrefesana voarakitra.",
+    "date": "Daty",
+    "age": "Taona (volana)",
+    "weight": "Lanja (kg)",
+    "height": "Halava (cm)",
+    "muac": "PB (mm)",
+    "oedema": "Fivontosana",
+    "whz": "L/H (z)",
+    "haz": "H/T (z)",
+    "waz": "L/T (z)",
+    "alert": "Fampitandremana",
+    "flagged": "Fandrefesana tokony hamarinina",
+    "position": {
+      "couche": "mandry",
+      "debout": "mitsangana"
+    },
+    "alerts": {
+      "vert": "Ara-dalàna",
+      "orange": "Arahi-maso",
+      "rouge": "Loza"
+    },
+    "notAvailable": "tsy norefesina",
+    "zscoreSource": "Kajian'ny mpizara ny z-score OMS 2006.",
+    "classification": "Fanasokajiana",
+    "classifications": {
+      "mas": "MAS",
+      "mam": "MAM",
+      "normal": "Ara-dalàna",
+      "nourrisson_a_risque": "Zazakely atahorana"
+    },
+    "notClassified": "Tsy voasokajy",
+    "orientation": "Toerana alefana",
+    "nextControl": "Fanaraha-maso manaraka"
+  },
+  "charts": {
+    "growth": "Fiolahana fitomboana",
+    "weightForAge": "Lanja araka ny taona",
+    "heightForAge": "Halava araka ny taona",
+    "whzOverTime": "Lanja araka ny halava (z-score) arak'izay fotoana",
+    "muacOverTime": "Manodidina ny sandry arak'izay fotoana",
+    "ageAxis": "Taona (volana)",
+    "dateAxis": "Daty",
+    "kg": "kg",
+    "cm": "cm",
+    "mm": "mm",
+    "z": "z",
+    "summary": "{title} : fandrefesana {count}, nanomboka {first} ka hatramin'ny {last}.",
+    "summaryEmpty": "{title} : tsy ampy ny fandrefesana hanaovana fiolahana.",
+    "point": "{x} : {y}",
+    "thresholdMas": "MAS (< −3)",
+    "thresholdMam": "MAM (< −2)",
+    "thresholdMuacMas": "MAS (< 115 mm)",
+    "thresholdMuacMam": "MAM (< 125 mm)",
+    "weightForLength": "Lanja araka ny halava mandry",
+    "weightForHeight": "Lanja araka ny halava mitsangana",
+    "lengthAxis": "Halava mandry (cm)",
+    "heightAxis": "Halava mitsangana (cm)",
+    "childSeries": "Fandrefesana ny zaza",
+    "whoSeries": "Fiolahana OMS (z-score)",
+    "median": "antonony",
+    "curveLabel": "{z} z",
+    "whoNote": "Fiolahana fanondroana : fenitry ny fitomboana OMS 2006 (−3, −2, antonony, +2, +3 z), kajian'ny mpizara avy amin'ny tabilao ofisialy.",
+    "whoMissing": "Tsy voapetraka ao amin'ny mpizara ny tabilao OMS : ny fandrefesana ny zaza sy ny fetra MAS / MAM ihany no aseho."
+  },
+  "conflicts": {
+    "title": "Fifanoherana amin'ny fampifanarahana",
+    "intro": "Fitaovana roa no nanova ny antontan-taratasy ara-pahasalamana iray ihany. Tsy misy voafafa ho azy : fidio isaky ny saha ny sanda hotazonina.",
+    "empty": "Tsy misy fifanoherana hodinihina.",
+    "count": "Tsy misy fifanoherana | Fifanoherana 1 hodinihina | Fifanoherana {n} hodinihina",
+    "table": "Karazana antontan-taratasy",
+    "tables": {
+      "enfant": "Taratasin'ny zaza",
+      "mesure": "Fandrefesana",
+      "referencement": "Fandefasana",
+      "consultation_nutritionnelle": "Fizahana",
+      "other": "Hafa ({name})",
+      "rendez_vous": "Fotoana",
+      "grossesse": "Fitondrana vohoka",
+      "danger_grossesse": "Famantarana loza"
+    },
+    "detectedAt": "Hita tamin'ny {date}",
+    "field": "Saha",
+    "serverVersion": "Dikan'ny mpizara (v{version})",
+    "deviceVersion": "Dikan'ny finday",
+    "deviceLabel": "Fitaovana {device}",
+    "keepServer": "Tazomy ny dikan'ny mpizara",
+    "keepDevice": "Tazomy ny dikan'ny finday",
+    "chooseField": "Sanda hotazonina ho an'ny {field}",
+    "differentFields": "Tsy misy saha samy hafa | Saha 1 samy hafa | Saha {n} samy hafa",
+    "resolve": "Hamafisina ny safidy",
+    "resolved": "Voavaha ny fifanoherana.",
+    "confirm": "Hamafisina ve ity safidy ity ? Voatahiry ao amin'ny tantara ireo sanda hafa.",
+    "comment": "Fanamarihana",
+    "commentHelp": "Hazavao ny safidinao (ohatra : nohamarinina tamin'ny reny).",
+    "operations": {
+      "create": "Famoronana",
+      "update": "Fanovana",
+      "delete": "Famafana"
+    },
+    "deleted": "voafafa",
+    "sentBy": "Nalefan'i"
+  },
+  "stats": {
+    "title": "Antontan'isa mitambatra",
+    "intro": "Angona tsy mitonona anarana. Afenina ny isa rehetra mahakasika tranga latsaky ny 5.",
+    "filters": "Sivana",
+    "period": "Fotoana",
+    "periods": {
+      "30d": "30 andro farany",
+      "90d": "3 volana farany",
+      "365d": "12 volana farany",
+      "custom": "Daty voafidy"
+    },
+    "from": "Nanomboka",
+    "to": "Hatramin'ny",
+    "zone": "Faritra",
+    "region": "Faritra",
+    "allRegions": "Faritra rehetra",
+    "apply": "Asehoy",
+    "invalidRange": "Tokony ho alohan'ny daty farany ny daty fanombohana.",
+    "export": "Alaina ho CSV",
+    "hidden": "< 5",
+    "hiddenLabel": "nafenina : tranga latsaky ny 5",
+    "periodLabel": "Nanomboka ny {start} ka hatramin'ny {end}",
+    "metrics": {
+      "depistages": "Fitiliana",
+      "referencements": "Fandefasana",
+      "referencements_arrives": "Fandefasana tonga",
+      "enfants_depistes": "Zaza voatily",
+      "cas_mas": "Zaza MAS",
+      "cas_mam": "Zaza MAM",
+      "nourrissons_a_risque": "Zazakely atahorana",
+      "rendez_vous_manques": "Fotoana tsy natrehina",
+      "taux_arrivee_pct": "Tahan'ny tonga",
+      "delai_moyen_arrivee_heures": "Faharetan'ny fahatongavana",
+      "beneficiaires_actives": "Mpisitraka mavitrika",
+      "grossesses_suivies": "Vohoka arahi-maso",
+      "signes_danger": "Famantarana loza voalaza",
+      "referencements_grossesse": "Fandefasana vehivavy bevohoka",
+      "referencements_grossesse_arrives": "Fandefasana vehivavy bevohoka tonga",
+      "enfants_vaccines": "Zaza voavakisiny",
+      "taux_arrivee_grossesse_pct": "Tahan'ny tonga (vohoka)",
+      "couverture_vaccinale_pct": "Fandrakofana ara-bakisiny (Penta 3, 12–23 volana)"
+    },
+    "hoursValue": "{n} ora",
+    "byZone": "Isaky ny faritra",
+    "byPeriod": "Fivoarana isam-bolana",
+    "outcomes": "Fivoahana",
+    "zoneColumn": "Faritra",
+    "outcomeColumn": "Fivoahana",
+    "casesColumn": "Tranga",
+    "noData": "Tsy misy angona ho an'ity fotoana sy faritra ity.",
+    "zoneLocked": "Voafetra amin'ity faritra ity ny kaontinao.",
+    "percentValue": "{n} %",
+    "exportHint": "Mitovy amin'ny isa eo amin'ny efijery isaky ny faritra ny ao amin'ny rakitra, misy « <5 » ho an'ny isa nafenina. Voarakitra ao amin'ny diarin'ny fanaraha-maso ny fanondranana tsirairay.",
+    "filename": "taranaka-antontanisa-{start}-{end}.csv",
+    "hiddenNote": "« < 5 » : isa nafenina hiarovana ny tsiambaratelo (tranga latsaky ny 5, na azo kajiana avy amin'ny isa hafa).",
+    "monthColumn": "Volana",
+    "exported": "Voaray ny rakitra CSV.",
+    "charts": {
+      "hiddenKey": "Nafenina (< 5)",
+      "outcomesIntro": "Ny fiafaran'ny fitsaboana nandritra ny fe-potoana.",
+      "cases": {
+        "title": "Mitombo ve ny tranga tsy fahampian-tsakafo mahery?",
+        "summaryShort": "Ankizy MAS sy MAM hita, isam-bolana ({n} volana).",
+        "trend": {
+          "up": "{month}: tranga {n}, mihoatra {diff} noho ny {previous}.",
+          "down": "{month}: tranga {n}, latsaka {diff} noho ny {previous}.",
+          "same": "{month}: tranga {n}, mitovy amin'ny {previous}."
+        },
+        "columnLabel": "{month}: MAS {sam}, MAM {mam}, fitiliana {screenings}"
+      },
+      "arrival": {
+        "title": "Tonga any amin'ny foibe ve ireo ankizy nalefa?",
+        "introRegion": "Ireo nalefa tonga amin'ny totaliny, isam-paritra. Ny tara indrindra no voalohany.",
+        "introMonth": "Ireo nalefa tonga amin'ny totaliny, isam-bolana. Ny volana tara indrindra no voalohany.",
+        "ofTotal": "{arrived} amin'ny {sent}",
+        "none": "Tsy misy nalefa"
+      }
+    },
+    "beneficiariesTitle": "Mpisitraka mampiasa ny fampiharana",
+    "beneficiariesIntro": "Ireo vehivavy mampiasa ny fampiharana amin'ny telefaoniny manokana."
+  },
+  "validation": {
+    "required": "Tsy maintsy fenoina ity."
+  },
+  "centreTypes": {
+    "csb": "CSB",
+    "crenam": "CRENAM",
+    "crenas": "CRENAS",
+    "creni": "CRENI"
+  },
+  "offline": {
+    "banner": "Tsy misy fifandraisana. Mety tsy vaovao ny angona aseho ; hitohy rehefa miverina ny tambajotra ny asa."
+  },
+  "contact": {
+    "call": "Antsoy {name} amin'ny {phone}",
+    "noPhone": "Tsy misy laharana voarakitra"
+  },
+  "accessRequest": {
+    "title": "Hangataka fidirana",
+    "intro": "Ho an'ny mpitsabo mpanampy sy dokotera ao amin'ny CSB, CRENAS, CRENI, CRENAM, ary ho an'ny mpanara-maso. Misy mpitantana manamarina ny fangatahana tsirairay alohan'ny hanokafana ny kaonty.",
+    "agentsNote": "Mpiasa ara-pahasalamana eny ifotony ve ianao? Ny mpanara-maso anao no mamorona ny kaontinao: miresaha aminy.",
+    "sections": {
+      "role": "Ny andraikitrao",
+      "identity": "Iza ianao?",
+      "login": "Ny fidiranao"
+    },
+    "profileHints": {
+      "agent_csb": "Mandray ireo ankizy alefa any amin'ny foibeny ary manavao ny antontan-taratasy.",
+      "superviseur": "Mahita antontan'isa tsy misy anarana ary mitantana ireo mpiasa eny ifotony ao amin'ny faritra misy azy."
+    },
+    "fields": {
+      "region": "Faritra",
+      "supervisedRegion": "Faritra arahi-maso",
+      "centre": "Toeram-pitsaboana",
+      "fonction": "Asa",
+      "nom": "Anarana",
+      "prenom": "Fanampin'anarana",
+      "phone": "Finday",
+      "email": "Adiresy mailaka",
+      "pinConfirm": "Amafiso ny PIN",
+      "message": "Hafatra ho an'ny mpitantana"
+    },
+    "hints": {
+      "nationalRegion": "Avelao ho « Firenena » raha manara-maso ny firenena manontolo na fandaharanasa iray ianao.",
+      "phone": "Hiantso anao ny mpitantana hanamarina ny fangatahanao.",
+      "identifiant": "Ilay hosoratanao hidirana, ohatra hoe fanampinanarana.foibe.",
+      "message": "Ohatra ny sampan-draharahanao na ny anaran'ny lehibenao."
+    },
+    "allRegions": "Faritra rehetra",
+    "national": "Firenena",
+    "chooseCentre": "Safidio ny foibenao",
+    "afterSubmit": "Hihidy ny kaontinao mandra-pankatoavina. Avy eo, amin'ny fidirana voalohany, hampandeha ny fanamarinana roa sosona ianao.",
+    "submit": "Alefaso ny fangatahana",
+    "sentTitle": "Lasa ny fangatahana",
+    "sentBody": "Hanamarina ny fangatahanao ny mpitantana. Mety hiantso anao amin'ny laharana nomenao izy.",
+    "sentNext": "Rehefa voaray ny fangatahana, midira amin'ny anarana fidirana sy PIN nofidinao.",
+    "backToLogin": "Hiverina amin'ny fidirana",
+    "errors": {
+      "email": "Tsy mety ny adiresy mailaka.",
+      "pin": "Isa 4 ka hatramin'ny 6 no tokony ho ao amin'ny PIN.",
+      "pinMismatch": "Tsy mitovy ireo PIN roa.",
+      "throttled": "Be loatra ny fangatahana avy amin'ity fifandraisana ity. Andramo indray afaka adiny iray."
+    }
+  },
+  "accessRequests": {
+    "title": "Fangatahana fidirana",
+    "intro": "Hamarino ny mombamomba ilay olona (ohatra amin'ny fiantsoana ny foibeny) alohan'ny hanekena: ny mombamomba sy ny foibe no mamaritra ny antontan-taratasy ho hitany.",
+    "filterLabel": "Asehoy ny fangatahana",
+    "statuses": {
+      "en_attente": "Miandry",
+      "approuvee": "Voaray",
+      "refusee": "Nolavina"
+    },
+    "empty": {
+      "en_attente": "Tsy misy fangatahana miandry",
+      "approuvee": "Tsy misy fangatahana voaray",
+      "refusee": "Tsy misy fangatahana nolavina"
+    },
+    "place": "Foibe na faritra",
+    "sentOn": "Nalefa ny",
+    "handledOn": {
+      "approuvee": "Neken'ny",
+      "refusee": "Nolavina ny"
+    },
+    "reason": "Antony",
+    "reasonHint": "Ho firaketana: tsy mahazo hafatra ilay olona.",
+    "approve": "Ekena",
+    "refuse": "Lavina",
+    "approveTitle": "Ekeo ny fangatahan'i {name}",
+    "refuseTitle": "Lavio ny fangatahan'i {name}",
+    "checkFirst": "Hosokafana amin'ity mombamomba sy foibe ity ny kaonty. Ahitsio raha diso ny fangatahana.",
+    "profile": "Mombamomba",
+    "approveSubmit": "Sokafy ny kaonty",
+    "refuseSubmit": "Lavio ny fangatahana",
+    "approved": "Voasokatra ny kaontin'i {name}.",
+    "refused": "Nolavina ny fangatahan'i {name}."
+  },
+  "agents": {
+    "title": "Ireo mpiasa eny ifotony",
+    "intro": "Mamorona kaonty ho an'ireo mpiasa ao amin'ny faritrao ary avereno ny PIN hadino. Ny mombamomba azy ihany no hitanao, tsy ny antontan-taratasy ara-pahasalamana mihitsy.",
+    "create": "Mpiasa vaovao",
+    "createTitle": "Hamorona kaontin'ny mpiasa eny ifotony",
+    "createIntro": "Hampiasain'ilay mpiasa ity anarana fidirana sy PIN ity ao amin'ny finday, amin'ny fomba mpiasa.",
+    "identifiantHint": "Ohatra ny laharan-findainy na fanampinanarana.tanàna. Tsy maintsy tsy mitovy amin'ny hafa.",
+    "firstPin": "PIN voalohany",
+    "createSubmit": "Foroniny ny kaonty",
+    "resetPin": "PIN vaovao",
+    "resetTitle": "PIN vaovao ho an'i {name}",
+    "resetIntro": "Voavaha ny kaonty ary mihidy ny fidirana rehetra. Miditra indray amin'ity PIN ity ilay mpiasa; miverina ny angona voatahiry rehefa miditra izy.",
+    "newPin": "PIN vaovao",
+    "resetSubmit": "Raketo ny PIN",
+    "handover": {
+      "createdTitle": "Voaforona ny kaontin'i {name}",
+      "resetTitle": "Voaraikitra ny PIN vaovaon'i {name}",
+      "note": "Omeo mivantana an'ilay mpiasa ireo. Tsy haseho intsony ny PIN.",
+      "done": "Voaray"
+    },
+    "empty": "Mbola tsy misy mpiasa",
+    "emptyHint": "Foroniny ny kaonty voalohany amin'ny « Mpiasa vaovao ».",
+    "noMatch": "Tsy misy mpiasa mifanaraka amin'ny fikarohana",
+    "search": "Hikaroka (anarana, anarana fidirana, finday)",
+    "count": "Tsy misy mpiasa | Mpiasa 1 | Mpiasa {n}",
+    "name": "Anarana",
+    "createdOn": "Noforonina ny",
+    "state": "Toetra",
+    "actions": "Asa atao",
+    "active": "Mandeha",
+    "inactive": "Tsy mandeha"
+  },
+  "beneficiaries": {
+    "title": "Mpisitraka",
+    "intro": "Ireo vehivavy ao amin'ny faritrao mampiasa ny fampiharana TARANAKA.",
+    "searchLabel": "Hikaroka mpisitraka",
+    "searchHint": "Anarana, telefaonina, na ny kaody hita ao amin'ny fampiharany. Ny kaody feno dia mahita azy na dia ivelan'ny faritrao aza.",
+    "searchPlaceholder": "Voahangy, 034… na K7Q-M4Z",
+    "submit": "Hikaroka",
+    "count": "Tsy misy mpisitraka | Mpisitraka 1 | Mpisitraka {n}",
+    "empty": "Tsy nisy mpisitraka hita.",
+    "emptyHint": "Andramo ny anarana, ny telefaonina, na ny kaody feno hita ao amin'ny fampiharany.",
+    "followed": "Arahi-maso",
+    "pregnant": "Bevohoka",
+    "children": "Tsy misy zaza | Zaza 1 | Zaza {n}",
+    "codeColumn": "Kaodin'ny mpisitraka"
+  },
+  "beneficiary": {
+    "title": "Taratasin'ny mpisitraka",
+    "code": "Kaodin'ny mpisitraka",
+    "phone": "Telefaonina",
+    "notProvided": "Tsy voasoratra",
+    "childrenCount": "Zaza",
+    "pregnancy": "Vohoka ankehitriny",
+    "noPregnancy": "Tsy misy vohoka ankehitriny.",
+    "gestationalAge": "Faharetan'ny vohoka",
+    "weeks": "{n} herinandro | {n} herinandro",
+    "dpa": "Daty fiterahana vinavinaina",
+    "ddr": "Fadim-bolana farany",
+    "cpn": "Fitsirihana mialoha ny fiterahana (CPN)",
+    "cpnItem": "CPN {n}",
+    "noCpn": "Tsy misy fitsirihana CPN voarakitra.",
+    "finishedPregnancies": "Tsy misy vohoka vita | Vohoka vita 1 ao amin'ny antontan-taratasy | Vohoka vita {n} ao amin'ny antontan-taratasy",
+    "dangers": "Famantarana loza",
+    "noDangers": "Tsy misy famantarana loza voalaza.",
+    "periods": {
+      "grossesse": "nandritra ny vohoka",
+      "post_partum": "taorian'ny fiterahana"
+    },
+    "children": "Zaza",
+    "noChildren": "Tsy misy zaza voarakitra.",
+    "referrals": "Fandefasana",
+    "noReferrals": "Tsy misy fandefasana.",
+    "auditNote": "Voarakitra ao amin'ny diarin'ny fanaraha-maso isaky ny sokafana ity antontan-taratasy ity."
+  },
+  "dangers": {
+    "codes": {
+      "saignement_vaginal": "Mandeha ra amin'ny fivaviana",
+      "convulsions": "Fifanintonana",
+      "maux_de_tete_vision": "Aretin'andoha mafy na manjavozavo ny fahitana",
+      "fievre_elevee": "Tazo mahery",
+      "difficulte_respirer": "Sarotra ny miaina",
+      "douleur_abdominale": "Fanaintainana mafy amin'ny kibo",
+      "perte_des_eaux": "Vaky rano",
+      "bebe_bouge_moins": "Mihetsika kely na tsy mihetsika intsony ny zaza",
+      "gonflement_visage_mains": "Mivonto tampoka ny tarehy na ny tanana",
+      "saignement_abondant": "Fandehanan-dra be",
+      "fievre": "Tazo"
+    }
+  }
+}

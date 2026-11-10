@@ -1,0 +1,687 @@
+{
+  "app": {
+    "name": "TARANAKA",
+    "tagline": "Health centre dashboard",
+    "skipToContent": "Skip to main content",
+    "loading": "Loading…",
+    "pageLoaded": "Page loaded: {title}",
+    "logoAlt": "Taranaka logo: a pregnant mother and her children. Women, pregnancy, child health, nutrition."
+  },
+  "language": {
+    "label": "Language",
+    "fr": "Français",
+    "mg": "Malagasy",
+    "en": "English"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "referrals": "Referrals",
+    "conflicts": "Sync conflicts",
+    "stats": "Statistics",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "agents": "My agents",
+    "accessRequests": "Access requests",
+    "beneficiaries": "Beneficiaries"
+  },
+  "user": {
+    "signedInAs": "Signed in: {name}",
+    "logout": "Sign out",
+    "idleLogout": "You were signed out after {minutes} minutes of inactivity."
+  },
+  "roles": {
+    "agent_csb": "Nurse / doctor",
+    "superviseur": "Supervisor",
+    "admin": "Administrator",
+    "asc": "Community health worker",
+    "beneficiaire": "Beneficiary"
+  },
+  "login": {
+    "title": "Sign in",
+    "intro": "For staff of CSB, CRENAS and CRENI centres, and supervisors.",
+    "identifier": "Username",
+    "identifierHelp": "Your phone number or the username given by your supervisor.",
+    "pin": "PIN code",
+    "pinHelp": "4 to 6 digits.",
+    "showPin": "Show PIN",
+    "hidePin": "Hide PIN",
+    "submit": "Continue",
+    "submitting": "Checking…",
+    "stepCredentials": "Step 1 of 2: username and PIN",
+    "stepTotp": "Step 2 of 2: verification code",
+    "totpTitle": "Verification code",
+    "totpIntro": "Open your authenticator app and enter the 6-digit code shown for TARANAKA.",
+    "totpCode": "6-digit code",
+    "totpHelp": "The code changes every 30 seconds.",
+    "totpSubmit": "Confirm code",
+    "enrollTitle": "Turn on two-factor authentication",
+    "enrollIntro": "Two-factor authentication is required to protect patient records. Scan this QR code with an authenticator app (for example FreeOTP, Aegis or Google Authenticator), then enter the code it shows.",
+    "enrollQrAlt": "QR code to set up the authenticator app",
+    "enrollManual": "Can't scan it? Enter this key in the app:",
+    "enrollSubmit": "Turn on and sign in",
+    "back": "Back to username",
+    "errors": {
+      "credentials": "Wrong username or PIN.",
+      "locked": "Account locked. Try again in {minutes} minute(s).",
+      "lockedAdmin": "Account locked. Contact an administrator to unlock it.",
+      "throttled": "Too many attempts. Wait a minute before trying again.",
+      "totpInvalid": "Wrong or expired code. Enter the new code shown.",
+      "totpFormat": "The code must be exactly 6 digits.",
+      "required": "This field is required.",
+      "noWebAccess": "Your profile has no access to this dashboard. Community health workers use the mobile app."
+    },
+    "noAccount": "No account yet?",
+    "requestAccess": "Request access"
+  },
+  "access": {
+    "title": "Access denied",
+    "body": "Your profile has no access to this dashboard. Community health workers use the mobile app.",
+    "forbidden": "You are not allowed to open this page.",
+    "backHome": "Back to home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This address does not match any page of the dashboard."
+  },
+  "errors": {
+    "network": "The server is not responding. Check the connection and try again.",
+    "session_expired": "Your session has expired. Sign in again.",
+    "unauthorized": "Your session has expired. Sign in again.",
+    "forbidden": "Your profile does not allow this action.",
+    "not_found": "This item does not exist or is not visible to your centre.",
+    "conflict": "This record was changed in the meantime. The latest version is shown: check it, then try again.",
+    "validation": "Some information is invalid. Correct it, then try again.",
+    "locked": "Account locked.",
+    "throttled": "Too many requests. Wait a minute.",
+    "server": "The server ran into an error. Try again later.",
+    "unknown": "An unexpected error occurred.",
+    "serverSays": "Server message: {detail}",
+    "retry": "Try again"
+  },
+  "common": {
+    "refresh": "Refresh",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "seeTable": "Show data as a table",
+    "hideTable": "Hide table",
+    "none": "None",
+    "unknown": "Unknown",
+    "optional": "optional",
+    "saved": "Saved."
+  },
+  "duration": {
+    "minutes": "{n} min | {n} min",
+    "hours": "{n} h | {n} h",
+    "days": "{n} day | {n} days",
+    "waiting": "Waiting for {duration}"
+  },
+  "urgency": {
+    "label": "Urgency",
+    "rouge": "Red",
+    "orange": "Orange",
+    "jaune": "Yellow",
+    "rougeHint": "Life-threatening",
+    "orangeHint": "See soon",
+    "jauneHint": "To be seen"
+  },
+  "status": {
+    "label": "Status",
+    "envoye": "Referred",
+    "recu": "Patient arrived",
+    "pris_en_charge": "Under care",
+    "en_suivi": "Follow-up",
+    "sortie": "Discharged"
+  },
+  "origin": {
+    "enfant": "Child",
+    "grossesse": "Pregnancy"
+  },
+  "queue": {
+    "title": "Incoming referrals",
+    "intro": "Sorted by urgency (red, orange, yellow), then oldest first.",
+    "tabs": {
+      "label": "Filter by stage",
+      "incoming": "Expected",
+      "in_care": "In progress",
+      "closed": "Discharged"
+    },
+    "count": "No referrals | 1 referral | {n} referrals",
+    "empty": "No referrals in this list.",
+    "emptyHint": "New referrals appear here as soon as the community health worker syncs their phone.",
+    "columns": {
+      "urgency": "Urgency",
+      "code": "Code",
+      "patient": "Patient",
+      "reason": "Reason",
+      "waiting": "Waiting",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "open": "Open record {code}",
+    "patientChild": "Child",
+    "patientMother": "{prenom} {nom}",
+    "arrived": "Patient arrived",
+    "arrivedDone": "Arrival of patient {code} recorded."
+  },
+  "search": {
+    "label": "Search by referral code",
+    "placeholder": "R-0AA5-1104-03",
+    "submit": "Search",
+    "title": "Search by code",
+    "searching": "Searching for code {code}…",
+    "notFound": "No referral with code {code} for your centre.",
+    "hint": "The code is on the slip the family brings. Check each character with them.",
+    "required": "Enter a referral code."
+  },
+  "referral": {
+    "title": "Referral {code}",
+    "code": "Referral code",
+    "origin": "Origin",
+    "reason": "Reason",
+    "priority": "Urgency",
+    "facility": "Destination centre",
+    "agent": "Community health worker",
+    "mother": "Pregnant woman",
+    "child": "Child",
+    "openChild": "Open the child's record",
+    "progress": "Record stages",
+    "stepDone": "done",
+    "stepCurrent": "current stage",
+    "stepTodo": "upcoming",
+    "measurement": "Screening measurement",
+    "nextAction": "Next step",
+    "closed": "This record is closed.",
+    "outcome": "Discharge outcome",
+    "disclaimer": "TARANAKA guides referrals; it does not diagnose. Care and discharge decisions remain the professional's responsibility.",
+    "actions": {
+      "recu": "Patient arrived",
+      "pris_en_charge": "Record care start",
+      "en_suivi": "Move to follow-up",
+      "sortie": "Record discharge"
+    },
+    "confirm": {
+      "recu": "Confirm that patient {code} arrived? The community health worker will see “Received by the centre” at their next sync.",
+      "pris_en_charge": "Confirm care start for patient {code}?",
+      "en_suivi": "Move record {code} to follow-up?"
+    },
+    "done": {
+      "recu": "Patient arrival recorded.",
+      "pris_en_charge": "Care start recorded.",
+      "en_suivi": "Record moved to follow-up.",
+      "sortie": "Discharge recorded."
+    },
+    "dischargeOnlyAgent": "Only a nurse or doctor at the destination centre can record the discharge.",
+    "dates": "Record dates",
+    "late": "Not arrived within the expected time",
+    "lateShort": "Late",
+    "facilityType": "{name} ({type})",
+    "stepSkipped": "skipped",
+    "openBeneficiary": "Open the beneficiary's record"
+  },
+  "care": {
+    "title": "Care and follow-up",
+    "consultations": "Consultations",
+    "noConsultations": "No consultations recorded.",
+    "add": "Add a consultation",
+    "date": "Date",
+    "diagnostic": "Clinical finding",
+    "decision": "Decision",
+    "observations": "Notes",
+    "decisions": {
+      "conseil": "Advice",
+      "reference": "Referral to another centre",
+      "prise_en_charge": "Care"
+    },
+    "followUps": "Follow-up visits",
+    "noFollowUps": "No visits scheduled.",
+    "addFollowUp": "Schedule a follow-up",
+    "followUpDate": "Follow-up date",
+    "followUpReason": "Follow-up reason",
+    "followUpStatus": {
+      "prevu": "Scheduled",
+      "honore": "Attended",
+      "annule": "Cancelled"
+    },
+    "dateInPast": "The follow-up date must be today or later.",
+    "dateInFuture": "The date cannot be in the future.",
+    "consultationSaved": "Consultation saved.",
+    "followUpSaved": "Follow-up scheduled for {date}.",
+    "missed": "Missed",
+    "markAttended": "Mark attended",
+    "markAttendedLabel": "Mark the {date} follow-up as attended",
+    "attendedSaved": "Follow-up attendance recorded."
+  },
+  "discharge": {
+    "title": "Record discharge",
+    "intro": "Only a professional at the destination centre can record a discharge. This closes the record and cannot be undone.",
+    "outcome": "Outcome",
+    "outcomes": {
+      "gueri": "Cured",
+      "transfere": "Transferred",
+      "non_repondant": "Non-responder",
+      "abandon": "Defaulted / lost to follow-up",
+      "decede": "Died"
+    },
+    "submit": "Close the record",
+    "confirm": "Close record {code} with outcome “{outcome}”? This cannot be undone."
+  },
+  "child": {
+    "title": "Child record",
+    "name": "Name",
+    "sex": "Sex",
+    "sexes": {
+      "M": "Boy",
+      "F": "Girl"
+    },
+    "birthDate": "Date of birth",
+    "age": "Age",
+    "ageMonths": "{n} month | {n} months",
+    "careStatus": "Care",
+    "careStatuses": {
+      "aucun": "None",
+      "suivi": "Follow-up",
+      "refere": "Referred",
+      "pris_en_charge": "Under care",
+      "gueri": "Cured",
+      "abandon": "Defaulted",
+      "transfere": "Transferred",
+      "non_repondant": "Non-responder",
+      "decede": "Died"
+    },
+    "referrals": "Child's referrals",
+    "noReferrals": "No referrals visible to your centre.",
+    "mother": "Mother",
+    "vaccines": "Vaccines",
+    "noVaccines": "No vaccine recorded.",
+    "vaccineCode": "Vaccine",
+    "vaccineCentre": "Centre",
+    "vaccineSource": "Source",
+    "vaccineConfirmed": "Confirmed in the booklet",
+    "vaccineDeclared": "Reported by the mother",
+    "meals": "Feeding (mother's log)",
+    "noMeals": "No food log.",
+    "breastfeeding": "Breastfeeding",
+    "breastfeedingTypes": {
+      "exclusif": "Exclusive",
+      "mixte": "Mixed",
+      "aucun": "None"
+    },
+    "mealsCount": "Meals",
+    "diversityScore": "Diversity",
+    "diversityValue": "{n}/8"
+  },
+  "measurements": {
+    "title": "Measurement history",
+    "empty": "No measurements recorded.",
+    "date": "Date",
+    "age": "Age (months)",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "muac": "MUAC (mm)",
+    "oedema": "Oedema",
+    "whz": "WHZ",
+    "haz": "HAZ",
+    "waz": "WAZ",
+    "alert": "Alert",
+    "flagged": "Measurement to check",
+    "position": {
+      "couche": "lying",
+      "debout": "standing"
+    },
+    "alerts": {
+      "vert": "Normal",
+      "orange": "Watch",
+      "rouge": "Danger"
+    },
+    "notAvailable": "not measured",
+    "zscoreSource": "WHO 2006 z-scores computed by the server.",
+    "classification": "Classification",
+    "classifications": {
+      "mas": "SAM",
+      "mam": "MAM",
+      "normal": "Normal",
+      "nourrisson_a_risque": "At-risk infant"
+    },
+    "notClassified": "Not classified",
+    "orientation": "Referral",
+    "nextControl": "Next check-up"
+  },
+  "charts": {
+    "growth": "Growth charts",
+    "weightForAge": "Weight for age",
+    "heightForAge": "Height for age",
+    "whzOverTime": "Weight for height (z-score) over time",
+    "muacOverTime": "Mid-upper arm circumference over time",
+    "ageAxis": "Age (months)",
+    "dateAxis": "Date",
+    "kg": "kg",
+    "cm": "cm",
+    "mm": "mm",
+    "z": "z",
+    "summary": "{title}: {count} measurements, from {first} to {last}.",
+    "summaryEmpty": "{title}: not enough measurements to draw a curve.",
+    "point": "{x}: {y}",
+    "thresholdMas": "SAM (< −3)",
+    "thresholdMam": "MAM (< −2)",
+    "thresholdMuacMas": "SAM (< 115 mm)",
+    "thresholdMuacMam": "MAM (< 125 mm)",
+    "weightForLength": "Weight for length",
+    "weightForHeight": "Weight for height",
+    "lengthAxis": "Length (cm)",
+    "heightAxis": "Height (cm)",
+    "childSeries": "Child's measurements",
+    "whoSeries": "WHO curves (z-score)",
+    "median": "median",
+    "curveLabel": "{z} z",
+    "whoNote": "Reference curves: WHO 2006 child growth standards (−3, −2, median, +2, +3 z), computed by the server from the official tables.",
+    "whoMissing": "The WHO tables are not loaded on the server: only the child's measurements and the SAM / MAM thresholds are drawn."
+  },
+  "conflicts": {
+    "title": "Sync conflicts",
+    "intro": "Two devices changed the same clinical record. Nothing is overwritten automatically: choose, field by field, which value to keep.",
+    "empty": "No conflicts to resolve.",
+    "count": "No conflicts | 1 conflict to resolve | {n} conflicts to resolve",
+    "table": "Record type",
+    "tables": {
+      "enfant": "Child record",
+      "mesure": "Measurement",
+      "referencement": "Referral",
+      "consultation_nutritionnelle": "Consultation",
+      "other": "Other ({name})",
+      "rendez_vous": "Appointment",
+      "grossesse": "Pregnancy",
+      "danger_grossesse": "Danger sign"
+    },
+    "detectedAt": "Detected on {date}",
+    "field": "Field",
+    "serverVersion": "Server version (v{version})",
+    "deviceVersion": "Phone version",
+    "deviceLabel": "Device {device}",
+    "keepServer": "Keep server version",
+    "keepDevice": "Keep phone version",
+    "chooseField": "Value to keep for {field}",
+    "differentFields": "No differing fields | 1 differing field | {n} differing fields",
+    "resolve": "Confirm resolution",
+    "resolved": "Conflict resolved.",
+    "confirm": "Confirm this choice? The other values are kept in the history.",
+    "comment": "Comment",
+    "commentHelp": "Explain your choice (for example: checked with the mother).",
+    "operations": {
+      "create": "Creation",
+      "update": "Change",
+      "delete": "Deletion"
+    },
+    "deleted": "deleted",
+    "sentBy": "Sent by"
+  },
+  "stats": {
+    "title": "Aggregate statistics",
+    "intro": "Anonymous data. Any figure covering fewer than 5 cases is hidden.",
+    "filters": "Filters",
+    "period": "Period",
+    "periods": {
+      "30d": "Last 30 days",
+      "90d": "Last 3 months",
+      "365d": "Last 12 months",
+      "custom": "Custom dates"
+    },
+    "from": "From",
+    "to": "To",
+    "zone": "Area",
+    "region": "Region",
+    "allRegions": "All regions",
+    "apply": "Show",
+    "invalidRange": "The start date must be before the end date.",
+    "export": "Export as CSV",
+    "hidden": "< 5",
+    "hiddenLabel": "hidden: fewer than 5 cases",
+    "periodLabel": "From {start} to {end}",
+    "metrics": {
+      "depistages": "Screenings",
+      "referencements": "Referrals",
+      "referencements_arrives": "Referrals arrived",
+      "enfants_depistes": "Children screened",
+      "cas_mas": "SAM children",
+      "cas_mam": "MAM children",
+      "nourrissons_a_risque": "At-risk infants",
+      "rendez_vous_manques": "Missed appointments",
+      "taux_arrivee_pct": "Arrival rate",
+      "delai_moyen_arrivee_heures": "Average time to arrival",
+      "beneficiaires_actives": "Active beneficiaries",
+      "grossesses_suivies": "Pregnancies followed",
+      "signes_danger": "Danger signs reported",
+      "referencements_grossesse": "Pregnancy referrals",
+      "referencements_grossesse_arrives": "Pregnancy referrals arrived",
+      "enfants_vaccines": "Children vaccinated",
+      "taux_arrivee_grossesse_pct": "Arrival rate (pregnancies)",
+      "couverture_vaccinale_pct": "Vaccine coverage (Penta 3, 12–23 months)"
+    },
+    "hoursValue": "{n} h",
+    "byZone": "By region",
+    "byPeriod": "Monthly trend",
+    "outcomes": "Discharge outcomes",
+    "zoneColumn": "Region",
+    "outcomeColumn": "Outcome",
+    "casesColumn": "Cases",
+    "noData": "No data for this period and area.",
+    "zoneLocked": "Your account is limited to this region.",
+    "percentValue": "{n} %",
+    "exportHint": "The file holds the same figures as the by-region view, with “<5” for hidden figures. Each export is recorded in the audit log.",
+    "filename": "taranaka-statistics-{start}-{end}.csv",
+    "hiddenNote": "“< 5”: figure hidden to protect anonymity (fewer than 5 cases, or deducible from the other figures).",
+    "monthColumn": "Month",
+    "exported": "CSV file downloaded.",
+    "charts": {
+      "hiddenKey": "Hidden (< 5)",
+      "outcomesIntro": "How the treatments of the period ended.",
+      "cases": {
+        "title": "Are acute malnutrition cases going up?",
+        "summaryShort": "SAM and MAM children found, month by month ({n} months).",
+        "trend": {
+          "up": "{month}: {n} cases, {diff} more than in {previous}.",
+          "down": "{month}: {n} cases, {diff} fewer than in {previous}.",
+          "same": "{month}: {n} cases, as many as in {previous}."
+        },
+        "columnLabel": "{month}: {sam} SAM, {mam} MAM, {screenings} screenings"
+      },
+      "arrival": {
+        "title": "Do referred children reach the centre?",
+        "introRegion": "Referrals that arrived out of all referrals, by region. The furthest behind first.",
+        "introMonth": "Referrals that arrived out of all referrals, by month. The furthest behind first.",
+        "ofTotal": "{arrived} of {sent}",
+        "none": "No referrals"
+      }
+    },
+    "beneficiariesTitle": "Connected beneficiaries",
+    "beneficiariesIntro": "Women who use the app on their own phone."
+  },
+  "validation": {
+    "required": "This field is required."
+  },
+  "centreTypes": {
+    "csb": "CSB",
+    "crenam": "CRENAM",
+    "crenas": "CRENAS",
+    "creni": "CRENI"
+  },
+  "offline": {
+    "banner": "No connection. The data shown may be out of date; actions will resume when the network is back."
+  },
+  "contact": {
+    "call": "Call {name} on {phone}",
+    "noPhone": "No phone number recorded"
+  },
+  "accessRequest": {
+    "title": "Request access",
+    "intro": "For nurses and doctors of CSBs, CRENAS, CRENI and CRENAM, and for supervisors. An administrator checks each request before opening the account.",
+    "agentsNote": "Community health worker? Your supervisor creates your account: please ask them.",
+    "sections": {
+      "role": "Your role",
+      "identity": "Who are you?",
+      "login": "Your sign-in"
+    },
+    "profileHints": {
+      "agent_csb": "Receives the referrals of their centre and updates the records.",
+      "superviseur": "Sees anonymous statistics and manages the community health workers of their region."
+    },
+    "fields": {
+      "region": "Region",
+      "supervisedRegion": "Supervised region",
+      "centre": "Health centre",
+      "fonction": "Job title",
+      "nom": "Last name",
+      "prenom": "First name",
+      "phone": "Phone",
+      "email": "Email address",
+      "pinConfirm": "Confirm the PIN",
+      "message": "Message to the administrator"
+    },
+    "hints": {
+      "nationalRegion": "Leave “National” if you follow the whole country or a programme.",
+      "phone": "The administrator will call you to check your request.",
+      "identifiant": "What you will type to sign in, for example firstname.centre.",
+      "message": "For example your department or the name of your manager."
+    },
+    "allRegions": "All regions",
+    "national": "National",
+    "chooseCentre": "Choose your centre",
+    "afterSubmit": "Your account stays closed until it is approved. Then, at your first sign-in, you will turn on two-factor authentication.",
+    "submit": "Send the request",
+    "sentTitle": "Request sent",
+    "sentBody": "An administrator will check your request. They may call you on the number you gave.",
+    "sentNext": "Once the request is approved, sign in with the identifier and PIN you chose.",
+    "backToLogin": "Back to sign-in",
+    "errors": {
+      "email": "Invalid email address.",
+      "pin": "The PIN must have 4 to 6 digits.",
+      "pinMismatch": "The two PINs do not match.",
+      "throttled": "Too many requests from this connection. Try again in an hour."
+    }
+  },
+  "accessRequests": {
+    "title": "Access requests",
+    "intro": "Check who the person is (for example by calling their centre) before approving: the profile and centre decide which records they will see.",
+    "filterLabel": "Show requests",
+    "statuses": {
+      "en_attente": "Pending",
+      "approuvee": "Approved",
+      "refusee": "Refused"
+    },
+    "empty": {
+      "en_attente": "No pending request",
+      "approuvee": "No approved request",
+      "refusee": "No refused request"
+    },
+    "place": "Centre or region",
+    "sentOn": "Sent on",
+    "handledOn": {
+      "approuvee": "Approved on",
+      "refusee": "Refused on"
+    },
+    "reason": "Reason",
+    "reasonHint": "For the record: the person does not receive a message.",
+    "approve": "Approve",
+    "refuse": "Refuse",
+    "approveTitle": "Approve {name}'s request",
+    "refuseTitle": "Refuse {name}'s request",
+    "checkFirst": "The account will open with this profile and centre. Correct them if the request is wrong.",
+    "profile": "Profile",
+    "approveSubmit": "Open the account",
+    "refuseSubmit": "Refuse the request",
+    "approved": "Account opened for {name}.",
+    "refused": "{name}'s request refused."
+  },
+  "agents": {
+    "title": "My community health workers",
+    "intro": "Create the accounts of the workers in your region and reset a forgotten PIN. You only see who they are, never health records.",
+    "create": "New worker",
+    "createTitle": "Create a community health worker account",
+    "createIntro": "The worker will use this identifier and PIN in the mobile app, in agent mode.",
+    "identifiantHint": "For example their phone number or firstname.village. It must be unique.",
+    "firstPin": "Starting PIN",
+    "createSubmit": "Create the account",
+    "resetPin": "New PIN",
+    "resetTitle": "New PIN for {name}",
+    "resetIntro": "The account is unblocked and its sessions are closed. The worker signs in again with this PIN; their synced data comes back at sign-in.",
+    "newPin": "New PIN",
+    "resetSubmit": "Save the PIN",
+    "handover": {
+      "createdTitle": "Account created for {name}",
+      "resetTitle": "New PIN saved for {name}",
+      "note": "Give this to the worker in person. The PIN will not be shown again.",
+      "done": "Done"
+    },
+    "empty": "No worker yet",
+    "emptyHint": "Create the first account with “New worker”.",
+    "noMatch": "No worker matches the search",
+    "search": "Search (name, identifier, phone)",
+    "count": "No workers | 1 worker | {n} workers",
+    "name": "Name",
+    "createdOn": "Created on",
+    "state": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Deactivated"
+  },
+  "beneficiaries": {
+    "title": "Beneficiaries",
+    "intro": "The women in your zone who use the TARANAKA app.",
+    "searchLabel": "Search for a beneficiary",
+    "searchHint": "Name, phone, or the code shown in her app. An exact code finds her even outside your zone.",
+    "searchPlaceholder": "Voahangy, 034… or K7Q-M4Z",
+    "submit": "Search",
+    "count": "No beneficiaries | 1 beneficiary | {n} beneficiaries",
+    "empty": "No beneficiary found.",
+    "emptyHint": "Try the name, the phone number, or the exact code shown in her app.",
+    "followed": "Followed",
+    "pregnant": "Pregnant",
+    "children": "No children | 1 child | {n} children",
+    "codeColumn": "Beneficiary code"
+  },
+  "beneficiary": {
+    "title": "Beneficiary record",
+    "code": "Beneficiary code",
+    "phone": "Phone",
+    "notProvided": "Not provided",
+    "childrenCount": "Children",
+    "pregnancy": "Current pregnancy",
+    "noPregnancy": "No current pregnancy.",
+    "gestationalAge": "Gestational age",
+    "weeks": "{n} week | {n} weeks",
+    "dpa": "Expected delivery",
+    "ddr": "Last period",
+    "cpn": "Antenatal visits (ANC)",
+    "cpnItem": "ANC {n}",
+    "noCpn": "No antenatal visit recorded.",
+    "finishedPregnancies": "No finished pregnancies | 1 finished pregnancy on file | {n} finished pregnancies on file",
+    "dangers": "Danger signs",
+    "noDangers": "No danger sign reported.",
+    "periods": {
+      "grossesse": "during pregnancy",
+      "post_partum": "after delivery"
+    },
+    "children": "Children",
+    "noChildren": "No child recorded.",
+    "referrals": "Referrals",
+    "noReferrals": "No referrals.",
+    "auditNote": "Every time this record is opened, it is written to the audit log."
+  },
+  "dangers": {
+    "codes": {
+      "saignement_vaginal": "Vaginal bleeding",
+      "convulsions": "Convulsions",
+      "maux_de_tete_vision": "Severe headache or blurred vision",
+      "fievre_elevee": "High fever",
+      "difficulte_respirer": "Difficulty breathing",
+      "douleur_abdominale": "Severe abdominal pain",
+      "perte_des_eaux": "Waters breaking",
+      "bebe_bouge_moins": "The baby moves less or not at all",
+      "gonflement_visage_mains": "Sudden swelling of the face or hands",
+      "saignement_abondant": "Heavy bleeding",
+      "fievre": "Fever"
+    }
+  }
+}

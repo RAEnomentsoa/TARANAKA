@@ -1,0 +1,20 @@
+Tables de référence OMS 2006 (Child Growth Standards) – À AJOUTER
+
+Ce dossier doit contenir les tables LMS officielles de l'OMS, telles que publiées
+dans le paquet « anthro » de l'OMS :
+https://github.com/WorldHealthOrganization/anthro  (dossier data-raw/growthstandards)
+
+Fichiers attendus (format tabulé, en-têtes d'origine conservés) :
+  weianthro.txt   poids pour l'âge        (colonnes sex, age, l, m, s)
+  lenanthro.txt   longueur/taille pour l'âge (sex, age, l, m, s, loh)
+  wflanthro.txt   poids pour la longueur  (sex, length, l, m, s, lorh)
+  wfhanthro.txt   poids pour la taille    (sex, height, l, m, s, lorh)
+
+Ce sont les mêmes fichiers que ceux chargés par le serveur avec
+`python manage.py importer_tables_oms <dossier>`.
+
+Ils ne sont pas dans le dépôt (licence GPL-3 du paquet anthro, voir docs/DECISIONS.md D6).
+Tant qu'ils sont absents, l'application ne calcule AUCUN z-score et n'affiche
+aucune courbe : elle ne remplace jamais ces valeurs par des valeurs inventées.
+Le classement de la malnutrition s'appuie alors sur le périmètre brachial et les
+œdèmes, et le serveur recalcule les z-scores s'il a ses tables.

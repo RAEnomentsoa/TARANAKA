@@ -1,0 +1,293 @@
+@import '@fontsource/atkinson-hyperlegible-next/400.css';
+@import '@fontsource/atkinson-hyperlegible-next/700.css';
+@import '@fontsource/atkinson-hyperlegible-mono/500.css';
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* rem everywhere: browser text size settings scale the whole dashboard. */
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--sky-50);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading);
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
+  font-weight: 700;
+}
+
+h1 {
+  font-size: var(--text-xl);
+}
+
+h2 {
+  font-size: var(--text-lg);
+}
+
+h3 {
+  font-size: var(--text-md);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+  max-width: 70ch;
+}
+
+a {
+  color: var(--primary);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--primary-strong);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Form controls inside AppField */
+.field input,
+.field select,
+.field textarea {
+  min-height: var(--target);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--field-border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  transition: border-color var(--duration) var(--easing);
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+  border-color: var(--ink-muted);
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 0;
+  border-radius: var(--radius-sm);
+}
+
+.field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.field--invalid input,
+.field--invalid select,
+.field--invalid textarea {
+  border-color: var(--rouge-ink);
+}
+
+/* Skeleton placeholders (LoadingState): a flat block that pulses softly. */
+.skeleton {
+  display: block;
+  background: var(--skeleton);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s var(--easing) infinite alternate;
+}
+
+@keyframes skeleton-pulse {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.5;
+  }
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  vertical-align: top;
+}
+
+thead th {
+  background: var(--sky-50);
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+tbody tr + tr td,
+tbody tr + tr th {
+  border-top: 1px solid var(--line);
+}
+
+caption {
+  text-align: left;
+  font-weight: 700;
+  padding-bottom: var(--space-2);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.table-scroll {
+  /* relative: keeps visually hidden captions inside the scroll box. */
+  position: relative;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.stack > * + * {
+  margin-top: var(--space-4);
+}
+
+/*
+ * Motion: short, played once, transform and opacity only (no layout work,
+ * so no slowdown on entry-level computers). All of it is switched off by the
+ * prefers-reduced-motion rule below.
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@keyframes logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Each page slides in a little when the route changes. */
+.page-enter {
+  animation: rise-in 220ms var(--easing) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* A 0.01 ms infinite pulse would flicker: hold the placeholder still. */
+  .skeleton {
+    animation: none !important;
+  }
+}
+
+/*
+ * Wide tables become one block per row on small screens: each cell shows
+ * its column name (data-label), so nothing scrolls sideways.
+ */
+@media (max-width: 40rem) {
+  table.stack-on-mobile {
+    min-width: 0;
+  }
+
+  table.stack-on-mobile thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  table.stack-on-mobile tr {
+    display: block;
+    padding: var(--space-2) 0;
+  }
+
+  table.stack-on-mobile tbody tr + tr {
+    border-top: 1px solid var(--line);
+  }
+
+  table.stack-on-mobile th[scope='row'],
+  table.stack-on-mobile td {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    border: none;
+    text-align: right;
+    white-space: normal;
+  }
+
+  table.stack-on-mobile th[scope='row'] {
+    font-size: var(--text-md);
+    text-align: left;
+  }
+
+  table.stack-on-mobile td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-align: left;
+  }
+
+  table.stack-on-mobile td[data-label=''] {
+    display: block;
+  }
+}
