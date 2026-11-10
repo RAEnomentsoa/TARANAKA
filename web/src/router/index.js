@@ -23,6 +23,12 @@ export const routes = [
     meta: { public: true, titleKey: 'login.title' },
   },
   {
+    path: '/demande-acces',
+    name: 'access-request',
+    component: () => import('@/views/auth/AccessRequestView.vue'),
+    meta: { public: true, titleKey: 'accessRequest.title' },
+  },
+  {
     path: '/',
     component: () => import('@/components/layout/AppShell.vue'),
     children: [
@@ -67,6 +73,18 @@ export const routes = [
         meta: { permission: 'stats:read', titleKey: 'stats.title' },
       },
       {
+        path: 'agents',
+        name: 'agents',
+        component: () => import('@/views/supervisor/AgentsView.vue'),
+        meta: { permission: 'agents:manage', titleKey: 'agents.title' },
+      },
+      {
+        path: 'demandes-acces',
+        name: 'access-requests',
+        component: () => import('@/views/admin/AccessRequestsView.vue'),
+        meta: { permission: 'access-requests:review', titleKey: 'accessRequests.title' },
+      },
+      {
         path: 'acces-refuse',
         name: 'no-access',
         component: () => import('@/views/NoAccessView.vue'),
@@ -92,7 +110,8 @@ export function installGuards(router, pinia) {
     await auth.restore()
 
     if (to.meta.public) {
-      return to.name === 'login' && auth.isAuthenticated ? { name: auth.homeRoute } : true
+      const loginPage = to.name === 'login' || to.name === 'access-request'
+      return loginPage && auth.isAuthenticated ? { name: auth.homeRoute } : true
     }
     if (!auth.isAuthenticated) {
       return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }

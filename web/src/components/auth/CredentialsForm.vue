@@ -36,6 +36,9 @@ defineExpose({ focus: () => identifiantInput.value?.focus() })
         type="text"
         name="identifiant"
         autocomplete="username"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
         required
         :aria-describedby="describedBy"
         :aria-invalid="invalid"

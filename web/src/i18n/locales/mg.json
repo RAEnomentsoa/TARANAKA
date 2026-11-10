@@ -4,7 +4,8 @@
     "tagline": "Tabilao fanaraha-maso ho an'ny toeram-pitsaboana",
     "skipToContent": "Mankany amin'ny votoaty lehibe",
     "loading": "Mampiditra…",
-    "pageLoaded": "Pejy vonona : {title}"
+    "pageLoaded": "Pejy vonona : {title}",
+    "logoAlt": "Sary famantarana an'i Taranaka: reny bevohoka sy ny zanany. Vehivavy, fitondrana vohoka, fahasalaman'ny zaza, sakafo."
   },
   "language": {
     "label": "Fiteny",
@@ -18,7 +19,9 @@
     "conflicts": "Fifanoherana amin'ny fampifanarahana",
     "stats": "Antontan'isa",
     "openMenu": "Sokafy ny menio",
-    "closeMenu": "Hidio ny menio"
+    "closeMenu": "Hidio ny menio",
+    "agents": "Ireo mpiasako",
+    "accessRequests": "Fangatahana fidirana"
   },
   "user": {
     "signedInAs": "Tafiditra : {name}",
@@ -65,7 +68,9 @@
       "totpFormat": "Tokony hisy isa 6 marina ny kaody.",
       "required": "Tsy maintsy fenoina ity.",
       "noWebAccess": "Tsy mahazo miditra amin'ity tabilao ity ny mombamomba anao. Ny fampiharana finday no ampiasain'ny mpiasan'ny fahasalamana eny ifotony."
-    }
+    },
+    "noAccount": "Mbola tsy manana kaonty?",
+    "requestAccess": "Hangataka fidirana"
   },
   "access": {
     "title": "Tsy mahazo miditra",
@@ -439,7 +444,28 @@
     "filename": "taranaka-antontanisa-{start}-{end}.csv",
     "hiddenNote": "« < 5 » : isa nafenina hiarovana ny tsiambaratelo (tranga latsaky ny 5, na azo kajiana avy amin'ny isa hafa).",
     "monthColumn": "Volana",
-    "exported": "Voaray ny rakitra CSV."
+    "exported": "Voaray ny rakitra CSV.",
+    "charts": {
+      "hiddenKey": "Nafenina (< 5)",
+      "outcomesIntro": "Ny fiafaran'ny fitsaboana nandritra ny fe-potoana.",
+      "cases": {
+        "title": "Mitombo ve ny tranga tsy fahampian-tsakafo mahery?",
+        "summaryShort": "Ankizy MAS sy MAM hita, isam-bolana ({n} volana).",
+        "trend": {
+          "up": "{month}: tranga {n}, mihoatra {diff} noho ny {previous}.",
+          "down": "{month}: tranga {n}, latsaka {diff} noho ny {previous}.",
+          "same": "{month}: tranga {n}, mitovy amin'ny {previous}."
+        },
+        "columnLabel": "{month}: MAS {sam}, MAM {mam}, fitiliana {screenings}"
+      },
+      "arrival": {
+        "title": "Tonga any amin'ny foibe ve ireo ankizy nalefa?",
+        "introRegion": "Ireo nalefa tonga amin'ny totaliny, isam-paritra. Ny tara indrindra no voalohany.",
+        "introMonth": "Ireo nalefa tonga amin'ny totaliny, isam-bolana. Ny volana tara indrindra no voalohany.",
+        "ofTotal": "{arrived} amin'ny {sent}",
+        "none": "Tsy misy nalefa"
+      }
+    }
   },
   "validation": {
     "required": "Tsy maintsy fenoina ity."
@@ -456,5 +482,117 @@
   "contact": {
     "call": "Antsoy {name} amin'ny {phone}",
     "noPhone": "Tsy misy laharana voarakitra"
+  },
+  "accessRequest": {
+    "title": "Hangataka fidirana",
+    "intro": "Ho an'ny mpitsabo mpanampy sy dokotera ao amin'ny CSB, CRENAS, CRENI, CRENAM, ary ho an'ny mpanara-maso. Misy mpitantana manamarina ny fangatahana tsirairay alohan'ny hanokafana ny kaonty.",
+    "agentsNote": "Mpiasa ara-pahasalamana eny ifotony ve ianao? Ny mpanara-maso anao no mamorona ny kaontinao: miresaha aminy.",
+    "sections": {
+      "role": "Ny andraikitrao",
+      "identity": "Iza ianao?",
+      "login": "Ny fidiranao"
+    },
+    "profileHints": {
+      "agent_csb": "Mandray ireo ankizy alefa any amin'ny foibeny ary manavao ny antontan-taratasy.",
+      "superviseur": "Mahita antontan'isa tsy misy anarana ary mitantana ireo mpiasa eny ifotony ao amin'ny faritra misy azy."
+    },
+    "fields": {
+      "region": "Faritra",
+      "supervisedRegion": "Faritra arahi-maso",
+      "centre": "Toeram-pitsaboana",
+      "fonction": "Asa",
+      "nom": "Anarana",
+      "prenom": "Fanampin'anarana",
+      "phone": "Finday",
+      "email": "Adiresy mailaka",
+      "pinConfirm": "Amafiso ny PIN",
+      "message": "Hafatra ho an'ny mpitantana"
+    },
+    "hints": {
+      "nationalRegion": "Avelao ho « Firenena » raha manara-maso ny firenena manontolo na fandaharanasa iray ianao.",
+      "phone": "Hiantso anao ny mpitantana hanamarina ny fangatahanao.",
+      "identifiant": "Ilay hosoratanao hidirana, ohatra hoe fanampinanarana.foibe.",
+      "message": "Ohatra ny sampan-draharahanao na ny anaran'ny lehibenao."
+    },
+    "allRegions": "Faritra rehetra",
+    "national": "Firenena",
+    "chooseCentre": "Safidio ny foibenao",
+    "afterSubmit": "Hihidy ny kaontinao mandra-pankatoavina. Avy eo, amin'ny fidirana voalohany, hampandeha ny fanamarinana roa sosona ianao.",
+    "submit": "Alefaso ny fangatahana",
+    "sentTitle": "Lasa ny fangatahana",
+    "sentBody": "Hanamarina ny fangatahanao ny mpitantana. Mety hiantso anao amin'ny laharana nomenao izy.",
+    "sentNext": "Rehefa voaray ny fangatahana, midira amin'ny anarana fidirana sy PIN nofidinao.",
+    "backToLogin": "Hiverina amin'ny fidirana",
+    "errors": {
+      "email": "Tsy mety ny adiresy mailaka.",
+      "pin": "Isa 4 ka hatramin'ny 6 no tokony ho ao amin'ny PIN.",
+      "pinMismatch": "Tsy mitovy ireo PIN roa.",
+      "throttled": "Be loatra ny fangatahana avy amin'ity fifandraisana ity. Andramo indray afaka adiny iray."
+    }
+  },
+  "accessRequests": {
+    "title": "Fangatahana fidirana",
+    "intro": "Hamarino ny mombamomba ilay olona (ohatra amin'ny fiantsoana ny foibeny) alohan'ny hanekena: ny mombamomba sy ny foibe no mamaritra ny antontan-taratasy ho hitany.",
+    "filterLabel": "Asehoy ny fangatahana",
+    "statuses": {
+      "en_attente": "Miandry",
+      "approuvee": "Voaray",
+      "refusee": "Nolavina"
+    },
+    "empty": {
+      "en_attente": "Tsy misy fangatahana miandry",
+      "approuvee": "Tsy misy fangatahana voaray",
+      "refusee": "Tsy misy fangatahana nolavina"
+    },
+    "place": "Foibe na faritra",
+    "sentOn": "Nalefa ny",
+    "handledOn": {
+      "approuvee": "Neken'ny",
+      "refusee": "Nolavina ny"
+    },
+    "reason": "Antony",
+    "reasonHint": "Ho firaketana: tsy mahazo hafatra ilay olona.",
+    "approve": "Ekena",
+    "refuse": "Lavina",
+    "approveTitle": "Ekeo ny fangatahan'i {name}",
+    "refuseTitle": "Lavio ny fangatahan'i {name}",
+    "checkFirst": "Hosokafana amin'ity mombamomba sy foibe ity ny kaonty. Ahitsio raha diso ny fangatahana.",
+    "profile": "Mombamomba",
+    "approveSubmit": "Sokafy ny kaonty",
+    "refuseSubmit": "Lavio ny fangatahana",
+    "approved": "Voasokatra ny kaontin'i {name}.",
+    "refused": "Nolavina ny fangatahan'i {name}."
+  },
+  "agents": {
+    "title": "Ireo mpiasa eny ifotony",
+    "intro": "Mamorona kaonty ho an'ireo mpiasa ao amin'ny faritrao ary avereno ny PIN hadino. Ny mombamomba azy ihany no hitanao, tsy ny antontan-taratasy ara-pahasalamana mihitsy.",
+    "create": "Mpiasa vaovao",
+    "createTitle": "Hamorona kaontin'ny mpiasa eny ifotony",
+    "createIntro": "Hampiasain'ilay mpiasa ity anarana fidirana sy PIN ity ao amin'ny finday, amin'ny fomba mpiasa.",
+    "identifiantHint": "Ohatra ny laharan-findainy na fanampinanarana.tanàna. Tsy maintsy tsy mitovy amin'ny hafa.",
+    "firstPin": "PIN voalohany",
+    "createSubmit": "Foroniny ny kaonty",
+    "resetPin": "PIN vaovao",
+    "resetTitle": "PIN vaovao ho an'i {name}",
+    "resetIntro": "Voavaha ny kaonty ary mihidy ny fidirana rehetra. Miditra indray amin'ity PIN ity ilay mpiasa; miverina ny angona voatahiry rehefa miditra izy.",
+    "newPin": "PIN vaovao",
+    "resetSubmit": "Raketo ny PIN",
+    "handover": {
+      "createdTitle": "Voaforona ny kaontin'i {name}",
+      "resetTitle": "Voaraikitra ny PIN vaovaon'i {name}",
+      "note": "Omeo mivantana an'ilay mpiasa ireo. Tsy haseho intsony ny PIN.",
+      "done": "Voaray"
+    },
+    "empty": "Mbola tsy misy mpiasa",
+    "emptyHint": "Foroniny ny kaonty voalohany amin'ny « Mpiasa vaovao ».",
+    "noMatch": "Tsy misy mpiasa mifanaraka amin'ny fikarohana",
+    "search": "Hikaroka (anarana, anarana fidirana, finday)",
+    "count": "Tsy misy mpiasa | Mpiasa 1 | Mpiasa {n}",
+    "name": "Anarana",
+    "createdOn": "Noforonina ny",
+    "state": "Toetra",
+    "actions": "Asa atao",
+    "active": "Mandeha",
+    "inactive": "Tsy mandeha"
   }
 }

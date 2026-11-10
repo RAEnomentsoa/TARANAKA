@@ -26,6 +26,7 @@ LECTURES = {
     "/api/conflicts/": (OK, OK, OK, NON, OK),
     "/api/profiles/": (OK, OK, NON, OK, OK),
     "/api/audit/": (NON, NON, NON, NON, OK),
+    "/api/access-requests/": (NON, NON, NON, NON, OK),
     "/api/stats/": (NON, NON, NON, OK, OK),
     "/api/stats/export/": (NON, NON, NON, OK, OK),
     "/api/clinical-config/": (OK, OK, OK, OK, OK),

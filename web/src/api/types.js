@@ -418,3 +418,86 @@
  * @property {number} [region]
  * @property {'region' | 'mois'} [grouper_par]
  */
+
+// ---------- Accounts: access requests (D15) and community agents ----------
+
+/** @typedef {'agent_csb' | 'superviseur'} RequestedProfile */
+/** @typedef {'en_attente' | 'approuvee' | 'refusee'} AccessRequestStatus */
+
+/**
+ * Public form of the login page.
+ * @typedef {Object} AccessRequestForm
+ * @property {string} nom
+ * @property {string} prenom
+ * @property {string} email
+ * @property {string} phone
+ * @property {string} identifiant
+ * @property {string} pin
+ * @property {RequestedProfile} profil_demande
+ * @property {number | null} csb_id Required for agent_csb.
+ * @property {number | null} region_id Supervisor: null = national.
+ * @property {string} fonction
+ * @property {string} message
+ */
+
+/**
+ * What the admin reviews. Never the PIN.
+ * @typedef {Object} AccessRequest
+ * @property {Uuid} id
+ * @property {string} nom
+ * @property {string} prenom
+ * @property {string} email
+ * @property {string} phone
+ * @property {string} identifiant
+ * @property {RequestedProfile} profil_demande
+ * @property {number | null} region_id
+ * @property {string | null} [region_nom]
+ * @property {number | null} csb_id
+ * @property {string | null} [csb_nom]
+ * @property {CentreType | null} [csb_type]
+ * @property {string} fonction
+ * @property {string} message
+ * @property {AccessRequestStatus} statut
+ * @property {string} [motif_refus]
+ * @property {{ id: Uuid, nom: string, prenom: string } | null} [traitee_par]
+ * @property {IsoDateTime | null} [date_traitement]
+ * @property {Uuid | null} [utilisateur_id]
+ * @property {IsoDateTime} date_creation
+ */
+
+/**
+ * @typedef {Object} AccessRequestCorrections
+ * @property {RequestedProfile} [profil_demande]
+ * @property {number | null} [csb_id]
+ * @property {number | null} [region_id]
+ */
+
+/**
+ * @typedef {Object} AccessRequestOptions
+ * @property {{ id: number, nom: string }[]} regions
+ * @property {{ id: number, name: string, type_centre: CentreType, region_id: number }[]} centres
+ */
+
+/**
+ * An account from /api/profiles/ (for a supervisor: the ASCs of their region).
+ * @typedef {Object} AgentAccount
+ * @property {Uuid} id
+ * @property {string} identifiant
+ * @property {string} nom
+ * @property {string} prenom
+ * @property {string} email
+ * @property {string} phone
+ * @property {Profile} profile
+ * @property {number | null} region_id
+ * @property {boolean} is_active
+ * @property {IsoDateTime} date_creation
+ */
+
+/**
+ * @typedef {Object} NewAgent
+ * @property {string} identifiant
+ * @property {string} nom
+ * @property {string} prenom
+ * @property {string} phone
+ * @property {string} pin
+ */

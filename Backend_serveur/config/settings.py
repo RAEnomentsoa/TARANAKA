@@ -73,6 +73,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'login': '10/minute',
+        'demande_acces': '5/hour',
     },
     'EXCEPTION_HANDLER': 'comptes.exceptions.gestionnaire_exceptions',
     'DEFAULT_PAGINATION_CLASS': 'synchro.pagination.Pagination',
@@ -95,6 +96,7 @@ SPECTACULAR_SETTINGS = {
         'StatutConflitEnum': 'synchro.models.StatutConflit',
         'StatutPublicationEnum': 'config_clinique.models.StatutPublication',
         'StatutOperationEnum': 'synchro.models.StatutOperation',
+        'StatutDemandeEnum': 'comptes.models.StatutDemande',
     },
     # Open during development. Otherwise, only staff logged in to /admin/.
     'SERVE_AUTHENTICATION': ['rest_framework.authentication.SessionAuthentication'],

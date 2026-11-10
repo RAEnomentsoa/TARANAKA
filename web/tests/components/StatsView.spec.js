@@ -112,7 +112,7 @@ describe('StatsView', () => {
     expect(figures.length).toBeGreaterThan(5)
     expect(figures.every((n) => n === 0 || n >= 5)).toBe(true)
     // The server hid Analamanga's MAS too, so Atsinanana's cannot be subtracted.
-    const firstRow = wrapper.findAll('tbody tr')[0]
+    const firstRow = wrapper.findAll('table.groups tbody tr')[0]
     expect(firstRow.findAll('td')[1].text()).toContain('< 5')
   })
 

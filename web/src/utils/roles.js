@@ -13,6 +13,8 @@
  *   | 'discharge:write'
  *   | 'conflicts:resolve'
  *   | 'stats:read'
+ *   | 'agents:manage'
+ *   | 'access-requests:review'
  * )} Permission
  */
 
@@ -28,9 +30,12 @@ const PERMISSIONS_BY_PROFILE = {
   // Nurse or doctor of a CSB, CRENAS or CRENI: the only one who may discharge.
   agent_csb: [...STAFF_READ, ...STAFF_WRITE, 'discharge:write'],
   // Aggregated statistics only: never an individual record (D1).
-  superviseur: ['stats:read'],
+  // Aggregated statistics, and the ASC accounts of their zone (identity
+  // only, spec §2 and §8: the supervisor creates agents and resets PINs).
+  superviseur: ['stats:read', 'agents:manage'],
   // Everything except the discharge, reserved to the destination centre (D7).
-  admin: [...STAFF_READ, ...STAFF_WRITE, 'stats:read'],
+  // Also reviews the access requests made from the login page (D15).
+  admin: [...STAFF_READ, ...STAFF_WRITE, 'stats:read', 'access-requests:review'],
 }
 
 /**
