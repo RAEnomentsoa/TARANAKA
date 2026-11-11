@@ -1,10 +1,16 @@
+from django.db import transaction
+from django.db.models import ProtectedError, RestrictedError
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from comptes.models import CodeProfile, User
+from comptes.permissions import AccesParAction, acces
 from nutrition.zscores import valeur_a_z
+from synchro.models import JournalAudit
+from synchro.services import LONGUEUR_DEVICE_ID
 
 from .filters import CSBFilter
 from .models import CSB, Indicateur, Province, ReferenceOms, Region, TypeDangerGrossesse
@@ -20,20 +26,80 @@ from .serializers import (
 COURBES_Z = (-3, -2, 0, 2, 3)
 
 
-class ProvinceViewSet(viewsets.ReadOnlyModelViewSet):
+class TerritoireViewSet(viewsets.ModelViewSet):
+    """Everyone reads the territory; only the admin changes it.
+
+    A row still used elsewhere is never deleted: the answer says why (400).
+    """
+
+    permission_classes = [AccesParAction]
+    profils_par_action = acces(lecture=tuple(CodeProfile.values), ecriture=(CodeProfile.ADMIN,))
+    message_utilise = ""
+
+    def utilisations(self, ligne):
+        """Rows that the database would not protect (SET_NULL) but that need it."""
+        return False
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        self.journaliser("creation", serializer.instance)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        self.journaliser("modification", serializer.instance)
+
+    def perform_destroy(self, ligne):
+        if self.utilisations(ligne):
+            raise ValidationError({"detail": self.message_utilise})
+        try:
+            with transaction.atomic():
+                ligne.delete()
+        except (ProtectedError, RestrictedError) as erreur:
+            raise ValidationError({"detail": self.message_utilise}) from erreur
+        self.journaliser("suppression", ligne)
+
+    def journaliser(self, action, ligne):
+        # Integer ids: they go in the details, ligne_id holds UUIDs only.
+        JournalAudit.objects.create(
+            user=self.request.user,
+            action=f"territoire_{action}",
+            table_nom=ligne._meta.db_table,
+            details={
+                "ip": self.request.META.get("REMOTE_ADDR"),
+                "device_id": self.request.headers.get("X-Device-Id", "")[:LONGUEUR_DEVICE_ID],
+                "id": ligne.pk,
+                "nom": str(ligne),
+            },
+        )
+
+
+class ProvinceViewSet(TerritoireViewSet):
     queryset = Province.objects.all()
     serializer_class = ProvinceSerializer
+    message_utilise = "Cette province a encore des régions : supprimez-les ou déplacez-les d'abord."
 
 
-class RegionViewSet(viewsets.ReadOnlyModelViewSet):
+class RegionViewSet(TerritoireViewSet):
     queryset = Region.objects.all()
     serializer_class = RegionSerializer
+    message_utilise = (
+        "Cette région est encore utilisée (centres, comptes ou dossiers) : "
+        "elle ne peut pas être supprimée."
+    )
+
+    def utilisations(self, ligne):
+        # A user's region is SET_NULL: deleting would silently empty it.
+        return User.objects.filter(region=ligne).exists()
 
 
-class CSBViewSet(viewsets.ReadOnlyModelViewSet):
+class CSBViewSet(TerritoireViewSet):
     queryset = CSB.objects.all()
     serializer_class = CSBSerializer
     filterset_class = CSBFilter
+    message_utilise = (
+        "Ce centre est encore utilisé (comptes ou référencements) : "
+        "il ne peut pas être supprimé."
+    )
 
 
 class TypeDangerGrossesseViewSet(viewsets.ReadOnlyModelViewSet):

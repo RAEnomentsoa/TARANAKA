@@ -2743,6 +2743,10 @@ paths:
   /api/facilities/:
     get:
       operationId: facilities_list
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
       parameters:
       - name: page
         required: false
@@ -2779,9 +2783,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCSBList'
           description: ''
+    post:
+      operationId: facilities_create
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CSBRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CSBRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CSBRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CSB'
+          description: ''
   /api/facilities/{id}/:
     get:
       operationId: facilities_retrieve
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
       parameters:
       - in: path
         name: id
@@ -2800,6 +2837,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/CSB'
           description: ''
+    put:
+      operationId: facilities_update
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) CSB.
+        required: true
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CSBRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CSBRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CSBRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CSB'
+          description: ''
+    patch:
+      operationId: facilities_partial_update
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) CSB.
+        required: true
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCSBRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCSBRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCSBRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CSB'
+          description: ''
+    delete:
+      operationId: facilities_destroy
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) CSB.
+        required: true
+      tags:
+      - facilities
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/feeds/:
     get:
       operationId: feeds_list
@@ -3955,10 +4083,28 @@ paths:
       operationId: profiles_list
       description: '/profiles/: the user accounts, which the specifications call profiles.'
       parameters:
+      - in: query
+        name: actif
+        schema:
+          type: boolean
       - name: page
         required: false
         in: query
         description: Un numéro de page de l'ensemble des résultats.
+        schema:
+          type: integer
+      - in: query
+        name: profil
+        schema:
+          type: string
+        description: Code du profil (asc, agent_csb…)
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Nom, prénom, identifiant ou téléphone
+      - in: query
+        name: region
         schema:
           type: integer
       tags:
@@ -4207,6 +4353,10 @@ paths:
   /api/provinces/:
     get:
       operationId: provinces_list
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
       parameters:
       - name: page
         required: false
@@ -4225,9 +4375,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedProvinceList'
           description: ''
+    post:
+      operationId: provinces_create
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      tags:
+      - provinces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvinceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProvinceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProvinceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Province'
+          description: ''
   /api/provinces/{id}/:
     get:
       operationId: provinces_retrieve
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
       parameters:
       - in: path
         name: id
@@ -4246,6 +4429,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/Province'
           description: ''
+    put:
+      operationId: provinces_update
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Province.
+        required: true
+      tags:
+      - provinces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvinceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProvinceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProvinceRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Province'
+          description: ''
+    patch:
+      operationId: provinces_partial_update
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Province.
+        required: true
+      tags:
+      - provinces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProvinceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProvinceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProvinceRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Province'
+          description: ''
+    delete:
+      operationId: provinces_destroy
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Province.
+        required: true
+      tags:
+      - provinces
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/referrals/:
     get:
       operationId: referrals_list
@@ -4612,6 +4886,10 @@ paths:
   /api/regions/:
     get:
       operationId: regions_list
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
       parameters:
       - name: page
         required: false
@@ -4630,9 +4908,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedRegionList'
           description: ''
+    post:
+      operationId: regions_create
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      tags:
+      - regions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          description: ''
   /api/regions/{id}/:
     get:
       operationId: regions_retrieve
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
       parameters:
       - in: path
         name: id
@@ -4651,6 +4962,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/Region'
           description: ''
+    put:
+      operationId: regions_update
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Région.
+        required: true
+      tags:
+      - regions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          description: ''
+    patch:
+      operationId: regions_partial_update
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Région.
+        required: true
+      tags:
+      - regions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRegionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRegionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRegionRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Region'
+          description: ''
+    delete:
+      operationId: regions_destroy
+      description: |-
+        Everyone reads the territory; only the admin changes it.
+
+        A row still used elsewhere is never deleted: the answer says why (400).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un(une) valeur entière unique identifiant ce(cette) Région.
+        required: true
+      tags:
+      - regions
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/stats/:
     get:
       operationId: stats_retrieve
@@ -5395,6 +5797,7 @@ components:
       - masques
     CSB:
       type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
       properties:
         id:
           type: integer
@@ -5406,12 +5809,31 @@ components:
           $ref: '#/components/schemas/TypeCentreEnum'
         region_id:
           type: integer
-          readOnly: true
         tel:
           type: string
           maxLength: 20
       required:
       - id
+      - name
+      - region_id
+      - tel
+    CSBRequest:
+      type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        type_centre:
+          $ref: '#/components/schemas/TypeCentreEnum'
+        region_id:
+          type: integer
+        tel:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
       - name
       - region_id
       - tel
@@ -8597,6 +9019,22 @@ components:
         version:
           type: integer
           minimum: 1
+    PatchedCSBRequest:
+      type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        type_centre:
+          $ref: '#/components/schemas/TypeCentreEnum'
+        region_id:
+          type: integer
+        tel:
+          type: string
+          minLength: 1
+          maxLength: 20
     PatchedCompteRequest:
       type: object
       description: A user account. The PIN can be sent on create and is never returned.
@@ -9115,6 +9553,14 @@ components:
         version:
           type: integer
           minimum: 1
+    PatchedProvinceRequest:
+      type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
+      properties:
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
     PatchedReferencementRequest:
       type: object
       description: Rules shared by the synced tables, also meant for the future /sync.
@@ -9155,6 +9601,16 @@ components:
         version:
           type: integer
           minimum: 1
+    PatchedRegionRequest:
+      type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
+      properties:
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        province_id:
+          type: integer
     PatchedRendezVousRequest:
       type: object
       description: Rules shared by the synced tables, also meant for the future /sync.
@@ -9390,6 +9846,7 @@ components:
       - libelle
     Province:
       type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
       properties:
         id:
           type: integer
@@ -9399,6 +9856,16 @@ components:
           maxLength: 100
       required:
       - id
+      - nom
+    ProvinceRequest:
+      type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
+      properties:
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
       - nom
     PullReponse:
       type: object
@@ -9661,6 +10128,7 @@ components:
           maxLength: 1000
     Region:
       type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
       properties:
         id:
           type: integer
@@ -9670,9 +10138,21 @@ components:
           maxLength: 100
         province_id:
           type: integer
-          readOnly: true
       required:
       - id
+      - nom
+      - province_id
+    RegionRequest:
+      type: object
+      description: 'The same name twice in one place is a typo: refused, case ignored.'
+      properties:
+        nom:
+          type: string
+          minLength: 1
+          maxLength: 100
+        province_id:
+          type: integer
+      required:
       - nom
       - province_id
     ReinitialiserPinRequest:

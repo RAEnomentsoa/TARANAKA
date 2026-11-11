@@ -22,7 +22,9 @@
     "closeMenu": "Hidio ny menio",
     "agents": "Ireo mpiasako",
     "accessRequests": "Fangatahana fidirana",
-    "beneficiaries": "Mpisitraka"
+    "beneficiaries": "Mpisitraka",
+    "accounts": "Kaonty",
+    "territory": "Faritra sy toerana"
   },
   "user": {
     "signedInAs": "Tafiditra : {name}",
@@ -683,5 +685,63 @@
       "saignement_abondant": "Fandehanan-dra be",
       "fievre": "Tazo"
     }
+  },
+  "accounts": {
+    "title": "Kaonty",
+    "intro": "Ny kaonty rehetra : mpiasan'ny fahasalamana eny ifotony, mpitsabo, mpanara-maso, mpisitraka ary mpitantana. Tsy afaka miditra intsony ny kaonty natsahatra ; voatahiry ny tantarany.",
+    "filters": {
+      "profile": "Karazana",
+      "allProfiles": "Karazana rehetra",
+      "region": "Faritra",
+      "allStates": "Rehetra"
+    },
+    "count": "Tsy misy kaonty | Kaonty 1 | Kaonty {n}",
+    "empty": "Tsy misy kaonty mifanaraka amin'ireo sivana ireo.",
+    "profile": "Karazana",
+    "place": "Faritra na toeram-pitsaboana",
+    "centre": "Toeram-pitsaboana",
+    "email": "Mailaka",
+    "you": "(ianao)",
+    "edit": "Ovay",
+    "editTitle": "Ovay ny kaontin'i {name}",
+    "ownProfile": "Tsy azonao ovaina ny karazan-kaontinao manokana.",
+    "centreRequired": "Tsy maintsy mifandray amin'ny toeram-pitsaboana ny mpitsabo.",
+    "saved": "Voarakitra ny kaontin'i {name}.",
+    "deactivate": "Atsaharo",
+    "reactivate": "Avereno",
+    "confirmDeactivate": "Tsy afaka miditra intsony i {name}. Voatahiry ny tantarany (fandefasana, fandrefesana, diary). Azonao averina any aoriana ny kaonty.",
+    "confirmReactivate": "Afaka miditra indray i {name} amin'ny anarany sy ny PIN-ny.",
+    "deactivated": "Natsahatra ny kaontin'i {name}.",
+    "reactivated": "Naverina ny kaontin'i {name}.",
+    "resetTotp": "Avereno ny fanamarinana roa sosona",
+    "confirmTotp": "Tsy maintsy mamerina mametraka ny fampiharana fanamarinana i {name} amin'ny fidirany manaraka.",
+    "totpDone": "Naverina ny fanamarinana roa sosonan'i {name}."
+  },
+  "territory": {
+    "title": "Faritra sy toerana",
+    "intro": "Faritany, faritra ary toeram-pitsaboana. Tsy azo fafana izay mbola ampiasaina (faritry ny faritany, kaonty na fandefasana amin'ny toeram-pitsaboana…).",
+    "tabs": {
+      "provinces": "Faritany",
+      "regions": "Faritra",
+      "facilities": "Toeram-pitsaboana"
+    },
+    "kinds": {
+      "provinces": "faritany",
+      "regions": "faritra",
+      "facilities": "toeram-pitsaboana"
+    },
+    "add": "Ampio {what}",
+    "addTitle": "Ampio {what}",
+    "editTitle": "Ovay ny {what}",
+    "name": "Anarana",
+    "province": "Faritany",
+    "centreType": "Karazana toeram-pitsaboana",
+    "regionsCount": "Tsy misy faritra | Faritra 1 | Faritra {n}",
+    "centresCount": "tsy misy toeram-pitsaboana | toeram-pitsaboana 1 | toeram-pitsaboana {n}",
+    "empty": "Tsy misy aloha.",
+    "saved": "Voarakitra.",
+    "delete": "Fafao",
+    "confirmDelete": "Hofafana ve « {name} » ? Tsy azo averina intsony izany.",
+    "deleted": "Voafafa « {name} »."
   }
 }

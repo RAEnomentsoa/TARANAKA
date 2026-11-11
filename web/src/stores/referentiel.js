@@ -11,15 +11,18 @@ export const useReferentielStore = defineStore('referentiel', () => {
   const regions = ref([])
   /** @type {import('vue').Ref<Facility[]>} */
   const facilities = ref([])
+  /** @type {import('vue').Ref<import('@/api/types').Province[]>} */
+  const provinces = ref([])
   /** @type {Promise<void> | null} */
   let loading = null
 
   /** @returns {Promise<void>} */
   function load() {
-    loading ??= Promise.all([referentielApi.regions(), referentielApi.facilities()])
-      .then(([r, f]) => {
+    loading ??= Promise.all([referentielApi.regions(), referentielApi.facilities(), referentielApi.provinces()])
+      .then(([r, f, p]) => {
         regions.value = r
         facilities.value = f
+        provinces.value = p
       })
       .catch((error) => {
         loading = null
@@ -44,5 +47,14 @@ export const useReferentielStore = defineStore('referentiel', () => {
     return regionId === null ? facilities.value : facilities.value.filter((f) => f.region_id === regionId)
   }
 
-  return { regions, facilities, load, facilityName, facilitiesOf }
+  /**
+   * After the admin changed the territory: fetch everything again.
+   * @returns {Promise<void>}
+   */
+  function reload() {
+    loading = null
+    return load()
+  }
+
+  return { regions, facilities, provinces, load, reload, facilityName, facilitiesOf }
 })

@@ -93,6 +93,18 @@ export const routes = [
         meta: { permission: 'agents:manage', titleKey: 'agents.title' },
       },
       {
+        path: 'comptes',
+        name: 'accounts',
+        component: () => import('@/views/admin/AccountsView.vue'),
+        meta: { permission: 'accounts:manage', titleKey: 'accounts.title' },
+      },
+      {
+        path: 'territoire',
+        name: 'territory',
+        component: () => import('@/views/admin/TerritoryView.vue'),
+        meta: { permission: 'territory:manage', titleKey: 'territory.title' },
+      },
+      {
         path: 'demandes-acces',
         name: 'access-requests',
         component: () => import('@/views/admin/AccessRequestsView.vue'),

@@ -479,8 +479,8 @@ Utilisez `code` dans la logique de l'application, et `libelle` pour l'affichage.
 |---|---|---|
 | `/api/profiles/` | GET, POST, PUT, PATCH | Comptes utilisateurs |
 | `/api/profile-types/` | GET | Liste des profils |
-| `/api/provinces/`, `/api/regions/` | GET | Listes de référence |
-| `/api/facilities/` | GET | Liste des CSB |
+| `/api/provinces/`, `/api/regions/` | GET (tous) ; POST, PATCH, DELETE (admin) | Listes de référence |
+| `/api/facilities/` | GET (tous) ; POST, PATCH, DELETE (admin) | Centres de santé (CSB, CRENAM, CRENAS, CRENI) |
 | `/api/danger-types/` | GET | Liste des signes de danger |
 | `/api/beneficiaries/` | GET | Bénéficiaires de la zone, recherche (ASC, agent de CSB) |
 | `/api/beneficiaries/{id}/` | GET | Dossier complet d'une bénéficiaire ; la suivre |
@@ -622,7 +622,11 @@ Les filtres s'appliquent uniquement aux lignes que l'utilisateur a le droit de v
 
 ## `/api/profiles/`
 
-**Ce qu'il fait :** gère les comptes. Il n'y a pas de suppression : un admin désactive un compte avec `is_active`.
+**Ce qu'il fait :** gère les comptes. Il n'y a pas de suppression : un admin désactive un compte avec `is_active` (un compte désactivé ne peut plus se connecter ; son historique est gardé).
+
+**Lister :** `GET`, avec les filtres facultatifs `profil` (`asc`, `agent_csb`…), `region`, `actif` (`true`/`false`) et `q` (nom, prénom, identifiant ou téléphone). Un admin voit tous les comptes.
+
+**Modifier (admin) :** `PATCH` avec `nom`, `prenom`, `phone`, `email`, `profile_code`, `region_id`, `csb_id` ou `is_active`. Un admin ne peut ni désactiver son propre compte ni retirer son propre profil admin (`400`).
 
 **Créer (ASC) :** `POST`. Le compte est toujours `beneficiaire`, dans la région de l'ASC. L'ASC doit donc avoir une région.
 
@@ -710,6 +714,8 @@ Chaque liste a le même format paginé. Voici le contenu de `results`.
 ```
 
 `type_centre` vaut `csb`, `crenam`, `crenas` ou `creni` : les CRENAS, CRENI et CRENAM sont des lignes de cette liste.
+
+**Territoire (admin) :** `POST`, `PATCH` et `DELETE` sur `/api/provinces/`, `/api/regions/` (`nom`, `province_id`) et `/api/facilities/` (`name`, `type_centre`, `region_id`, `tel`). Les autres profils lisent seulement (`403`). Un même nom deux fois au même endroit est refusé (`400`, casse ignorée). Une ligne encore utilisée n'est pas supprimée : `400` avec `detail` qui dit pourquoi (régions d'une province ; centres, comptes ou dossiers d'une région ; comptes ou référencements d'un centre). Chaque changement est journalisé (`territoire_creation`, `territoire_modification`, `territoire_suppression`).
 
 `GET /api/danger-types/`
 
@@ -1482,7 +1488,7 @@ Les courbes sont calculées à partir des valeurs LMS avec la formule OMS. `404`
 
 ## Créer les premiers comptes
 
-Les listes de référence (provinces, régions, CSB, types de danger) sont vides tant que personne ne les a remplies. Remplissez-les dans `/admin/`.
+Les listes de référence (provinces, régions, CSB, types de danger) sont vides tant que personne ne les a remplies. Remplissez les provinces, régions et centres sur la page « Territoire » du tableau de bord web (ou dans `/admin/`) ; les types de danger dans `/admin/`.
 
 1. Créez un administrateur depuis le dossier `Backend_serveur` :
 
