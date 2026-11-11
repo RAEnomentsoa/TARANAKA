@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
@@ -211,12 +212,42 @@ class CompteViewSet(
         effacer=(CodeProfile.ADMIN,),
     )
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("profil", OpenApiTypes.STR, description="Code du profil (asc, agent_csb…)"),
+            OpenApiParameter("region", OpenApiTypes.INT),
+            OpenApiParameter("actif", OpenApiTypes.BOOL),
+            OpenApiParameter("q", OpenApiTypes.STR, description="Nom, prénom, identifiant ou téléphone"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return CompteSerializer.Meta.model.objects.none()
-        return services.comptes_visibles(self.request.user).order_by(
-            "-date_creation", "-id"
-        )
+        comptes = services.comptes_visibles(self.request.user)
+        if self.action == "list":
+            comptes = self.filtrer(comptes, self.request.query_params)
+        return comptes.order_by("-date_creation", "-id")
+
+    @staticmethod
+    def filtrer(comptes, parametres):
+        if parametres.get("profil"):
+            comptes = comptes.filter(profile__code=parametres["profil"])
+        if parametres.get("region", "").isdigit():
+            comptes = comptes.filter(region_id=int(parametres["region"]))
+        if parametres.get("actif") in ("true", "false"):
+            comptes = comptes.filter(is_active=parametres["actif"] == "true")
+        texte = parametres.get("q", "").strip()
+        if texte:
+            comptes = comptes.filter(
+                Q(nom__icontains=texte)
+                | Q(prenom__icontains=texte)
+                | Q(identifiant__icontains=texte)
+                | Q(phone__icontains=texte)
+            )
+        return comptes
 
     def perform_create(self, serializer):
         serializer.instance = services.creer_compte(
@@ -225,6 +256,15 @@ class CompteViewSet(
         )
 
     def perform_update(self, serializer):
+        donnees = serializer.validated_data
+        if serializer.instance.pk == self.request.user.pk:
+            # The admin would lock themselves out.
+            if donnees.get("is_active") is False or (
+                "profile" in donnees and donnees["profile"].code != CodeProfile.ADMIN
+            ):
+                raise ValidationError(
+                    {"detail": "Vous ne pouvez pas désactiver votre propre compte ni retirer votre profil d'administrateur."}
+                )
         serializer.instance = services.modifier_compte(
             serializer.instance,
             serializer.validated_data,

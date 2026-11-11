@@ -498,9 +498,34 @@
  * @property {string} phone
  * @property {Profile} profile
  * @property {number | null} region_id
+ * @property {number | null} [csb_id]
  * @property {boolean} is_active
  * @property {IsoDateTime} date_creation
  */
+
+/**
+ * Filters of the admin's account list (all optional).
+ * @typedef {Object} AccountQuery
+ * @property {ProfileCode} [profil]
+ * @property {number} [region]
+ * @property {boolean} [actif]
+ * @property {string} [q]
+ */
+
+/**
+ * What the admin may change on an account.
+ * @typedef {Object} AccountChanges
+ * @property {string} [nom]
+ * @property {string} [prenom]
+ * @property {string} [phone]
+ * @property {string} [email]
+ * @property {ProfileCode} [profile_code]
+ * @property {number | null} [region_id]
+ * @property {number | null} [csb_id]
+ * @property {boolean} [is_active]
+ */
+
+/** @typedef {{ id: number, nom: string }} Province */
 
 /**
  * @typedef {Object} NewAgent

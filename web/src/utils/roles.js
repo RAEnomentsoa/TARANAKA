@@ -15,6 +15,8 @@
  *   | 'conflicts:resolve'
  *   | 'stats:read'
  *   | 'agents:manage'
+ *   | 'accounts:manage'
+ *   | 'territory:manage'
  *   | 'access-requests:review'
  * )} Permission
  */
@@ -38,7 +40,15 @@ const PERMISSIONS_BY_PROFILE = {
   superviseur: ['stats:read', 'agents:manage'],
   // Everything except the discharge, reserved to the destination centre (D7).
   // Also reviews the access requests made from the login page (D15).
-  admin: [...STAFF_READ, ...STAFF_WRITE, 'stats:read', 'access-requests:review'],
+  // Also every account (edit, deactivate) and the territory (D15).
+  admin: [
+    ...STAFF_READ,
+    ...STAFF_WRITE,
+    'stats:read',
+    'access-requests:review',
+    'accounts:manage',
+    'territory:manage',
+  ],
 }
 
 /**

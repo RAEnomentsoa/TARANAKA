@@ -22,7 +22,9 @@
     "closeMenu": "Close menu",
     "agents": "My agents",
     "accessRequests": "Access requests",
-    "beneficiaries": "Beneficiaries"
+    "beneficiaries": "Beneficiaries",
+    "accounts": "Accounts",
+    "territory": "Territory"
   },
   "user": {
     "signedInAs": "Signed in: {name}",
@@ -683,5 +685,63 @@
       "saignement_abondant": "Heavy bleeding",
       "fievre": "Fever"
     }
+  },
+  "accounts": {
+    "title": "Accounts",
+    "intro": "Every account: community health workers, nurses and doctors, supervisors, beneficiaries and administrators. A deactivated account can no longer sign in; its history is kept.",
+    "filters": {
+      "profile": "Profile",
+      "allProfiles": "All profiles",
+      "region": "Region",
+      "allStates": "All"
+    },
+    "count": "No accounts | 1 account | {n} accounts",
+    "empty": "No account matches these filters.",
+    "profile": "Profile",
+    "place": "Region or centre",
+    "centre": "Centre",
+    "email": "Email",
+    "you": "(you)",
+    "edit": "Edit",
+    "editTitle": "Edit {name}'s account",
+    "ownProfile": "You cannot change your own profile.",
+    "centreRequired": "A nurse or doctor must belong to a centre.",
+    "saved": "{name}'s account saved.",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "confirmDeactivate": "{name} will no longer be able to sign in. Their history (referrals, measurements, audit log) is kept. You can reactivate the account later.",
+    "confirmReactivate": "{name} will be able to sign in again with their identifier and PIN.",
+    "deactivated": "{name}'s account deactivated.",
+    "reactivated": "{name}'s account reactivated.",
+    "resetTotp": "Reset two-factor login",
+    "confirmTotp": "{name} will have to set up their authenticator app again at their next sign-in.",
+    "totpDone": "{name}'s two-factor login reset."
+  },
+  "territory": {
+    "title": "Territory",
+    "intro": "Provinces, regions and health centres. Anything still in use (a province's regions, a centre's accounts or referrals…) cannot be deleted.",
+    "tabs": {
+      "provinces": "Provinces",
+      "regions": "Regions",
+      "facilities": "Centres"
+    },
+    "kinds": {
+      "provinces": "a province",
+      "regions": "a region",
+      "facilities": "a centre"
+    },
+    "add": "Add {what}",
+    "addTitle": "Add {what}",
+    "editTitle": "Edit {what}",
+    "name": "Name",
+    "province": "Province",
+    "centreType": "Centre type",
+    "regionsCount": "No regions | 1 region | {n} regions",
+    "centresCount": "no centres | 1 centre | {n} centres",
+    "empty": "Nothing yet.",
+    "saved": "Saved.",
+    "delete": "Delete",
+    "confirmDelete": "Delete \"{name}\"? This cannot be undone.",
+    "deleted": "\"{name}\" deleted."
   }
 }

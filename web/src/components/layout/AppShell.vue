@@ -12,6 +12,7 @@ import NoticeTray from '@/components/ui/NoticeTray.vue'
 import OfflineBanner from '@/components/ui/OfflineBanner.vue'
 import BrandMark from './BrandMark.vue'
 import CodeSearch from './CodeSearch.vue'
+import NavIcon from './NavIcon.vue'
 
 /** @typedef {import('@/utils/roles').Permission} Permission */
 
@@ -37,6 +38,8 @@ const NAV = [
   { name: 'conflicts', labelKey: 'nav.conflicts', permission: 'conflicts:resolve' },
   { name: 'stats', labelKey: 'nav.stats', permission: 'stats:read' },
   { name: 'agents', labelKey: 'nav.agents', permission: 'agents:manage' },
+  { name: 'accounts', labelKey: 'nav.accounts', permission: 'accounts:manage' },
+  { name: 'territory', labelKey: 'nav.territory', permission: 'territory:manage' },
   { name: 'access-requests', labelKey: 'nav.accessRequests', permission: 'access-requests:review' },
 ]
 
@@ -111,6 +114,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
         <ul class="sidenav__list">
           <li v-for="item in items" :key="item.name">
             <RouterLink :to="{ name: item.name }" class="sidenav__link" active-class="sidenav__link--active">
+              <NavIcon :name="item.name" />
               {{ t(item.labelKey) }}
             </RouterLink>
           </li>
@@ -253,6 +257,7 @@ useIdleLogout(config.idleTimeoutMinutes, async () => {
 .sidenav__link {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
   min-height: var(--target);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
