@@ -22,7 +22,9 @@
     "closeMenu": "Fermer le menu",
     "agents": "Mes agents",
     "accessRequests": "Demandes d'accès",
-    "beneficiaries": "Bénéficiaires"
+    "beneficiaries": "Bénéficiaires",
+    "accounts": "Comptes",
+    "territory": "Territoire"
   },
   "user": {
     "signedInAs": "Connecté : {name}",
@@ -683,5 +685,63 @@
       "saignement_abondant": "Saignement abondant",
       "fievre": "Fièvre"
     }
+  },
+  "accounts": {
+    "title": "Comptes",
+    "intro": "Tous les comptes : agents communautaires, infirmiers et médecins, superviseurs, bénéficiaires et administrateurs. Un compte désactivé ne peut plus se connecter ; son historique est conservé.",
+    "filters": {
+      "profile": "Profil",
+      "allProfiles": "Tous les profils",
+      "region": "Région",
+      "allStates": "Tous"
+    },
+    "count": "Aucun compte | 1 compte | {n} comptes",
+    "empty": "Aucun compte ne correspond à ces filtres.",
+    "profile": "Profil",
+    "place": "Région ou centre",
+    "centre": "Centre",
+    "email": "E-mail",
+    "you": "(vous)",
+    "edit": "Modifier",
+    "editTitle": "Modifier le compte de {name}",
+    "ownProfile": "Vous ne pouvez pas changer votre propre profil.",
+    "centreRequired": "Un infirmier ou un médecin doit être rattaché à un centre.",
+    "saved": "Compte de {name} enregistré.",
+    "deactivate": "Désactiver",
+    "reactivate": "Réactiver",
+    "confirmDeactivate": "{name} ne pourra plus se connecter. Son historique (référencements, mesures, journal) est conservé. Vous pourrez réactiver le compte plus tard.",
+    "confirmReactivate": "{name} pourra de nouveau se connecter avec son identifiant et son PIN.",
+    "deactivated": "Compte de {name} désactivé.",
+    "reactivated": "Compte de {name} réactivé.",
+    "resetTotp": "Réinitialiser la double authentification",
+    "confirmTotp": "{name} devra configurer de nouveau son application d'authentification à sa prochaine connexion.",
+    "totpDone": "Double authentification de {name} réinitialisée."
+  },
+  "territory": {
+    "title": "Territoire",
+    "intro": "Provinces, régions et centres de santé. Un élément encore utilisé (régions d'une province, comptes ou référencements d'un centre…) ne peut pas être supprimé.",
+    "tabs": {
+      "provinces": "Provinces",
+      "regions": "Régions",
+      "facilities": "Centres"
+    },
+    "kinds": {
+      "provinces": "une province",
+      "regions": "une région",
+      "facilities": "un centre"
+    },
+    "add": "Ajouter {what}",
+    "addTitle": "Ajouter {what}",
+    "editTitle": "Modifier {what}",
+    "name": "Nom",
+    "province": "Province",
+    "centreType": "Type de centre",
+    "regionsCount": "Aucune région | 1 région | {n} régions",
+    "centresCount": "aucun centre | 1 centre | {n} centres",
+    "empty": "Rien pour le moment.",
+    "saved": "Enregistré.",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer « {name} » ? Cette action est définitive.",
+    "deleted": "« {name} » supprimé."
   }
 }

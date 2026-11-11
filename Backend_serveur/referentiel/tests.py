@@ -19,8 +19,9 @@ class ListesTest(BaseApiTest):
         self.assertEqual(self.client.get("/api/regions/").status_code, 401)
 
     def test_lecture_seule(self):
+        # Provinces, regions and centres are edited by the admin (tests_territoire).
         self.comme(self.admin)
-        for url in ("provinces", "regions", "facilities", "danger-types", "profile-types"):
+        for url in ("danger-types", "profile-types"):
             with self.subTest(url=url):
                 self.assertEqual(
                     self.client.post(f"/api/{url}/", {}, format="json").status_code,

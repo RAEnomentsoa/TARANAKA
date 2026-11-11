@@ -58,6 +58,45 @@ export const accessRequestsApi = {
 }
 
 /**
+ * The admin's view of every account. "Deleting" is deactivating: an account
+ * stays linked to its referrals and to the audit log, so it is never erased
+ * from here (the legal erasure is a separate procedure).
+ */
+export const accountsApi = {
+  /**
+   * @param {import('./types').AccountQuery} [query={}]
+   * @returns {Promise<AgentAccount[]>}
+   */
+  list(query = {}) {
+    return http.getAll('/api/profiles/', { ...query })
+  },
+  /**
+   * @param {string} id
+   * @param {import('./types').AccountChanges} changes
+   * @returns {Promise<AgentAccount>}
+   */
+  update(id, changes) {
+    return http.patch(`/api/profiles/${id}/`, changes)
+  },
+  /**
+   * @param {string} id
+   * @param {string} pin
+   * @returns {Promise<unknown>}
+   */
+  resetPin(id, pin) {
+    return http.post(`/api/profiles/${id}/reset-pin/`, { nouveau_pin: pin })
+  },
+  /**
+   * Lost phone: two-factor login is turned off, to be set up again.
+   * @param {string} id
+   * @returns {Promise<unknown>}
+   */
+  resetTwoFactor(id) {
+    return http.post(`/api/profiles/${id}/reset-2fa/`)
+  },
+}
+
+/**
  * The supervisor's community agents (spec §2, §8, D1): the server only lists
  * the ASC accounts of the supervisor's region and creates ASCs there.
  */

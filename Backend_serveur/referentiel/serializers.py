@@ -5,19 +5,58 @@ from rest_framework import serializers
 from .models import CSB, Indicateur, Province, Region, Sexe, TypeDangerGrossesse
 
 
-class ProvinceSerializer(serializers.ModelSerializer):
+class NomUniqueMixin:
+    """The same name twice in one place is a typo: refused, case ignored."""
+
+    champ_nom = "nom"
+    champ_parent = None
+    message_doublon = "Ce nom existe déjà."
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        nom = attrs.get(self.champ_nom, getattr(self.instance, self.champ_nom, ""))
+        attrs[self.champ_nom] = " ".join(nom.split())
+        if not attrs[self.champ_nom]:
+            raise serializers.ValidationError({self.champ_nom: ["Ce champ est obligatoire."]})
+        lignes = self.Meta.model.objects.filter(
+            **{f"{self.champ_nom}__iexact": attrs[self.champ_nom]}
+        )
+        if self.champ_parent:
+            parent = attrs.get(self.champ_parent, getattr(self.instance, self.champ_parent, None))
+            lignes = lignes.filter(**{self.champ_parent: parent})
+        if self.instance is not None:
+            lignes = lignes.exclude(pk=self.instance.pk)
+        if lignes.exists():
+            raise serializers.ValidationError({self.champ_nom: [self.message_doublon]})
+        return attrs
+
+
+class ProvinceSerializer(NomUniqueMixin, serializers.ModelSerializer):
+    message_doublon = "Cette province existe déjà."
+
     class Meta:
         model = Province
         fields = ("id", "nom")
 
 
-class RegionSerializer(serializers.ModelSerializer):
+class RegionSerializer(NomUniqueMixin, serializers.ModelSerializer):
+    province_id = serializers.PrimaryKeyRelatedField(
+        source="province", queryset=Province.objects.all()
+    )
+    champ_parent = "province"
+    message_doublon = "Cette région existe déjà dans cette province."
+
     class Meta:
         model = Region
         fields = ("id", "nom", "province_id")
 
 
-class CSBSerializer(serializers.ModelSerializer):
+class CSBSerializer(NomUniqueMixin, serializers.ModelSerializer):
+    region_id = serializers.PrimaryKeyRelatedField(source="region", queryset=Region.objects.all())
+    champ_nom = "name"
+    champ_parent = "region"
+    message_doublon = "Ce centre existe déjà dans cette région."
+
     class Meta:
         model = CSB
         fields = ("id", "name", "type_centre", "region_id", "tel")
