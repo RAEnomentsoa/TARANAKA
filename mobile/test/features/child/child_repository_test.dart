@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/core/db/app_database.dart';
 import 'package:taranaka/core/growth/who_lms.dart';
 import 'package:taranaka/core/security/pin_crypto.dart';
-import 'package:taranaka/core/sync/outbox.dart';
 import 'package:taranaka/core/sync/sync_status.dart';
 import 'package:taranaka/features/child/data/child_repository.dart';
 
@@ -25,7 +24,7 @@ void main() {
     env.dir.deleteSync(recursive: true);
   });
 
-  test('children stay on the phone ("Enregistré"), nothing is queued for sync', () async {
+  test('children are queued for the sync (D16): "En attente" until sent', () async {
     final c = await repo.addChild(
       name: 'Kanto',
       sex: 'M',
@@ -33,7 +32,7 @@ void main() {
       birthWeightKg: 3.1,
     );
     expect(c.birthWeightKg, 3.1);
-    expect(c.child.syncStatus, SyncStatus.saved);
+    expect(c.child.syncStatus, SyncStatus.pending);
     await repo.addGrowth(
       child: c,
       date: DateTime(2026, 11, 4),
@@ -43,7 +42,8 @@ void main() {
       tables: WhoTables.empty,
       alerte: 'vert',
     );
-    expect(await Outbox.count(db.db), 0);
+    final ops = await db.db.query('outbox', columns: ['table_name', 'operation'], orderBy: 'seq');
+    expect(ops.map((o) => (o['table_name'], o['operation'])), [('enfant', 'create'), ('mesure', 'create')]);
   });
 
   test('growth: age and length correction computed, no z-score without WHO tables', () async {

@@ -22,6 +22,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Lalao', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       final lmp = addDays(env.clock.now(), -daysSinceLmp);
       await PregnancyRepository(
         session.active!.db,
@@ -288,6 +289,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Lalao', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
     });
     await settle(tester);
     await tapKey(tester, 'tile-pregnancy');

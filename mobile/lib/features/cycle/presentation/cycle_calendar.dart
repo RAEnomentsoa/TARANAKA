@@ -71,7 +71,7 @@ Map<DateTime, DayMark> calendarMarks({
         marks[d] = DayMark.ongoing;
       }
       for (var d = addDays(last, 1); daysBetween(start, d) < periodDays; d = addDays(d, 1)) {
-        marks.putIfAbsent(d, () => DayMark.predicted);
+        if (marks[d] != DayMark.period && marks[d] != DayMark.ongoing) marks[d] = DayMark.predicted;
       }
     } else {
       for (var d = start; !d.isAfter(dateOnly(p.end!)); d = addDays(d, 1)) {
@@ -95,8 +95,10 @@ List<DateTime> predictedStarts(CycleSummary summary, DateTime today) {
 
 /// Month grid of "Mon cycle": past, ongoing and expected periods, one month at
 /// a time, back to the first cycle logged. Each marked day has a pictogram,
-/// never colour alone. Tapping a logged period edits it; tapping another past
-/// day adds a period starting that day.
+/// never colour alone, and a tooltip with its name. Tapping a logged period
+/// edits it. Tapping another past day chooses the first day of a period, then
+/// a second tap its last day (or "durée habituelle"). Tapping a future day
+/// says what is expected that day, just under the grid.
 class CycleCalendar extends StatefulWidget {
   const CycleCalendar({
     super.key,
@@ -105,7 +107,7 @@ class CycleCalendar extends StatefulWidget {
     required this.today,
     required this.first,
     required this.onPeriodTap,
-    required this.onDayTap,
+    required this.onRangePicked,
   });
 
   final List<Period> periods;
@@ -115,7 +117,10 @@ class CycleCalendar extends StatefulWidget {
   /// Earliest day that can be logged: the calendar does not go before its month.
   final DateTime first;
   final ValueChanged<Period> onPeriodTap;
-  final ValueChanged<DateTime> onDayTap;
+
+  /// A new period chosen on the grid: its first day and, when chosen, its
+  /// last day (null: the usual length, or still going on).
+  final void Function(DateTime start, DateTime? end) onRangePicked;
 
   @override
   State<CycleCalendar> createState() => _CycleCalendarState();
@@ -131,8 +136,15 @@ class CycleCalendar extends StatefulWidget {
   /// Days really logged by the user, as opposed to the estimated ones.
   static bool logged(DayMark m) => m == DayMark.period || m == DayMark.ongoing;
 
-  /// Legend under the calendar: period days, then the estimates.
-  static const legend = [DayMark.period, DayMark.predicted, DayMark.fertile, DayMark.ovulation, DayMark.risk];
+  /// Legend under the calendar, left to right: period days, expected
+  /// period, fertile window, ovulation, pregnancy possible.
+  static const legend = [
+    DayMark.period,
+    DayMark.predicted,
+    DayMark.fertile,
+    DayMark.ovulation,
+    DayMark.risk,
+  ];
 
   static String label(AppLocalizations l10n, DayMark m) => switch (m) {
     // Logged and ongoing: one legend, "Jours des règles".
@@ -147,6 +159,16 @@ class CycleCalendar extends StatefulWidget {
 class _CycleCalendarState extends State<CycleCalendar> {
   /// Always opens on the current month.
   late DateTime _month = _monthOf(widget.today);
+
+  /// Direction of the last month change (1 next, -1 previous): the new month
+  /// slides in from that side.
+  int _direction = 1;
+
+  /// First day of a period being chosen on the grid (waiting for its last).
+  DateTime? _rangeStart;
+
+  /// Future day tapped: what is expected that day is shown under the grid.
+  DateTime? _info;
 
   static DateTime _monthOf(DateTime d) => DateTime(d.year, d.month);
 
@@ -171,7 +193,123 @@ class _CycleCalendarState extends State<CycleCalendar> {
   void _go(int months) {
     final target = DateTime(_month.year, _month.month + months);
     if (target.isBefore(_firstMonth) || target.isAfter(_lastMonth)) return;
-    setState(() => _month = target);
+    setState(() {
+      _direction = months.sign;
+      _month = target;
+      _info = null;
+    });
+  }
+
+  void _goTo(DateTime month) => setState(() {
+    _direction = month.isBefore(_month) ? -1 : 1;
+    _month = month;
+    _info = null;
+  });
+
+  void _tap(DateTime date, Period? period) {
+    final today = dateOnly(widget.today);
+    if (period != null) {
+      setState(() => _rangeStart = _info = null);
+      widget.onPeriodTap(period);
+      return;
+    }
+    if (date.isAfter(today)) {
+      setState(() => _info = _info == date ? null : date);
+      return;
+    }
+    final start = _rangeStart;
+    if (start == null || date.isBefore(start)) {
+      setState(() {
+        _rangeStart = date;
+        _info = null;
+      });
+      return;
+    }
+    setState(() => _rangeStart = null);
+    widget.onRangePicked(start, date);
+  }
+
+  /// "Durée habituelle": the period lasts its usual length from the chosen
+  /// day (the sheet leaves the end empty when it would be after today).
+  void _useUsual() {
+    final start = _rangeStart!;
+    setState(() => _rangeStart = null);
+    widget.onRangePicked(start, null);
+  }
+
+  /// Under the grid: the period being chosen (first day picked), or what is
+  /// expected on the future day tapped. Nothing otherwise.
+  Widget _panel(BuildContext context, Map<DateTime, DayMark> marks) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final start = _rangeStart;
+    if (start != null) {
+      return Container(
+        key: const ValueKey('cal-range-panel'),
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: Space.s),
+        padding: const EdgeInsets.all(Space.m),
+        decoration: BoxDecoration(
+          color: AppColors.accentSoft,
+          borderRadius: BorderRadius.circular(Radii.m),
+          border: Border.all(color: AppColors.accentSoftBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Semantics(
+              liveRegion: true,
+              child: Text(l10n.rangeStartChosen(formatDate(start)), style: text.bodyMedium),
+            ),
+            const Gap(Space.s),
+            Wrap(
+              spacing: Space.s,
+              runSpacing: Space.xs,
+              children: [
+                FilledButton.tonal(
+                  key: const ValueKey('cal-range-usual'),
+                  onPressed: _useUsual,
+                  child: Text(l10n.rangeUseUsual(widget.summary.periodDays)),
+                ),
+                TextButton(
+                  key: const ValueKey('cal-range-cancel'),
+                  onPressed: () => setState(() => _rangeStart = null),
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    final info = _info;
+    if (info == null) return const SizedBox(width: double.infinity);
+    final mark = marks[info];
+    return Padding(
+      key: ValueKey('cal-info-${isoDate(info)}'),
+      padding: const EdgeInsets.only(top: Space.s),
+      child: Semantics(
+        liveRegion: true,
+        child: Row(
+          children: [
+            if (mark != null) ...[CycleSwatch(mark: mark), const SizedBox(width: Space.s)],
+            Expanded(
+              child: Text(
+                mark == null
+                    ? l10n.calendarDayInfoNone(formatDate(info))
+                    : l10n.calendarDayInfo(
+                        formatDate(info),
+                        '${CycleCalendar.label(l10n, mark)} · '
+                        '${CycleCalendar.logged(mark) ? l10n.calendarLogged : l10n.calendarEstimated}',
+                      ),
+                key: const ValueKey('cal-info'),
+                style: text.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Period? _periodOn(DateTime day) {
@@ -207,18 +345,30 @@ class _CycleCalendarState extends State<CycleCalendar> {
       if (n < 1 || n > days) return const SizedBox.shrink();
       final date = DateTime(_month.year, _month.month, n);
       final period = _periodOn(date);
-      final tappable = period != null || !date.isAfter(today);
       return _Day(
         date: date,
         mark: marks[date],
+        selected: date == _rangeStart || date == _info,
         // "Règles prévues": the pictogram on the exact date computed for the
         // next periods; the other expected days only have the dashed outline.
         showIcon: marks[date] != DayMark.predicted || starts.contains(date),
         isToday: date == today,
         height: cellHeight,
-        onTap: !tappable ? null : () => period != null ? widget.onPeriodTap(period) : widget.onDayTap(date),
+        onTap: () => _tap(date, period),
+        future: date.isAfter(today),
       );
     }
+
+    final motion = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 220);
+    final grid = Column(
+      key: ValueKey('cal-grid-${_month.year}-${_month.month}'),
+      children: [
+        for (var r = 0; r < rows; r++)
+          Row(children: [for (var c = 0; c < 7; c++) Expanded(child: cell(r * 7 + c))]),
+      ],
+    );
 
     return Card(
       child: Padding(
@@ -261,7 +411,7 @@ class _CycleCalendarState extends State<CycleCalendar> {
                 Center(
                   child: TextButton(
                     key: const ValueKey('cal-today'),
-                    onPressed: () => setState(() => _month = _monthOf(today)),
+                    onPressed: () => _goTo(_monthOf(today)),
                     child: Text(l10n.today),
                   ),
                 ),
@@ -283,26 +433,42 @@ class _CycleCalendarState extends State<CycleCalendar> {
                 ),
               ),
               const Gap(Space.xs),
-              for (var r = 0; r < rows; r++)
-                Row(children: [for (var c = 0; c < 7; c++) Expanded(child: cell(r * 7 + c))]),
+              ClipRect(
+                child: AnimatedSwitcher(
+                  duration: motion,
+                  layoutBuilder: (current, previous) =>
+                      Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
+                  transitionBuilder: (child, animation) {
+                    final incoming = child.key == grid.key;
+                    final dx = (incoming ? 0.25 : -0.25) * _direction;
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween(
+                          begin: Offset(dx, 0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: grid,
+                ),
+              ),
+              AnimatedSize(
+                duration: motion,
+                curve: Curves.easeOut,
+                alignment: Alignment.topCenter,
+                child: _panel(context, marks),
+              ),
               const Gap(Space.m),
-              _LegendGroup(
-                title: l10n.calendarLogged,
-                marks: [
-                  for (final m in CycleCalendar.legend)
-                    if (CycleCalendar.logged(m)) m,
-                ],
+              Text(
+                l10n.calendarHint,
+                key: const ValueKey('calendar-hint'),
+                style: text.bodySmall?.copyWith(color: AppColors.textMuted),
               ),
-              const Gap(Space.s),
-              _LegendGroup(
-                title: l10n.calendarEstimated,
-                marks: [
-                  for (final m in CycleCalendar.legend)
-                    if (!CycleCalendar.logged(m)) m,
-                ],
-              ),
-              const Gap(Space.s),
-              Text(l10n.calendarHint, style: text.bodySmall?.copyWith(color: AppColors.textMuted)),
+              const Gap(Space.m),
+              const _Legend(),
             ],
           ),
         ),
@@ -313,73 +479,133 @@ class _CycleCalendarState extends State<CycleCalendar> {
 
 /// Logged days are solid red (white drop and number); estimated days are never
 /// solid: a dashed outline or a pale fill, with an outlined pictogram.
-({Color? fill, Color? border, bool dashed, Color icon, Color text}) _style(DayMark? m) => switch (m) {
-  DayMark.period || DayMark.ongoing => (
-    fill: AppColors.danger,
-    border: null,
-    dashed: false,
-    icon: AppColors.surface,
-    text: AppColors.surface,
-  ),
-  DayMark.predicted => (
-    fill: AppColors.surface,
-    border: AppColors.danger,
-    dashed: true,
-    icon: AppColors.danger,
-    text: AppColors.danger,
-  ),
-  DayMark.risk => (
-    fill: AppColors.cautionSoft,
-    border: null,
-    dashed: false,
-    icon: AppColors.caution,
-    text: AppColors.text,
-  ),
-  DayMark.fertile || DayMark.ovulation => (
-    fill: AppColors.accentSoft,
-    border: null,
-    dashed: false,
-    icon: AppColors.accent,
-    text: AppColors.text,
-  ),
-  null => (fill: null, border: null, dashed: false, icon: AppColors.text, text: AppColors.text),
-};
+/// Risk days are yellow, fertile days blue (a thin border keeps them visible
+/// on any screen), ovulation blue with a strong border.
+({Color? fill, Color? border, bool dashed, Color icon, Color text, double width}) _style(DayMark? m) =>
+    switch (m) {
+      DayMark.period || DayMark.ongoing => (
+        fill: AppColors.danger,
+        border: null,
+        dashed: false,
+        icon: AppColors.surface,
+        text: AppColors.surface,
+        width: 2,
+      ),
+      DayMark.predicted => (
+        fill: AppColors.surface,
+        border: AppColors.danger,
+        dashed: true,
+        icon: AppColors.danger,
+        text: AppColors.danger,
+        width: 2,
+      ),
+      DayMark.risk => (
+        fill: AppColors.warningSoft,
+        border: AppColors.cautionBorder,
+        dashed: false,
+        icon: AppColors.caution,
+        text: AppColors.text,
+        width: 1,
+      ),
+      DayMark.fertile => (
+        fill: AppColors.accentSoft,
+        border: AppColors.accentSoftBorder,
+        dashed: false,
+        icon: AppColors.accent,
+        text: AppColors.text,
+        width: 1,
+      ),
+      DayMark.ovulation => (
+        fill: AppColors.accentSoft,
+        border: AppColors.accent,
+        dashed: false,
+        icon: AppColors.accent,
+        text: AppColors.text,
+        width: 2,
+      ),
+      null => (fill: null, border: null, dashed: false, icon: AppColors.text, text: AppColors.text, width: 0),
+    };
 
-/// One group of the legend: "Noté" or "Estimé", then its marks.
-class _LegendGroup extends StatelessWidget {
-  const _LegendGroup({required this.title, required this.marks});
+/// Legend colors: the logged period very red, the expected one pale.
+const _legendPeriodRed = Color(0xFFC62828);
+const _legendPredictedRed = Color(0xFFEF9A9A);
 
-  final String title;
-  final List<DayMark> marks;
+/// The legend, left to right: each mark with its pictogram on top and its
+/// name under it. Equal columns, as many per line as the longest word allows
+/// (narrow screen, large text, long Malagasy names): no word is ever cut.
+class _Legend extends StatelessWidget {
+  const _Legend();
+
+  static Color _color(DayMark m) => switch (m) {
+    DayMark.period || DayMark.ongoing => _legendPeriodRed,
+    DayMark.predicted => _legendPredictedRed,
+    _ => AppColors.accent,
+  };
+
+  static IconData _icon(DayMark m) => m == DayMark.predicted ? Icons.water_drop : CycleCalendar.icon(m);
+
+  /// "Grossesse possible": the very look of its days on the calendar.
+  static Widget _pictogram(DayMark m) => m == DayMark.risk
+      ? const CycleSwatch(mark: DayMark.risk, size: _iconSize)
+      : Icon(_icon(m), size: _iconSize, color: _color(m));
+
+  static const double _iconSize = 24;
+  static const double _gutter = Space.xs;
+
+  double _longestWord(BuildContext context, Iterable<String> labels, TextStyle? style) {
+    var longest = 0.0;
+    for (final word in labels.expand((l) => l.split(' '))) {
+      final painter = TextPainter(
+        text: TextSpan(text: word, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      longest = math.max(longest, painter.width);
+      painter.dispose();
+    }
+    return longest;
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final text = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: text.labelMedium?.copyWith(color: AppColors.textMuted, fontWeight: FontWeight.w700),
-        ),
-        const Gap(Space.xs),
-        Wrap(
-          spacing: Space.l,
+    final style = Theme.of(context).textTheme.bodySmall;
+    const marks = CycleCalendar.legend;
+    final labels = [for (final m in marks) CycleCalendar.label(l10n, m)];
+    return LayoutBuilder(
+      key: const ValueKey('cycle-legend'),
+      builder: (context, constraints) {
+        final column = _longestWord(context, labels, style).ceilToDouble() + _gutter;
+        final perLine = (constraints.maxWidth / column).floor().clamp(1, marks.length);
+        return Wrap(
           runSpacing: Space.s,
           children: [
-            for (final m in marks)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _Swatch(mark: m),
-                  const SizedBox(width: Space.xs),
-                  Flexible(child: Text(CycleCalendar.label(l10n, m), style: text.bodySmall)),
-                ],
+            for (final (i, m) in marks.indexed)
+              SizedBox(
+                width: (constraints.maxWidth / perLine).floorToDouble(),
+                child: Semantics(
+                  container: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: _gutter / 2),
+                    child: Column(
+                      children: [
+                        ExcludeSemantics(child: _pictogram(m)),
+                        const Gap(Space.xs),
+                        Text(
+                          labels[i],
+                          key: ValueKey('legend-${m.name}'),
+                          textAlign: TextAlign.center,
+                          style: style,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -410,9 +636,12 @@ class _DashedBorder extends CustomPainter {
   bool shouldRepaint(_DashedBorder old) => old.color != color || old.radius != radius;
 }
 
-class _Swatch extends StatelessWidget {
-  const _Swatch({required this.mark});
+/// The look of a calendar day, small: in the legend ("Grossesse possible") and
+/// beside what is expected on the future day tapped.
+class CycleSwatch extends StatelessWidget {
+  const CycleSwatch({super.key, required this.mark, this.size = 22});
   final DayMark mark;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -420,14 +649,14 @@ class _Swatch extends StatelessWidget {
     return CustomPaint(
       foregroundPainter: s.dashed ? _DashedBorder(color: s.border!, radius: Radii.s) : null,
       child: Container(
-        width: 22,
-        height: 22,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: s.fill,
           borderRadius: BorderRadius.circular(Radii.s),
-          border: s.border == null || s.dashed ? null : Border.all(color: s.border!, width: 2),
+          border: s.border == null || s.dashed ? null : Border.all(color: s.border!, width: s.width),
         ),
-        child: Icon(CycleCalendar.icon(mark), size: 14, color: s.icon),
+        child: Icon(CycleCalendar.icon(mark), size: size * 0.64, color: s.icon),
       ),
     );
   }
@@ -441,10 +670,18 @@ class _Day extends StatelessWidget {
     required this.height,
     required this.onTap,
     this.showIcon = true,
+    this.selected = false,
+    this.future = false,
   });
 
   final DateTime date;
   final DayMark? mark;
+
+  /// First day of a period being chosen, or the future day being described.
+  final bool selected;
+
+  /// After today: only predictions, never logged from the grid.
+  final bool future;
   final bool showIcon;
   final bool isToday;
   final double height;
@@ -455,22 +692,29 @@ class _Day extends StatelessWidget {
     final l10n = context.l10n;
     final s = _style(mark);
     // Today: a dark ring, over any mark (an estimated day keeps its dashes).
-    final border = isToday
+    final border = selected
+        ? Border.all(color: AppColors.accent, width: 3)
+        : isToday
         ? Border.all(color: AppColors.text, width: 2)
-        : (s.border == null || s.dashed ? null : Border.all(color: s.border!, width: 2));
+        : (s.border == null || s.dashed ? null : Border.all(color: s.border!, width: s.width));
+    final markLabel = mark == null ? null : CycleCalendar.label(l10n, mark!);
     final semantics = [
       formatDate(date),
       if (isToday) l10n.today,
-      if (mark != null) CycleCalendar.label(l10n, mark!),
+      ?markLabel,
+      if (mark != null) CycleCalendar.logged(mark!) ? l10n.calendarLogged : l10n.calendarEstimated,
     ].join(', ');
-    return Semantics(
+    final day = Semantics(
       label: semantics,
       button: onTap != null,
+      selected: selected,
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.all(1.5),
         child: CustomPaint(
-          foregroundPainter: s.dashed && !isToday ? _DashedBorder(color: s.border!, radius: Radii.s) : null,
+          foregroundPainter: s.dashed && !isToday && !selected
+              ? _DashedBorder(color: s.border!, radius: Radii.s)
+              : null,
           child: Material(
             color: s.fill ?? Colors.transparent,
             shape: RoundedRectangleBorder(
@@ -493,7 +737,7 @@ class _Day extends StatelessWidget {
                         Text(
                           '${date.day}',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: onTap == null && mark == null ? AppColors.textMuted : s.text,
+                            color: future && mark == null ? AppColors.textMuted : s.text,
                             fontWeight: isToday || (mark != null && CycleCalendar.logged(mark!))
                                 ? FontWeight.w800
                                 : null,
@@ -513,5 +757,14 @@ class _Day extends StatelessWidget {
         ),
       ),
     );
+    // Long press on a marked day: its name, without looking for the legend.
+    return markLabel == null
+        ? day
+        : Tooltip(
+            message: markLabel,
+            excludeFromSemantics: true,
+            triggerMode: TooltipTriggerMode.longPress,
+            child: day,
+          );
   }
 }

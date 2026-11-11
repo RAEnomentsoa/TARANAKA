@@ -13,6 +13,8 @@ class Child {
     required this.careStatus,
     required this.version,
     required this.syncStatus,
+    this.motherId,
+    this.pregnancyId,
   });
 
   final String id;
@@ -24,6 +26,10 @@ class Child {
   final int version;
   final SyncStatus syncStatus;
 
+  /// The beneficiary (D16): no child without a mother any more.
+  final String? motherId;
+  final String? pregnancyId;
+
   static Child fromRow(Map<String, Object?> r) => Child(
     id: r['id']! as String,
     name: r['nom']! as String,
@@ -32,6 +38,101 @@ class Child {
     regionId: r['region_id'] as int?,
     careStatus: r['statut_prise_en_charge']! as String,
     version: r['version']! as int,
+    syncStatus: SyncStatus.parse(r['sync_status']),
+    motherId: r['mere_id'] as String?,
+    pregnancyId: r['grossesse_id'] as String?,
+  );
+}
+
+/// A woman of the agent's zone (`/api/beneficiaries/`), and her file once
+/// opened (D16).
+class Beneficiary {
+  const Beneficiary({
+    required this.id,
+    required this.firstName,
+    required this.lastName,
+    this.identifiant,
+    this.phone,
+    this.regionId,
+    this.code,
+    this.followed = false,
+    this.pregnant = false,
+    this.childCount = 0,
+    this.sharesCycle = false,
+    this.file,
+    this.fileAt,
+  });
+
+  final String id;
+  final String firstName;
+  final String lastName;
+  final String? identifiant;
+  final String? phone;
+  final int? regionId;
+
+  /// `code_beneficiaire`, shown by her (QR or typed).
+  final String? code;
+  final bool followed;
+  final bool pregnant;
+  final int childCount;
+  final bool sharesCycle;
+
+  /// Her whole file as last downloaded (`/api/beneficiaries/{id}/`).
+  final Map<String, Object?>? file;
+  final DateTime? fileAt;
+
+  String get displayName => '$firstName $lastName'.trim();
+
+  static Beneficiary fromRow(Map<String, Object?> r) => Beneficiary(
+    id: r['id']! as String,
+    firstName: (r['prenom'] as String?) ?? '',
+    lastName: (r['nom'] as String?) ?? '',
+    identifiant: r['identifiant'] as String?,
+    phone: r['phone'] as String?,
+    regionId: r['region_id'] as int?,
+    code: r['code_beneficiaire'] as String?,
+    followed: r['suivie'] == 1,
+    pregnant: r['grossesse_en_cours'] == 1,
+    childCount: (r['nb_enfants'] as int?) ?? 0,
+    sharesCycle: r['partage_cycle'] == 1,
+    file: r['dossier'] is String
+        ? (jsonDecode(r['dossier']! as String) as Map).cast<String, Object?>()
+        : null,
+    fileAt: r['dossier_at'] is String ? DateTime.tryParse(r['dossier_at']! as String) : null,
+  );
+}
+
+/// A pregnancy of a followed woman, as the agent sees it.
+class AgentPregnancy {
+  const AgentPregnancy({
+    required this.id,
+    required this.userId,
+    this.lmp,
+    this.dueDate,
+    this.deliveredOn,
+    this.ended = false,
+    required this.syncStatus,
+  });
+
+  final String id;
+  final String? userId;
+  final DateTime? lmp;
+  final DateTime? dueDate;
+  final DateTime? deliveredOn;
+  final bool ended;
+  final SyncStatus syncStatus;
+
+  bool get ongoing => !ended && deliveredOn == null;
+
+  static AgentPregnancy fromRow(Map<String, Object?> r) => AgentPregnancy(
+    id: r['id']! as String,
+    userId: r['user_id'] as String?,
+    lmp: _blank(r['ddr']) == null ? null : parseIsoDate(r['ddr']! as String),
+    dueDate: _blank(r['dpa']) == null ? null : parseIsoDate(r['dpa']! as String),
+    deliveredOn: _blank(r['date_accouchement']) == null
+        ? null
+        : parseIsoDate(r['date_accouchement']! as String),
+    ended: r['terminee'] == 1,
     syncStatus: SyncStatus.parse(r['sync_status']),
   );
 }
@@ -132,7 +233,13 @@ class Referral {
     required this.transmitted,
     required this.previousCode,
     required this.syncStatus,
+    this.origin = 'enfant',
+    this.pregnancyId,
   });
+
+  /// `enfant` or `grossesse` (a pregnant woman referred for danger signs).
+  final String origin;
+  final String? pregnancyId;
 
   final String id;
   final String code;
@@ -168,6 +275,8 @@ class Referral {
     transmitted: r['transmis'] == 1,
     previousCode: r['ancien_code'] as String?,
     syncStatus: SyncStatus.parse(r['sync_status']),
+    origin: (r['origine'] as String?) ?? 'enfant',
+    pregnancyId: r['grossesse_id'] as String?,
   );
 }
 

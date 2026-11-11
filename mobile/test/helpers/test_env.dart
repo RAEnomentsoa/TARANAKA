@@ -15,6 +15,7 @@ import 'package:taranaka/core/db/db_opener.dart';
 import 'package:taranaka/core/growth/who_lms.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:taranaka/core/security/secret_store.dart';
 import 'package:taranaka/core/sync/network_status.dart';
 import 'package:taranaka/core/util/clock.dart';
@@ -81,7 +82,10 @@ class TestEnv {
       clock: clock,
       network: network ?? FakeNetworkStatus(),
       whoTables: WhoTables.empty,
-      httpClient: httpClient,
+      // Without a server given, the phone is "offline": the background sync
+      // of the personal mode never reaches a real network in tests (the
+      // integration test against a real backend gives its URL).
+      httpClient: httpClient ?? (apiBaseUrl == null ? offlineClient() : null),
       biometrics: biometrics,
       auth: auth ?? FakeAuthService(),
       defaultApiBaseUrl: apiBaseUrl ?? 'http://localhost:8000',
@@ -151,18 +155,15 @@ Future<void> enterPin(WidgetTester tester, String pin) async {
   await settle(tester);
 }
 
-/// Profile creation, personal mode: chooses the secret question in the list
-/// and types the answer twice, then continues to the PIN.
+/// Profile creation, personal mode: writes the secret question and its
+/// answer, then continues to the PIN.
 Future<void> answerSecretQuestion(
   WidgetTester tester, {
-  String question = 'birthPlace',
+  String question = 'Ma ville natale ?',
   String answer = 'Ambositra',
 }) async {
-  await tapKey(tester, 'secret-question');
-  await tester.tap(find.byKey(ValueKey('secret-question-$question')).last);
-  await settle(tester);
+  await typeKey(tester, 'secret-question', question);
   await typeKey(tester, 'secret-answer', answer);
-  await typeKey(tester, 'secret-answer-confirm', answer);
   await tapKey(tester, 'secret-continue');
 }
 
@@ -172,4 +173,28 @@ Future<void> settleUntil(WidgetTester tester, bool Function() done, {int tries =
   for (var i = 0; i < tries && !done(); i++) {
     await settle(tester);
   }
+}
+
+/// An HTTP client that never reaches a server (no network).
+http.Client offlineClient() => MockClient((_) async => throw const SocketException('no network in tests'));
+
+/// "Votre région" on the profile form (personal profiles, D16); nothing
+/// to do when the form does not ask for it (health worker).
+Future<void> chooseRegion(WidgetTester tester, [String region = 'Analamanga']) async {
+  final field = find.byKey(const ValueKey('region-field'));
+  if (field.evaluate().isEmpty) return;
+  await tester.ensureVisible(field);
+  await settle(tester);
+  await tester.tap(field, warnIfMissed: false);
+  await settle(tester);
+  final item = find.text(region).last;
+  await tester.ensureVisible(item);
+  await settle(tester);
+  await tester.tap(item, warnIfMissed: false);
+  await settle(tester);
+}
+
+/// The consent is given with "J'accepte et je continue" (no check box).
+Future<void> agreeToConsent(WidgetTester tester) async {
+  await tapKey(tester, 'consent-accept');
 }

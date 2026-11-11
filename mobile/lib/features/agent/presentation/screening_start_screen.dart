@@ -2,19 +2,34 @@ import 'package:flutter/material.dart';
 
 import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
-import '../../../core/sync/sync_status.dart';
+import '../../../core/sync/api_client.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import '../domain/models.dart';
-import '../domain/screening.dart';
-import 'agent_child_screen.dart';
 import 'agent_scope.dart';
+import 'beneficiary_file_screen.dart';
 import 'measurement_form_screen.dart';
+import 'qr_scan_screen.dart';
+import 'register_beneficiary_screen.dart';
 
-/// Step 1 of a screening: find the child, or add a new one.
+/// Message for an online action of the agent that failed.
+String agentOnlineError(BuildContext context, Object e) {
+  final l10n = context.l10n;
+  if (e is! ApiException) return l10n.syncProblemServer;
+  return switch (e.code) {
+    'offline' => l10n.agentNeedsNetwork,
+    'auth_expired' => l10n.syncProblemAuth,
+    _ when e.status == 404 => l10n.agentCodeUnknown,
+    _ => l10n.syncProblemServer,
+  };
+}
+
+/// Step 1 of a screening (D16): choose the beneficiary first — scan her QR
+/// code, type her code, find her in the list of the zone, or register her
+/// (no phone). Then one of her children, or a new child attached to her.
 class ScreeningStartScreen extends StatefulWidget {
   const ScreeningStartScreen({super.key});
 
@@ -24,17 +39,21 @@ class ScreeningStartScreen extends StatefulWidget {
 
 class _ScreeningStartScreenState extends State<ScreeningStartScreen> {
   final _search = TextEditingController();
-  Future<List<Child>>? _children;
+  final _code = TextEditingController();
+  Future<List<Beneficiary>>? _list;
+  String? _error;
+  bool _busy = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _children ??= AgentScope.read(context).repo.children();
+    _list ??= AgentScope.read(context).repo.beneficiaries();
   }
 
   @override
   void dispose() {
     _search.dispose();
+    _code.dispose();
     super.dispose();
   }
 
@@ -43,90 +62,208 @@ class _ScreeningStartScreenState extends State<ScreeningStartScreen> {
   void _reload() {
     if (!mounted || !(ModalRoute.of(context)?.isActive ?? false)) return;
     setState(() {
-      _children = AgentScope.read(context).repo.children(search: _search.text);
+      _list = AgentScope.read(context).repo.beneficiaries(search: _search.text);
+    });
+  }
+
+  Future<void> _run(Future<Beneficiary?> Function() action) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final b = await action();
+      if (b != null && mounted) {
+        await pushAgent<void>(context, BeneficiaryFileScreen(beneficiaryId: b.id));
+      }
+    } on Object catch (e) {
+      if (mounted) setState(() => _error = agentOnlineError(context, e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      _reload();
+    }
+  }
+
+  Future<void> _scan() async {
+    final agent = AgentScope.read(context);
+    final code = await Navigator.of(context)
+        .push<String>(MaterialPageRoute(builder: (_) => const QrScanScreen()));
+    if (code == null || code.isEmpty) return;
+    await _run(() => agent.openByCode(code));
+  }
+
+  Future<void> _openCode() async {
+    final agent = AgentScope.read(context);
+    final code = _code.text.trim();
+    if (code.isEmpty) return setState(() => _error = context.l10n.agentCodeLabel);
+    await _run(() => agent.openByCode(code));
+  }
+
+  Future<void> _searchZone() async {
+    final agent = AgentScope.read(context);
+    await _run(() async {
+      await agent.searchBeneficiaries(_search.text);
+      return null;
+    });
+  }
+
+  /// A woman already on this phone: her file is refreshed if there is
+  /// network, otherwise the one kept is shown.
+  Future<void> _open(Beneficiary b) async {
+    final agent = AgentScope.read(context);
+    await _run(() async {
+      try {
+        return await agent.openBeneficiary(b.id);
+      } on ApiException catch (e) {
+        if (e.code == 'offline' && b.file != null) return b;
+        rethrow;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final today = AppScope.of(context).services.clock.now();
+    final theme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.agentScreen)),
+      appBar: AppBar(title: Text(l10n.agentChooseBeneficiary)),
       floatingActionButton: FloatingActionButton.extended(
-        key: const ValueKey('new-child'),
-        onPressed: () => pushAgent<void>(context, const ChildFormScreen()),
+        key: const ValueKey('register-beneficiary'),
+        onPressed: _busy
+            ? null
+            : () => pushAgent<Beneficiary>(context, const RegisterBeneficiaryScreen())
+                  .then((b) {
+                    if (b != null && context.mounted) {
+                      return pushAgent<void>(
+                        context,
+                        BeneficiaryFileScreen(beneficiaryId: b.id, justRegistered: true),
+                      );
+                    }
+                  })
+                  .whenComplete(_reload),
         icon: const Icon(Icons.person_add_alt),
-        label: Text(l10n.newChild),
+        label: Text(l10n.agentRegisterWoman),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(Space.l),
-              child: TextField(
-                key: const ValueKey('child-search'),
-                controller: _search,
-                onChanged: (_) => _reload(),
-                decoration: InputDecoration(
-                  labelText: l10n.searchChild,
-                  prefixIcon: const Icon(Icons.search),
+        child: FutureBuilder<List<Beneficiary>>(
+          future: _list,
+          builder: (context, snap) {
+            final people = snap.data ?? const <Beneficiary>[];
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(Space.l, Space.l, Space.l, 96),
+              children: [
+                if (_busy) ...[const LinearProgressIndicator(), const Gap(Space.m)],
+                if (_error != null) ...[
+                  NoticeBox(
+                    key: const ValueKey('beneficiary-error'),
+                    icon: Icons.error_outline,
+                    tone: Tone.danger,
+                    text: _error!,
+                  ),
+                  const Gap(Space.m),
+                ],
+                FilledButton.icon(
+                  key: const ValueKey('scan-qr'),
+                  onPressed: _busy ? null : _scan,
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: Text(l10n.agentScanQr),
                 ),
-              ),
-            ),
-            Expanded(
-              child: FutureBuilder<List<Child>>(
-                future: _children,
-                builder: (context, snap) {
-                  if (snap.hasError) return ErrorView(onRetry: _reload);
-                  if (!snap.hasData) return const LoadingView();
-                  final children = snap.data!;
-                  if (children.isEmpty) {
-                    return EmptyView(icon: Icons.child_care, message: l10n.noChildren);
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, 96),
-                    itemCount: children.length,
-                    separatorBuilder: (_, _) => const Gap(Space.s),
-                    itemBuilder: (context, i) {
-                      final c = children[i];
-                      final months = ScreeningCalculator.ageMonths(
-                        ScreeningCalculator.ageDays(c.birthDate, today),
-                      );
-                      return Card(
-                        child: ListTile(
-                          key: ValueKey('child-${c.id}'),
-                          leading: Icon(
-                            c.sex == 'F' ? Icons.girl : Icons.boy,
-                            color: AppColors.accent,
-                            size: 32,
-                          ),
-                          title: Text(c.name),
-                          subtitle: SubtitleWithPills(
-                            text: '${c.sex == 'F' ? l10n.sexF : l10n.sexM} · ${l10n.ageMonths(months)}',
-                            pills: [SyncStatusPill(c.syncStatus)],
-                          ),
-                          onTap: () => pushAgent<void>(
-                            context,
-                            AgentChildScreen(childId: c.id),
-                          ).then((_) => _reload()),
+                const Gap(Space.m),
+                // Stacked, not side by side: room for large text at 320 dp
+                // (and the theme's buttons take the full width).
+                TextField(
+                  key: const ValueKey('beneficiary-code'),
+                  controller: _code,
+                  textCapitalization: TextCapitalization.characters,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.go,
+                  onSubmitted: (_) => _openCode(),
+                  decoration: InputDecoration(
+                    labelText: l10n.agentCodeLabel,
+                    prefixIcon: const Icon(Icons.pin_outlined),
+                  ),
+                ),
+                const Gap(Space.s),
+                OutlinedButton(
+                  key: const ValueKey('open-code'),
+                  onPressed: _busy ? null : _openCode,
+                  child: Text(l10n.agentOpen),
+                ),
+                SectionTitle(l10n.agentSearchZone),
+                TextField(
+                  key: const ValueKey('beneficiary-search'),
+                  controller: _search,
+                  onChanged: (_) => _reload(),
+                  onSubmitted: (_) => _searchZone(),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    labelText: l10n.agentSearchHint,
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(
+                      key: const ValueKey('search-zone'),
+                      tooltip: l10n.agentSearchZone,
+                      icon: const Icon(Icons.cloud_download_outlined),
+                      onPressed: _busy ? null : _searchZone,
+                    ),
+                  ),
+                ),
+                const Gap(Space.m),
+                if (snap.hasError)
+                  ErrorView(onRetry: _reload)
+                else if (!snap.hasData)
+                  const LoadingView()
+                else if (people.isEmpty)
+                  EmptyView(icon: Icons.person_search, message: l10n.agentNoBeneficiaries)
+                else
+                  for (final b in people) ...[
+                    Card(
+                      child: ListTile(
+                        key: ValueKey('beneficiary-${b.id}'),
+                        leading: Icon(
+                          b.pregnant ? Icons.pregnant_woman : Icons.woman,
+                          color: AppColors.accent,
+                          size: 32,
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+                        title: Text(b.displayName.isEmpty ? (b.code ?? '') : b.displayName),
+                        subtitle: SubtitleWithPills(
+                          text: [
+                            if (b.code != null) b.code!,
+                            if (b.phone != null && b.phone!.isNotEmpty) b.phone!,
+                            l10n.agentChildCount(b.childCount),
+                          ].join(' · '),
+                          pills: [
+                            if (b.followed)
+                              StatusPill(
+                                icon: Icons.folder_shared_outlined,
+                                label: l10n.agentFollowed,
+                                tone: Tone.info,
+                              ),
+                          ],
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _busy ? null : () => _open(b),
+                      ),
+                    ),
+                    const Gap(Space.s),
+                  ],
+                Text(l10n.agentNeedsNetworkHint, style: theme.bodySmall),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-/// New child: name, sex, birth date (the age is always computed, spec §6).
+/// New child of [mother] (D16: `mere_id` is mandatory): name, sex, birth
+/// date (the age is always computed, spec §6).
 class ChildFormScreen extends StatefulWidget {
-  const ChildFormScreen({super.key});
+  const ChildFormScreen({super.key, required this.mother, this.pregnancyId});
+
+  final Beneficiary mother;
+  final String? pregnancyId;
 
   @override
   State<ChildFormScreen> createState() => _ChildFormScreenState();
@@ -165,8 +302,10 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
       name: _name.text,
       sex: _sex!,
       birthDate: _birth!,
-      regionId: user.regionId,
+      regionId: widget.mother.regionId ?? user.regionId,
       agentId: user.id,
+      motherId: widget.mother.id,
+      pregnancyId: widget.pregnancyId,
     );
     await agent.refreshCounts();
     if (!mounted) return;
@@ -185,6 +324,14 @@ class _ChildFormScreenState extends State<ChildFormScreen> {
         child: Text(l10n.continueLabel),
       ),
       children: [
+        NoticeBox(
+          icon: Icons.woman,
+          tone: Tone.info,
+          text: l10n.childFormMother(
+            widget.mother.displayName.isEmpty ? (widget.mother.code ?? '') : widget.mother.displayName,
+          ),
+        ),
+        const Gap(Space.l),
         if (_error != null) ...[
           NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
           const Gap(Space.l),

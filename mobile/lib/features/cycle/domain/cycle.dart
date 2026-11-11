@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../../core/config/clinical_config.dart';
 import '../../../core/util/clock.dart';
 
@@ -165,6 +167,18 @@ DateTime? forgottenEnd(Period p, DateTime today, int periodDays) {
 
 enum Confidence { estimate, reliable }
 
+/// How much the predictions can be trusted, shown to the user in plain words:
+/// low (no complete cycle yet), medium (some cycles, or irregular ones),
+/// good (enough regular cycles).
+enum Reliability { low, medium, good }
+
+/// Where today falls in the cycle, for the short sentence that accompanies
+/// the user ("Tu es en période fertile", "Tes règles arrivent bientôt"…).
+enum CyclePhase { noData, period, late, periodSoon, ovulation, fertile, calm }
+
+/// Days before the expected period when it is said to "arrive bientôt".
+const int periodSoonDays = 3;
+
 enum CycleSignal {
   /// Several cycles under the short limit (21 days in the sample config).
   shortCycles,
@@ -203,9 +217,30 @@ class CycleSummary {
     required this.confidence,
     required this.signals,
     required this.daysLate,
+    this.margin = 0,
+    this.cyclesToReliable = 0,
   });
 
   final int periodsLogged;
+
+  /// Days of uncertainty around [nextPeriod]: the period is expected between
+  /// `nextPeriod - margin` and `nextPeriod + margin`. Wide while few or
+  /// irregular cycles are logged, narrow once the cycle is well known.
+  final int margin;
+
+  /// Periods still to log before the prediction can become "fiable".
+  final int cyclesToReliable;
+
+  /// Low with no complete cycle (one period or none), good when reliable,
+  /// medium otherwise.
+  Reliability get reliability => confidence == Confidence.reliable
+      ? Reliability.good
+      : cycleLengths.isEmpty
+      ? Reliability.low
+      : Reliability.medium;
+
+  DateTime? get nextPeriodEarliest => nextPeriod == null ? null : addDays(nextPeriod!, -margin);
+  DateTime? get nextPeriodLatest => nextPeriod == null ? null : addDays(nextPeriod!, margin);
 
   /// Complete cycles used for the averages (most recent last).
   final List<int> cycleLengths;
@@ -216,12 +251,13 @@ class CycleSummary {
   final DateTime? ovulation;
   final DateTime? fertileStart;
 
-  /// Fertile window: the days before ovulation, ovulation and the day after
-  /// (high probability of pregnancy).
+  /// Fertile window: the days before ovulation and ovulation itself (high
+  /// probability of pregnancy).
   final DateTime? fertileEnd;
 
   /// Wider period where a pregnancy stays possible: a few days before and
-  /// after the fertile window (cycles vary, ovulation is only estimated).
+  /// after the fertile window, at least [margin] days on each side (cycles
+  /// vary, ovulation is only estimated).
   final DateTime? riskStart;
   final DateTime? riskEnd;
 
@@ -248,6 +284,9 @@ class CycleCalculator {
 
   int get cyclesForAverage => asInt(_c['cycles_pour_moyenne']) ?? 6;
   int get cyclesForReliable => asInt(_c['cycles_pour_prediction_fiable']) ?? 3;
+
+  /// Luteal phase: the days from the day after ovulation to the last day of
+  /// the cycle.
   int get ovulationBeforePeriod => asInt(_c['ovulation_avant_regles_jours']) ?? 14;
   int get fertileDaysBeforeOvulation => asInt(_c['fenetre_fertile_jours_avant_ovulation']) ?? 5;
 
@@ -259,6 +298,14 @@ class CycleCalculator {
   int get defaultCycle => asInt(_c['duree_cycle_par_defaut_jours']) ?? 28;
   int get riskDaysBeforeWindow => asInt(_c['risque_jours_avant_fenetre']) ?? 3;
   int get riskDaysAfterWindow => asInt(_c['risque_jours_apres_fenetre']) ?? 2;
+
+  /// Uncertainty of the next period while no complete cycle is logged (the
+  /// standard cycle of 28 days is only a guess: cycles of 21 to 35 days are
+  /// common).
+  int get firstCycleMargin => asInt(_c['marge_premier_cycle_jours']) ?? 4;
+
+  /// Widest uncertainty shown once cycles are logged.
+  int get maxMargin => asInt(_c['marge_max_jours']) ?? 5;
   int? get shortCycle => asInt(_s['cycle_court_jours']);
   int? get longCycle => asInt(_s['cycle_long_jours']);
   int? get longPeriod => asInt(_s['regles_longues_jours']);
@@ -293,17 +340,35 @@ class CycleCalculator {
 
     // From the first period on: the average cycle, else 28 days.
     final predictionCycle = averageCycle?.round() ?? defaultCycle;
-    DateTime? next, ovulation, fertileStart, fertileEnd, riskStart, riskEnd;
-    if (sorted.isNotEmpty) {
-      next = addDays(sorted.last.start, predictionCycle);
-      ovulation = addDays(next, -ovulationBeforePeriod);
-      fertileStart = addDays(ovulation, -fertileDaysBeforeOvulation);
-      fertileEnd = addDays(ovulation, fertileDaysAfterOvulation);
-      riskStart = addDays(fertileStart, -riskDaysBeforeWindow);
-      riskEnd = addDays(fertileEnd, riskDaysAfterWindow);
+    final reliable = sorted.length >= cyclesForReliable && regular == true;
+
+    // Uncertainty: half the spread of the recent cycles, at least 1 day once
+    // reliable, 2 days otherwise; wide while no complete cycle is known.
+    final int margin;
+    if (recent.isEmpty) {
+      margin = firstCycleMargin;
+    } else {
+      final spread = recent.reduce(math.max) - recent.reduce(math.min);
+      margin = (spread / 2).ceil().clamp(reliable ? 1 : 2, math.max(maxMargin, 2));
     }
 
-    final reliable = sorted.length >= cyclesForReliable && regular == true;
+    DateTime? next, ovulation, fertileStart, fertileEnd, riskStart, riskEnd;
+    if (sorted.isNotEmpty) {
+      final cycleStart = dateOnly(sorted.last.start);
+      next = addDays(cycleStart, predictionCycle);
+      final cycleEnd = addDays(next, -1);
+      // Every window stays inside its cycle, even a very short one.
+      DateTime inCycle(DateTime d) =>
+          d.isBefore(cycleStart) ? cycleStart : (d.isAfter(cycleEnd) ? cycleEnd : d);
+      // Follicular phase: first day of the cycle to the day before ovulation.
+      // Ovulation: day (cycle length - luteal phase), so day 14 of 28 days.
+      ovulation = inCycle(addDays(cycleEnd, -ovulationBeforePeriod));
+      fertileStart = inCycle(addDays(ovulation, -fertileDaysBeforeOvulation));
+      fertileEnd = inCycle(addDays(ovulation, fertileDaysAfterOvulation));
+      // The less predictable the cycle, the wider the days at risk.
+      riskStart = inCycle(addDays(fertileStart, -math.max(riskDaysBeforeWindow, margin)));
+      riskEnd = inCycle(addDays(fertileEnd, math.max(riskDaysAfterWindow, margin)));
+    }
 
     final signals = <CycleSignal>{};
     if (shortCycle != null && recent.where((l) => l < shortCycle!).length >= 2) {
@@ -344,6 +409,8 @@ class CycleCalculator {
       confidence: reliable ? Confidence.reliable : Confidence.estimate,
       signals: signals,
       daysLate: daysLate,
+      margin: margin,
+      cyclesToReliable: math.max(0, cyclesForReliable - sorted.length),
     );
   }
 
@@ -355,4 +422,23 @@ class CycleCalculator {
     if (last.end != null || last.start.isAfter(dateOnly(today))) return null;
     return forgottenEnd(last, today, periodDays) == null ? last : null;
   }
+}
+
+/// Where [today] falls: the ongoing period first, then a late period, the
+/// days just before the next one, ovulation, the fertile window, else calm.
+CyclePhase cyclePhase(CycleSummary s, Period? ongoing, DateTime today) {
+  final t = dateOnly(today);
+  if (ongoing != null) return CyclePhase.period;
+  final next = s.nextPeriod;
+  if (next == null) return CyclePhase.noData;
+  if (s.daysLate > 0 || s.signals.contains(CycleSignal.amenorrhoea)) return CyclePhase.late;
+  final inDays = daysBetween(t, next);
+  if (inDays >= 0 && inDays <= periodSoonDays) return CyclePhase.periodSoon;
+  if (s.ovulation != null && t == dateOnly(s.ovulation!)) return CyclePhase.ovulation;
+  if (s.fertileStart != null &&
+      !t.isBefore(dateOnly(s.fertileStart!)) &&
+      !t.isAfter(dateOnly(s.fertileEnd!))) {
+    return CyclePhase.fertile;
+  }
+  return CyclePhase.calm;
 }

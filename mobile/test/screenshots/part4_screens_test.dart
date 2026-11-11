@@ -18,6 +18,7 @@ void main() {
       await session.setLanguage('mg');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Lalao', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       await PregnancyRepository(
         session.active!.db,
         clock: env.clock,

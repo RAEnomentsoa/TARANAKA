@@ -11,7 +11,6 @@ import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
 import '../../../core/widgets/status_pill.dart';
 import 'email_link_form.dart';
-import 'security_question_form.dart';
 
 enum _Method { question, email }
 
@@ -196,7 +195,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
             key: const ValueKey('forgot-with-question'),
             icon: Icons.help_outline,
             title: l10n.forgotWithQuestion,
-            subtitle: l10n.forgotWithQuestionHint(securityQuestionText(l10n, profile.recoveryQuestion!)),
+            subtitle: l10n.forgotWithQuestionHint(profile.recoveryQuestion!),
             onTap: () => _choose(_Method.question),
           ),
           const Gap(Space.m),
@@ -275,7 +274,7 @@ class _ForgotPinScreenState extends State<ForgotPinScreen> {
           else ...[
             Text(l10n.forgotPinRecovery),
             const Gap(Space.l),
-            Text(securityQuestionText(l10n, profile.recoveryQuestion!), style: title),
+            Text(profile.recoveryQuestion!, style: title),
             const Gap(Space.m),
             TextField(
               key: const ValueKey('recovery-answer-input'),

@@ -22,29 +22,49 @@ void main() {
     // The profile first: no consent screen before it.
     expect(find.byKey(const ValueKey('consent-accept')), findsNothing);
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
+    await chooseRegion(tester);
     await tapKey(tester, 'name-continue');
     await answerSecretQuestion(tester);
     await enterPin(tester, '2580');
     await enterPin(tester, '2580');
     await settleUntil(tester, () => session.stage != SessionStage.createFirstProfile);
     expect(session.stage, SessionStage.consent);
-    expect(find.text('Comment vos données sont-elles protégées ?'), findsOneWidget);
-    expect(
-      find.text(
-        'Vos données personnelles sont protégées. Vous décidez si elles peuvent être partagées. '
-        'Sans votre autorisation, aucune information ne sera transmise.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('Vous gardez le contrôle', skipOffstage: false), findsOneWidget);
+    // D16: what is sent, who sees it, the cycle kept private. No audio nor
+    // check box: the explicit button gives the consent.
+    expect(find.text('Ce qui est envoyé', skipOffstage: false), findsOneWidget);
+    expect(find.text('Votre cycle reste privé', skipOffstage: false), findsOneWidget);
+    expect(find.byKey(const ValueKey('consent-audio-mg')), findsNothing);
+    expect(find.byKey(const ValueKey('consent-check')), findsNothing);
     expect(find.text("J'accepte et je continue"), findsOneWidget);
     await tapKey(tester, 'consent-policy');
     expect(find.text('Politique de confidentialité'), findsOneWidget);
     expect(find.byKey(const ValueKey('privacy-policy')), findsOneWidget);
     await tester.binding.handlePopRoute();
     await settle(tester);
-    await tapKey(tester, 'consent-accept');
+    await agreeToConsent(tester);
     expect(session.stage, SessionStage.unlocked);
+    await tester.runAsync(session.lock);
+    await settle(tester);
+    env.dir.deleteSync(recursive: true);
+  });
+
+  testWidgets('the secret question can be skipped with "Passer"', (tester) async {
+    final env = await TestEnv.create();
+    final session = await pumpApp(tester, env);
+    await tapKey(tester, 'lang-fr');
+    await tapKey(tester, 'welcome-start');
+    await tapKey(tester, 'type-personal');
+    await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
+    await chooseRegion(tester);
+    await tapKey(tester, 'name-continue');
+    expect(find.byKey(const ValueKey('secret-question')), findsOneWidget);
+    await tapKey(tester, 'secret-skip');
+    await enterPin(tester, '2580');
+    await enterPin(tester, '2580');
+    await settleUntil(tester, () => session.stage != SessionStage.createFirstProfile);
+    expect(session.stage, SessionStage.consent);
+    expect(session.active!.info.hasRecovery, isFalse);
+    await agreeToConsent(tester);
     await tester.runAsync(session.lock);
     await settle(tester);
     env.dir.deleteSync(recursive: true);
@@ -116,6 +136,7 @@ void main() {
     await tapKey(tester, 'type-personal');
     // 3. Profile + PIN (the mode is already chosen): created once confirmed
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Voahangy');
+    await chooseRegion(tester);
     await tapKey(tester, 'name-continue');
     await answerSecretQuestion(tester);
     await enterPin(tester, '2580');
@@ -125,14 +146,14 @@ void main() {
     // 4. Consent, in Malagasy, right after the profile
     expect(session.stage, SessionStage.consent);
     expect(find.text('Ny angon-drakitrao, ny safidinao'), findsOneWidget);
-    await tapKey(tester, 'consent-accept');
+    await agreeToConsent(tester);
 
     expect(session.stage, SessionStage.unlocked);
     expect(find.text('Manao ahoana Voahangy'), findsOneWidget);
     expect(find.text('Ny fadim-bolako'), findsOneWidget);
     expect(find.text('Ny fitondrana vohoka'), findsOneWidget);
     expect(find.text('Ny zanako'), findsOneWidget);
-    expect(find.byKey(const ValueKey('config-banner')), findsOneWidget);
+    expect(find.byKey(const ValueKey('config-banner')), findsNothing);
     expect(session.active!.info.mode, ProfileMode.personal);
 
     await tester.runAsync(session.lock);
@@ -147,6 +168,7 @@ void main() {
     await tapKey(tester, 'welcome-start');
     await tapKey(tester, 'type-personal');
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
+    await chooseRegion(tester);
     await tapKey(tester, 'name-continue');
     await answerSecretQuestion(tester);
     await enterPin(tester, '1111');
@@ -163,6 +185,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Hery', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       await session.active!.db.setMeta('test', 'gardé');
     });
     await settle(tester);
@@ -190,6 +213,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Hery', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
     });
     await settle(tester);
     return (env, session);
@@ -235,6 +259,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Hery', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       path = await env.services.profileDbPath(session.active!.info.id);
     });
     await settle(tester);
@@ -242,7 +267,11 @@ void main() {
 
     await tapKey(tester, 'open-settings');
     await tapKey(tester, 'settings-erase');
-    await tester.tap(find.text('Effacer'));
+    // "Sur ce téléphone seulement" is the default (no account yet: the
+    // server choice is disabled), then the confirmation.
+    expect(find.byKey(const ValueKey('erase-phone-only')), findsOneWidget);
+    await tapKey(tester, 'erase-confirm');
+    await tester.tap(find.text('Effacer').last);
     await settle(tester);
 
     expect(File(path).existsSync(), isFalse);
@@ -264,6 +293,7 @@ void main() {
         recoveryQuestion: 'Ville natale',
         recoveryAnswer: 'Ambositra',
       );
+      await session.acceptConsent();
       await session.active!.db.setMeta('test', 'gardé');
       await session.lock();
     });
@@ -310,7 +340,7 @@ void main() {
     await typeKey(tester, 'agent-login-pin', '1234');
     await tapKey(tester, 'agent-login-submit');
     expect(session.stage, SessionStage.consent);
-    await tapKey(tester, 'consent-accept');
+    await agreeToConsent(tester);
     expect(session.stage, SessionStage.unlocked);
     expect(session.active!.info.mode, ProfileMode.agent);
     expect(session.active!.info.displayName, 'Rasoa Rasoanirina');
@@ -347,7 +377,7 @@ void main() {
     await enterPin(tester, '2580');
     await settleUntil(tester, () => session.stage != SessionStage.createFirstProfile);
     expect(session.stage, SessionStage.consent);
-    await tapKey(tester, 'consent-accept');
+    await agreeToConsent(tester);
     expect(session.stage, SessionStage.unlocked);
     expect(session.active!.info.mode, ProfileMode.agent);
     await tester.runAsync(session.lock);
@@ -383,6 +413,7 @@ void main() {
     await tapKey(tester, 'welcome-start');
     await tapKey(tester, 'type-personal');
     await tester.enterText(find.byKey(const ValueKey('profile-name')), 'Hery');
+    await chooseRegion(tester);
     await revealKey(tester, 'name-continue');
     await tapKey(tester, 'name-continue');
     // The secret question fits too (list, answer twice).
@@ -397,8 +428,7 @@ void main() {
     // reachable too.
     expect(find.textContaining('codes de récupération'), findsNothing);
     expect(session.stage, SessionStage.consent);
-    await revealKey(tester, 'consent-accept');
-    await tapKey(tester, 'consent-accept');
+    await agreeToConsent(tester);
     expect(session.stage, SessionStage.unlocked);
     expect(tester.takeException(), isNull);
     await tester.runAsync(session.lock);
@@ -413,6 +443,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Hery', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       await session.lock();
     });
     await settle(tester);

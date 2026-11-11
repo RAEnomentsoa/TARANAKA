@@ -4,6 +4,7 @@ import 'package:sqflite_common/sqlite_api.dart';
 
 import '../../../core/db/app_database.dart';
 import '../../../core/growth/who_lms.dart';
+import '../../../core/sync/local_changes.dart';
 import '../../../core/sync/sync_status.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/util/ids.dart';
@@ -73,8 +74,9 @@ class FeedingLog {
   final Set<String> others;
 }
 
-/// Local store of "Mon enfant". Rows stay "Enregistré" on the phone: the
-/// server can't receive them from a parent (docs/API_ISSUES.md M1).
+/// Local store of "Mon enfant". Every change is queued for the sync in the
+/// same transaction (D16: the mother's account creates her own children,
+/// measurements, feeding logs, feeds and vaccines; see [LocalChanges]).
 class ChildRepository {
   ChildRepository(this.database, {Clock? clock}) : _clock = clock ?? const SystemClock();
 
@@ -82,6 +84,17 @@ class ChildRepository {
   final Clock _clock;
   Database get _db => database.db;
   String _now() => _clock.now().toUtc().toIso8601String();
+
+  Future<void> _write(String table, String id, Future<void> Function(Transaction txn) change) =>
+      _db.transaction((txn) async {
+        await change(txn);
+        await LocalChanges.saved(txn, table, id);
+      });
+
+  Future<void> _remove(String table, String id) => _db.transaction((txn) async {
+    await LocalChanges.deleting(txn, table, id);
+    await txn.delete(table, where: 'id = ?', whereArgs: [id]);
+  });
 
   Future<List<MyChild>> children() async => (await _db.query(
     'enfant',
@@ -101,16 +114,20 @@ class ChildRepository {
     double? birthWeightKg,
   }) async {
     final id = newUuid();
-    await _db.insert('enfant', {
-      'id': id,
-      'nom': name.trim(),
-      'sexe': sex,
-      'date_naissance': isoDate(birthDate),
-      'poids_naissance_kg': birthWeightKg,
-      'sync_status': SyncStatus.saved.name,
-      'created_at': _now(),
-      'updated_at': _now(),
-    });
+    await _write(
+      'enfant',
+      id,
+      (txn) => txn.insert('enfant', {
+        'id': id,
+        'nom': name.trim(),
+        'sexe': sex,
+        'date_naissance': isoDate(birthDate),
+        'poids_naissance_kg': birthWeightKg,
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      }),
+    );
     return (await child(id))!;
   }
 
@@ -154,7 +171,8 @@ class ChildRepository {
     ]),
   );
 
-  Future<void> deleteChild(String id) => _db.delete('enfant', where: 'id = ?', whereArgs: [id]);
+  /// The server hides the child's measurements, logs and vaccines with it.
+  Future<void> deleteChild(String id) => _remove('enfant', id);
 
   // ---------------------------------------------------------------- growth
 
@@ -197,28 +215,32 @@ class ChildRepository {
       weightKg: weightKg,
       correctedLengthCm: corrected,
     );
-    await _db.insert('mesure', {
-      'id': id,
-      'enfant_id': child.id,
-      'date_mesure': isoDate(date),
-      'poids_kg': weightKg,
-      'taille_cm': lengthCm,
-      'position': position,
-      'age_jour': ageDays,
-      'age_mois': ScreeningCalculator.ageMonths(ageDays),
-      'taille_corrigee_cm': corrected,
-      'waz': z.waz,
-      'haz': z.haz,
-      'whz': z.whz,
-      'alerte': alerte,
-      'sync_status': SyncStatus.saved.name,
-      'created_at': _now(),
-      'updated_at': _now(),
-    });
+    await _write(
+      'mesure',
+      id,
+      (txn) => txn.insert('mesure', {
+        'id': id,
+        'enfant_id': child.id,
+        'date_mesure': isoDate(date),
+        'poids_kg': weightKg,
+        'taille_cm': lengthCm,
+        'position': position,
+        'age_jour': ageDays,
+        'age_mois': ScreeningCalculator.ageMonths(ageDays),
+        'taille_corrigee_cm': corrected,
+        'waz': z.waz,
+        'haz': z.haz,
+        'whz': z.whz,
+        'alerte': alerte,
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      }),
+    );
     return (await growth(child.id)).firstWhere((g) => g.id == id);
   }
 
-  Future<void> deleteGrowth(String id) => _db.delete('mesure', where: 'id = ?', whereArgs: [id]);
+  Future<void> deleteGrowth(String id) => _remove('mesure', id);
 
   // --------------------------------------------------------------- feeding
 
@@ -265,22 +287,27 @@ class ChildRepository {
       ]),
       'updated_at': now,
     };
-    final updated = await _db.update(
+    final rows = await _db.query(
       'journal_alimentaire',
-      values,
+      columns: ['id'],
       where: 'enfant_id = ? AND date_jour = ?',
       whereArgs: [childId, isoDate(log.date)],
     );
-    if (updated == 0) {
-      await _db.insert('journal_alimentaire', {
-        'id': newUuid(),
-        'enfant_id': childId,
-        'date_jour': isoDate(log.date),
-        ...values,
-        'sync_status': SyncStatus.saved.name,
-        'created_at': now,
-      });
-    }
+    final id = rows.isEmpty ? newUuid() : rows.first['id']! as String;
+    await _write(
+      'journal_alimentaire',
+      id,
+      (txn) => rows.isEmpty
+          ? txn.insert('journal_alimentaire', {
+              'id': id,
+              'enfant_id': childId,
+              'date_jour': isoDate(log.date),
+              ...values,
+              'sync_status': SyncStatus.saved.name,
+              'created_at': now,
+            })
+          : txn.update('journal_alimentaire', values, where: 'id = ?', whereArgs: [id]),
+    );
   }
 
   // ----------------------------------------------------------------- feeds
@@ -306,33 +333,45 @@ class ChildRepository {
     ];
   }
 
-  Future<void> addFeed(String childId, DateTime at, String type, {int? minutes, int? millilitres}) =>
-      _db.insert('tetee', {
-        'id': newUuid(),
+  Future<void> addFeed(String childId, DateTime at, String type, {int? minutes, int? millilitres}) {
+    final id = newUuid();
+    return _write(
+      'tetee',
+      id,
+      (txn) => txn.insert('tetee', {
+        'id': id,
         'enfant_id': childId,
         // Local time, without zone: the feeds of a day stay on that day.
         'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
         'type': type,
         'duree_min': minutes,
         'quantite_ml': millilitres,
+        'sync_status': SyncStatus.saved.name,
         'created_at': _now(),
-      });
+        'updated_at': _now(),
+      }),
+    );
+  }
 
   /// Corrects a feed: its time, type, duration or quantity.
-  Future<void> updateFeed(String id, DateTime at, String type, {int? minutes, int? millilitres}) =>
-      _db.update(
-        'tetee',
-        {
-          'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
-          'type': type,
-          'duree_min': minutes,
-          'quantite_ml': millilitres,
-        },
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+  Future<void> updateFeed(String id, DateTime at, String type, {int? minutes, int? millilitres}) => _write(
+    'tetee',
+    id,
+    (txn) => txn.update(
+      'tetee',
+      {
+        'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
+        'type': type,
+        'duree_min': minutes,
+        'quantite_ml': millilitres,
+        'updated_at': _now(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    ),
+  );
 
-  Future<void> deleteFeed(String id) => _db.delete('tetee', where: 'id = ?', whereArgs: [id]);
+  Future<void> deleteFeed(String id) => _remove('tetee', id);
 
   // ------------------------------------------- breastfeeding difficulties
 
@@ -383,22 +422,42 @@ class ChildRepository {
   Future<void> saveVaccine(String childId, VaccineRecord r) async {
     final existing = await _db.query(
       'vaccin_fait',
-      columns: ['created_at'],
+      columns: ['id'],
       where: 'enfant_id = ? AND code = ?',
       whereArgs: [childId, r.code],
     );
-    await _db.insert('vaccin_fait', {
-      'enfant_id': childId,
-      'code': r.code,
+    final values = {
       'date_faite': isoDate(r.date),
       'centre': r.centre.trim(),
       'professionnel': r.professional.trim(),
       'confirme_carnet': r.confirmedByCard == null ? null : (r.confirmedByCard! ? 1 : 0),
-      'created_at': existing.isEmpty ? _now() : existing.first['created_at'],
-      if (existing.isNotEmpty) 'updated_at': _now(),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+      'updated_at': _now(),
+    };
+    // One row per child and dose: a correction keeps the row's id.
+    final id = existing.isEmpty ? newUuid() : existing.first['id']! as String;
+    await _write(
+      'vaccin_fait',
+      id,
+      (txn) => existing.isEmpty
+          ? txn.insert('vaccin_fait', {
+              'id': id,
+              'enfant_id': childId,
+              'code': r.code,
+              ...values,
+              'sync_status': SyncStatus.saved.name,
+              'created_at': _now(),
+            })
+          : txn.update('vaccin_fait', values, where: 'id = ?', whereArgs: [id]),
+    );
   }
 
-  Future<void> unmarkVaccine(String childId, String code) =>
-      _db.delete('vaccin_fait', where: 'enfant_id = ? AND code = ?', whereArgs: [childId, code]);
+  Future<void> unmarkVaccine(String childId, String code) async {
+    final rows = await _db.query(
+      'vaccin_fait',
+      columns: ['id'],
+      where: 'enfant_id = ? AND code = ?',
+      whereArgs: [childId, code],
+    );
+    if (rows.isNotEmpty) await _remove('vaccin_fait', rows.first['id']! as String);
+  }
 }

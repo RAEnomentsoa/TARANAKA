@@ -3,7 +3,6 @@ import 'package:taranaka/core/auth/auth_service.dart';
 import 'package:taranaka/core/security/profile.dart';
 import 'package:taranaka/core/security/profile_registry.dart';
 import 'package:taranaka/core/security/secret_store.dart';
-import 'package:taranaka/core/security/security_question.dart';
 import 'package:taranaka/core/util/clock.dart';
 
 import '../../helpers/fake_auth.dart';
@@ -93,7 +92,7 @@ void main() {
       displayName: 'Lalao',
       pin: '1111',
       mode: ProfileMode.personal,
-      recoveryQuestion: SecurityQuestion.firstPet.stored,
+      recoveryQuestion: 'Mon premier chien ?',
       recoveryAnswer: 'Bobby',
     );
     final id = created.profile.id;
@@ -116,12 +115,12 @@ void main() {
     await registry.setRecoveryQuestion(
       created.profile.id,
       created.masterKey,
-      SecurityQuestion.primarySchool.stored,
+      'Mon école primaire ?',
       'EPP Ambohijatovo',
     );
     final saved = (await registry.find(created.profile.id))!;
     expect(saved.hasRecovery, isTrue);
-    expect(saved.recoveryQuestion, 'preset:primarySchool');
+    expect(saved.recoveryQuestion, 'Mon école primaire ?');
     expect(saved.toJson().toString().toLowerCase(), isNot(contains('ambohijatovo')));
     final r = await registry.recover(created.profile.id, 'epp  ambohijatovo', '2468') as Unlocked;
     expect(r.masterKey, created.masterKey);

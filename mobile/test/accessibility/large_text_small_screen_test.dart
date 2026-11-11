@@ -60,6 +60,7 @@ void main() {
           pin: '1234',
           mode: ProfileMode.personal,
         );
+        await session.acceptConsent();
         final db = session.active!.db;
         final children = ChildRepository(db, clock: env.clock);
         final c = await children.addChild(name: 'Kanto', sex: 'M', birthDate: DateTime(2026, 2, 1));
@@ -174,7 +175,8 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 2.0;
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final server = FakeServer();
+    final server = FakeServer()
+      ..addBeneficiary(id: 'mere-1', prenom: 'Voahangy', nom: 'Rasoanirina', code: 'K7QM4Z');
     final network = FakeNetworkStatus();
     final env = await TestEnv.create(httpClient: server.client, network: network);
     final session = await pumpApp(tester, env);
@@ -189,21 +191,28 @@ void main() {
     await typeKey(tester, 'agent-login-pin', '1234');
     await tapKey(tester, 'agent-login-submit');
     expectNoLayoutError(tester, 'home');
-    network.kind = NetworkKind.none;
     final agent = AgentScope.read(tester.element(await revealKey(tester, 'agent-screen')));
-    await tester.runAsync(
+    await tapKey(tester, 'agent-screen');
+    expectNoLayoutError(tester, 'choose the mother');
+    await typeKey(tester, 'beneficiary-code', 'K7QM4Z');
+    await tapKey(tester, 'open-code');
+    expectNoLayoutError(tester, 'her file');
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+    network.kind = NetworkKind.none;
+    final child = await tester.runAsync(
       () => agent.repo.createChild(
         name: 'Soa Rakotomalala',
         sex: 'F',
         birthDate: DateTime(2025, 5, 4),
         regionId: 1,
         agentId: 'agent-1',
+        motherId: 'mere-1',
       ),
     );
-    await tapKey(tester, 'agent-screen');
-    expectNoLayoutError(tester, 'search');
-    await tester.tap(find.text('Soa Rakotomalala'));
-    await settle(tester);
+    await tapKey(tester, 'beneficiary-mere-1');
+    expectNoLayoutError(tester, 'her file with a child');
+    await tapKey(tester, 'file-child-${child!.id}');
     expectNoLayoutError(tester, 'child');
     await tapKey(tester, 'new-measure');
     expectNoLayoutError(tester, 'form');

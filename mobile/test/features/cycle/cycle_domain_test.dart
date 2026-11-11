@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taranaka/core/util/clock.dart';
 import 'package:taranaka/features/cycle/domain/cycle.dart';
 import 'package:taranaka/features/cycle/presentation/cycle_calendar.dart';
 
@@ -27,12 +28,11 @@ void main() {
     expect(s.averagePeriod, 5);
     expect(s.regular, isTrue);
     expect(s.nextPeriod, DateTime(2026, 10, 29));
-    expect(s.ovulation, DateTime(2026, 10, 15));
-    // Fertile window: 5 days before ovulation to the day after.
+    expect(s.ovulation, DateTime(2026, 10, 14)); // day 14 of the 28-day cycle
     // Fertile window: the 5 days before ovulation and the day of ovulation.
-    expect((s.fertileStart, s.fertileEnd), (DateTime(2026, 10, 10), DateTime(2026, 10, 15)));
+    expect((s.fertileStart, s.fertileEnd), (DateTime(2026, 10, 9), DateTime(2026, 10, 14)));
     // Pregnancy still possible 3 days before and 2 days after.
-    expect((s.riskStart, s.riskEnd), (DateTime(2026, 10, 7), DateTime(2026, 10, 17)));
+    expect((s.riskStart, s.riskEnd), (DateTime(2026, 10, 6), DateTime(2026, 10, 16)));
     expect(s.confidence, Confidence.reliable);
     expect(s.signals, isEmpty);
   });
@@ -63,17 +63,65 @@ void main() {
     expect(s.nextPeriod, DateTime(2026, 10, 29));
   });
 
-  test('first period logged today: next period at +28 days, ovulation 14 days before', () {
+  test('first period logged today: next period at +28 days, ovulation on day 14', () {
     final today = DateTime(2026, 11, 4);
     final s = calc.summarise([Period(id: 'first', start: today)], today);
     expect(s.averageCycle, isNull);
     expect(s.predictionCycle, 28);
     expect(s.nextPeriod, DateTime(2026, 12, 2));
-    expect(s.ovulation, DateTime(2026, 11, 18)); // day 14 of the cycle
-    expect((s.fertileStart, s.fertileEnd), (DateTime(2026, 11, 13), DateTime(2026, 11, 18)));
-    expect((s.riskStart, s.riskEnd), (DateTime(2026, 11, 10), DateTime(2026, 11, 20)));
+    expect(s.ovulation, DateTime(2026, 11, 17)); // day 14 of the cycle
+    expect((s.fertileStart, s.fertileEnd), (DateTime(2026, 11, 12), DateTime(2026, 11, 17)));
+    // Cycle not known yet: the uncertainty (4 days) widens the days at risk.
+    expect((s.riskStart, s.riskEnd), (DateTime(2026, 11, 8), DateTime(2026, 11, 21)));
     expect(s.confidence, Confidence.estimate);
     expect(s.signals, isEmpty);
+  });
+
+  group('every phase is coherent with the length of the cycle', () {
+    CycleSummary cycles(int length, {int count = 4}) {
+      final periods = [for (var i = 0; i < count; i++) p(DateTime(2026, 1, 1 + i * length))];
+      return calc.summarise(periods, periods.last.start);
+    }
+
+    int dayOf(CycleSummary s, DateTime? d) => daysBetween(addDays(s.nextPeriod!, -s.predictionCycle), d!) + 1;
+
+    for (final (length, ovulationDay) in [(21, 7), (26, 12), (28, 14), (30, 16), (35, 21)]) {
+      test('$length days: ovulation on day $ovulationDay, 14 days of luteal phase after it', () {
+        final s = cycles(length);
+        expect(dayOf(s, s.ovulation), ovulationDay);
+        expect(length - dayOf(s, s.ovulation), 14);
+        expect(daysBetween(s.fertileStart!, s.ovulation!), ovulationDay > 5 ? 5 : ovulationDay - 1);
+        expect(s.fertileEnd, s.ovulation);
+        // From the widest to the narrowest window, all inside the cycle.
+        expect(dayOf(s, s.riskStart), greaterThanOrEqualTo(1));
+        expect(s.riskStart!.isAfter(s.fertileStart!), isFalse);
+        expect(s.riskEnd!.isBefore(s.fertileEnd!), isFalse);
+        expect(s.riskEnd!.isBefore(s.nextPeriod!), isTrue);
+      });
+    }
+
+    test('a very short cycle never spills over the previous one', () {
+      final s = cycles(16);
+      final start = addDays(s.nextPeriod!, -16);
+      expect(s.ovulation, addDays(start, 1)); // day 2
+      expect(s.fertileStart, start);
+      expect(s.riskStart, start);
+    });
+
+    test('the less regular the cycle, the wider the days at risk', () {
+      final regular = cycles(28);
+      expect(daysBetween(regular.riskStart!, regular.fertileStart!), calc.riskDaysBeforeWindow);
+      expect(daysBetween(regular.fertileEnd!, regular.riskEnd!), calc.riskDaysAfterWindow);
+      final irregular = calc.summarise([
+        p(DateTime(2026, 6, 1)),
+        p(DateTime(2026, 6, 25)), // 24
+        p(DateTime(2026, 8, 1)), // 37
+        p(DateTime(2026, 8, 30)), // 29
+      ], DateTime(2026, 9, 5));
+      expect(irregular.margin, 5);
+      expect(daysBetween(irregular.riskStart!, irregular.fertileStart!), 5);
+      expect(daysBetween(irregular.fertileEnd!, irregular.riskEnd!), 5);
+    });
   });
 
   test('no period logged: no prediction', () {
@@ -171,7 +219,7 @@ void main() {
     final today = DateTime(2026, 10, 30);
     final marks = calendarMarks(periods: [open], summary: calc.summarise([open], today), today: today);
     expect(marks[DateTime(2026, 10, 5)], DayMark.period);
-    expect(marks[DateTime(2026, 10, 6)], isNull);
+    expect(marks[DateTime(2026, 10, 6)], isNot(anyOf(DayMark.period, DayMark.ongoing)));
     expect(marks[DateTime(2026, 10, 25)], isNull);
     // One period logged: the next one expected 28 days after its start.
     expect(marks[DateTime(2026, 10, 29)], DayMark.predicted);
@@ -200,16 +248,16 @@ void main() {
     // The ongoing period is expected to last the usual 5 days.
     expect(marks[DateTime(2026, 10, 3)], DayMark.predicted);
     expect(marks[DateTime(2026, 10, 5)], DayMark.predicted);
-    expect(marks[DateTime(2026, 10, 6)], isNull);
-    // Next period 29 Oct (28-day average), ovulation 14 days before.
+    // Next period 29 Oct (28-day average), ovulation on day 14.
     expect(marks[DateTime(2026, 10, 29)], DayMark.predicted);
-    expect(marks[DateTime(2026, 10, 15)], DayMark.ovulation);
-    expect(marks[DateTime(2026, 10, 10)], DayMark.fertile);
-    expect(marks[DateTime(2026, 10, 14)], DayMark.fertile);
+    expect(marks[DateTime(2026, 10, 14)], DayMark.ovulation);
+    expect(marks[DateTime(2026, 10, 9)], DayMark.fertile);
+    expect(marks[DateTime(2026, 10, 13)], DayMark.fertile);
+    expect(marks[DateTime(2026, 10, 6)], DayMark.risk);
+    expect(marks[DateTime(2026, 10, 8)], DayMark.risk);
+    expect(marks[DateTime(2026, 10, 15)], DayMark.risk);
     expect(marks[DateTime(2026, 10, 16)], DayMark.risk);
-    expect(marks[DateTime(2026, 10, 7)], DayMark.risk);
-    expect(marks[DateTime(2026, 10, 17)], DayMark.risk);
-    expect(marks[DateTime(2026, 10, 18)], isNull);
+    expect(marks[DateTime(2026, 10, 17)], isNull);
     // The "Règles prévues" pictogram: on the exact computed dates only.
     final summary = calc.summarise(periods, today);
     expect(predictedStarts(summary, today).take(2), [DateTime(2026, 10, 29), DateTime(2026, 11, 26)]);
@@ -228,9 +276,11 @@ void main() {
     expect(marks[today], DayMark.ongoing);
     expect(marks[DateTime(2026, 12, 2)], DayMark.predicted);
     expect(predictedStarts(summary, today).first, DateTime(2026, 12, 2));
-    expect(marks[DateTime(2026, 11, 18)], DayMark.ovulation);
-    expect(marks[DateTime(2026, 11, 13)], DayMark.fertile);
-    expect(marks[DateTime(2026, 11, 10)], DayMark.risk);
+    expect(marks[DateTime(2026, 11, 17)], DayMark.ovulation);
+    expect(marks[DateTime(2026, 11, 12)], DayMark.fertile);
+    // The expected days of the ongoing period win over the days at risk.
+    expect(marks[DateTime(2026, 11, 8)], DayMark.predicted);
+    expect(marks[DateTime(2026, 11, 9)], DayMark.risk);
   });
 
   test('calendar marks without any period: nothing', () {
@@ -264,6 +314,56 @@ void main() {
       expect(cleared.flow, 'faible');
       expect(cleared.mood, 3);
       expect(DayLog(day: DateTime(2026, 11, 1)).isEmpty, isTrue);
+    });
+  });
+
+  group('reliability, range and phase', () {
+    test('one period: low reliability, wide range, 2 cycles to go', () {
+      final s = calc.summarise([p(DateTime(2026, 11, 1))], DateTime(2026, 11, 10));
+      expect(s.reliability, Reliability.low);
+      expect(s.margin, calc.firstCycleMargin);
+      expect(s.nextPeriodEarliest, DateTime(2026, 11, 25));
+      expect(s.nextPeriodLatest, DateTime(2026, 12, 3));
+      expect(s.cyclesToReliable, 2);
+    });
+
+    test('regular cycles: good reliability, narrow range', () {
+      final s = calc.summarise([
+        p(DateTime(2026, 7, 8)),
+        p(DateTime(2026, 8, 5)),
+        p(DateTime(2026, 9, 3)),
+        p(DateTime(2026, 10, 1)),
+      ], DateTime(2026, 10, 10));
+      expect(s.reliability, Reliability.good);
+      expect(s.margin, 1);
+      expect(s.cyclesToReliable, 0);
+    });
+
+    test('irregular cycles: medium reliability, wider range', () {
+      final s = calc.summarise([
+        p(DateTime(2026, 6, 1)),
+        p(DateTime(2026, 6, 25)), // 24
+        p(DateTime(2026, 8, 1)), // 37
+        p(DateTime(2026, 8, 30)), // 29
+      ], DateTime(2026, 9, 5));
+      expect(s.reliability, Reliability.medium);
+      expect(s.margin, greaterThanOrEqualTo(2));
+      expect(s.margin, lessThanOrEqualTo(calc.maxMargin));
+    });
+
+    test('phase follows the moment of the cycle', () {
+      final periods = [p(DateTime(2026, 10, 1))]; // next 29/10, ovulation 14/10
+      CyclePhase at(DateTime d, {Period? ongoing}) => cyclePhase(calc.summarise(periods, d), ongoing, d);
+      expect(
+        cyclePhase(calc.summarise(const [], DateTime(2026, 10, 1)), null, DateTime(2026, 10, 1)),
+        CyclePhase.noData,
+      );
+      expect(at(DateTime(2026, 10, 2), ongoing: periods.first), CyclePhase.period);
+      expect(at(DateTime(2026, 10, 12)), CyclePhase.fertile);
+      expect(at(DateTime(2026, 10, 14)), CyclePhase.ovulation);
+      expect(at(DateTime(2026, 10, 20)), CyclePhase.calm);
+      expect(at(DateTime(2026, 10, 27)), CyclePhase.periodSoon);
+      expect(at(DateTime(2026, 11, 2)), CyclePhase.late);
     });
   });
 }

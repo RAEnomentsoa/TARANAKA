@@ -83,12 +83,16 @@ void main() {
     // the test can be replayed on the same demo database).
     final today = DateTime.now();
     final birth = DateTime(today.year, today.month, today.day).subtract(const Duration(days: 549));
+    // D16: a child always has its mother — the demo beneficiary, opened by
+    // her code (she is then followed by this agent).
+    final mother = await agent.openByCode('VHG444');
     final child = await agent.repo.createChild(
       name: 'Test mobile ${today.millisecondsSinceEpoch}',
       sex: 'F',
       birthDate: birth,
       regionId: agent.account!.user.regionId,
       agentId: agent.account!.user.id,
+      motherId: mother.id,
     );
     final input = ScreeningInput(
       sex: 'F',

@@ -70,6 +70,9 @@ flutter pub get
 flutter test
 ```
 
+Sans `--dart-define=TARANAKA_API=…`, l'application utilise le serveur de
+production (`https://taranaka-production.up.railway.app`).
+
 Lancer sur un émulateur ou un téléphone (build debug) avec le backend de
 démonstration (voir `docs/DEMO.md` pour le charger) :
 

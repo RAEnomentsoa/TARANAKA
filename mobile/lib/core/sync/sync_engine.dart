@@ -10,10 +10,19 @@ import 'sync_status.dart';
 
 /// How one server table maps to its local table.
 class TableAdapter {
-  const TableAdapter({required this.serverTable, required this.localTable, required this.toLocal});
+  const TableAdapter({
+    required this.serverTable,
+    required this.localTable,
+    required this.toLocal,
+    this.naturalKey = const [],
+  });
 
   final String serverTable;
   final String localTable;
+
+  /// Local unique key besides `id` ("one row per day / dose"): a server row
+  /// for a key this phone already has (another id) takes that local row over.
+  final List<String> naturalKey;
 
   /// Server row (as in `/sync/pull/` and push answers) → local columns.
   final Map<String, Object?> Function(Map<String, Object?> server) toLocal;
@@ -38,6 +47,11 @@ class SyncReport {
 /// can be retried.
 typedef ErrorFixer = Future<bool> Function(DatabaseExecutor db, OutboxOp op, Object? errors);
 
+/// Builds the `donnees` of an operation from the row as it is now on the
+/// phone (personal mode), instead of the payload saved when it was queued.
+/// Null: the operation is dropped (the row is gone, or must not be sent).
+typedef PayloadBuilder = Future<Map<String, Object?>?> Function(DatabaseExecutor db, OutboxOp op);
+
 /// Outbox push then incremental pull (spec §9).
 ///
 /// - Operations are sent in order, by batches of at most 100, at most one per
@@ -56,6 +70,8 @@ class SyncEngine {
     required this.adapters,
     this.config,
     this.fixers = const {},
+    this.payloads,
+    this.phoneWins = const {},
   });
 
   final AppDatabase database;
@@ -63,6 +79,11 @@ class SyncEngine {
   final List<TableAdapter> adapters;
   final ConfigRepository? config;
   final Map<String, ErrorFixer> fixers;
+  final PayloadBuilder? payloads;
+
+  /// Personal data (cycle, diet…): the server opens no conflict file, the
+  /// phone decides. Its version is sent again on top of the server's.
+  final Set<String> phoneWins;
 
   Database get _db => database.db;
 
@@ -87,9 +108,20 @@ class SyncEngine {
       if (waiting.isEmpty) return;
       final batch = <OutboxOp>[];
       final rows = <String>{};
+      var dropped = 0;
       for (final op in waiting) {
         if (batch.length == 100) break;
-        if (rows.add('${op.table}/${op.rowId}')) batch.add(op);
+        if (!rows.add('${op.table}/${op.rowId}')) continue;
+        final built = await _build(op);
+        if (built == null) {
+          dropped++;
+        } else {
+          batch.add(built);
+        }
+      }
+      if (batch.isEmpty) {
+        if (dropped > 0) continue;
+        return;
       }
       await Outbox.markSending(_db, batch.map((o) => o.seq).toList());
       report.sent += batch.length;
@@ -108,10 +140,25 @@ class SyncEngine {
     }
   }
 
+  /// The operation with its payload from the current row, or null when it
+  /// was dropped from the outbox.
+  Future<OutboxOp?> _build(OutboxOp op) async {
+    final builder = payloads;
+    if (builder == null || op.operation == 'delete') return op;
+    final payload = await builder(_db, op);
+    if (payload == null) {
+      await Outbox.remove(_db, op.seq);
+      return null;
+    }
+    return op.withPayload(payload);
+  }
+
   Future<bool> _handle(OutboxOp op, Map<String, Object?> r, SyncReport report) async {
     final adapter = _adapter(op.table);
     final status = r['statut'] as String?;
     final ligne = (r['ligne'] as Map?)?.cast<String, Object?>();
+    final serverVersion = ligne == null ? null : ligne['version'];
+    final phoneDecides = phoneWins.contains(op.table) && serverVersion is int;
     switch (status) {
       case 'applique' || 'deja_applique':
         report.applied++;
@@ -132,7 +179,7 @@ class SyncEngine {
                 whereArgs: [op.rowId],
               );
             } else {
-              await _upsert(txn, adapter, {...local, 'sync_status': SyncStatus.synced.name});
+              await upsert(txn, adapter, {...local, 'sync_status': SyncStatus.synced.name});
             }
           } else {
             await txn.update(
@@ -142,6 +189,21 @@ class SyncEngine {
               whereArgs: [op.rowId],
             );
           }
+        });
+        return true;
+      case 'conflit' when phoneDecides:
+        // No conflict file for personal data: the phone's version is sent
+        // again, on top of the server's.
+        await _db.transaction((txn) async {
+          await Outbox.remove(txn, op.seq);
+          await Outbox.enqueue(
+            txn,
+            table: op.table,
+            operation: op.operation == 'delete' ? 'delete' : 'update',
+            rowId: op.rowId,
+            version: serverVersion,
+            payload: op.payload,
+          );
         });
         return true;
       case 'conflit':
@@ -215,10 +277,7 @@ class SyncEngine {
               await txn.delete(adapter.localTable, where: 'id = ?', whereArgs: [id]);
             } else {
               try {
-                await _upsert(txn, adapter, {
-                  ...adapter.toLocal(line),
-                  'sync_status': SyncStatus.synced.name,
-                });
+                await upsert(txn, adapter, {...adapter.toLocal(line), 'sync_status': SyncStatus.synced.name});
               } on DatabaseException {
                 // A row whose parent this phone can't see: skipped.
                 continue;
@@ -261,10 +320,21 @@ class SyncEngine {
 
   /// Update, else insert. Never REPLACE: it would delete the row first and
   /// cascade to its children.
-  static Future<void> _upsert(DatabaseExecutor txn, TableAdapter adapter, Map<String, Object?> values) async {
+  static Future<void> upsert(DatabaseExecutor txn, TableAdapter adapter, Map<String, Object?> values) async {
     final id = values['id'];
     final now = DateTime.now().toUtc().toIso8601String();
-    final count = await txn.update(adapter.localTable, values, where: 'id = ?', whereArgs: [id]);
+    var count = await txn.update(adapter.localTable, values, where: 'id = ?', whereArgs: [id]);
+    final key = adapter.naturalKey;
+    if (count == 0 && key.isNotEmpty && key.every(values.containsKey)) {
+      // Same day / dose under another id (e.g. noted on two phones): the
+      // server's row wins unless this phone still has changes to send.
+      count = await txn.update(
+        adapter.localTable,
+        values,
+        where: "${key.map((k) => '$k = ?').join(' AND ')} AND sync_status NOT IN ('pending', 'conflict')",
+        whereArgs: [for (final k in key) values[k]],
+      );
+    }
     if (count == 0) {
       await txn.insert(adapter.localTable, {'created_at': now, 'updated_at': now, ...values});
     }

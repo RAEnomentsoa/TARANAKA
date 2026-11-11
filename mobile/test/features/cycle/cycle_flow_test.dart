@@ -7,6 +7,7 @@ import 'package:taranaka/core/sync/outbox.dart';
 import 'package:taranaka/core/sync/sync_status.dart';
 import 'package:taranaka/features/cycle/data/cycle_repository.dart';
 import 'package:taranaka/features/cycle/domain/cycle.dart';
+import 'package:taranaka/features/cycle/presentation/cycle_calendar.dart';
 import 'package:taranaka/features/pregnancy/presentation/pregnancy_home_screen.dart';
 
 import '../../helpers/test_env.dart';
@@ -19,6 +20,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Voahangy', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       final repo = CycleRepository(session.active!.db, clock: env.clock);
       for (final (s, e) in periods) {
         final p = await repo.start(s);
@@ -46,9 +48,66 @@ void main() {
       (DateTime(2026, 10, 14), DateTime(2026, 10, 18)), // 28
     ]);
     await tapKey(tester, 'tile-cycle');
-    expect(find.text('Fiable'), findsOneWidget);
-    expect(find.text('Vers le 11/11/2026'), findsOneWidget);
-    expect(find.text('Fenêtre fertile : Du 23/10/2026 au 28/10/2026'), findsOneWidget);
+    // No reliability meter any more.
+    expect(find.text('Fiabilité des prévisions'), findsNothing);
+    expect(find.text('Tes prochaines règles devraient arriver vers le 11/11/2026.'), findsOneWidget);
+    // The countdown, very visible at the top: 7 days left.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('countdown')),
+        matching: find.text('7 jours', findRichText: true),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('avant tes prochaines règles'), findsOneWidget);
+    expect(find.byKey(const ValueKey('cycle-phase-calm')), findsOneWidget);
+    // No greeting in "Mon cycle" any more.
+    expect(find.text('Bonjour Voahangy'), findsNothing);
+    // Enough regular cycles: no wide range. No fertility card: the fertile
+    // window and the ovulation are in the calendar and its legend.
+    expect(find.byKey(const ValueKey('next-period-range')), findsNothing);
+    expect(find.byKey(const ValueKey('fertility-card')), findsNothing);
+    await revealKey(tester, 'cycle-legend');
+    final legend = find.byKey(const ValueKey('cycle-legend'));
+    // Just under the calendar hint.
+    expect(
+      tester.getTopLeft(legend).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(find.byKey(const ValueKey('calendar-hint'))).dy),
+    );
+    var previousX = double.negativeInfinity;
+    var previousY = double.negativeInfinity;
+    for (final (mark, label) in [
+      ('period', 'Règles'),
+      ('predicted', 'Règles prévues'),
+      ('fertile', 'Fertile'),
+      ('ovulation', 'Ovulation'),
+      ('risk', 'Grossesse possible'),
+    ]) {
+      final name = find.descendant(of: legend, matching: find.text(label));
+      expect(name, findsOneWidget);
+      expect(find.byKey(ValueKey('legend-$mark')), findsOneWidget);
+      // Left to right (a narrow screen continues on the next line), the
+      // pictogram above its name.
+      final center = tester.getCenter(name);
+      expect(center.dx > previousX || center.dy > previousY, isTrue);
+      previousX = center.dx;
+      previousY = center.dy;
+      final icon = find.descendant(
+        of: find.ancestor(of: name, matching: find.byType(Column)).first,
+        matching: find.byType(Icon),
+      );
+      expect(tester.getBottomLeft(icon).dy, lessThanOrEqualTo(tester.getTopLeft(name).dy));
+    }
+    // "Grossesse possible" around the next fertile window (from 19 Nov), with
+    // exactly the pictogram and the colors of its legend.
+    final swatch = find.descendant(of: legend, matching: find.byType(CycleSwatch));
+    final legendIcon = tester.widget<Icon>(find.descendant(of: swatch, matching: find.byType(Icon)));
+    final legendBox = tester.widget<Container>(find.descendant(of: swatch, matching: find.byType(Container)));
+    final riskDay = find.byKey(const ValueKey('cal-day-2026-11-17'));
+    final dayIcon = tester.widget<Icon>(find.descendant(of: riskDay, matching: find.byType(Icon)));
+    final dayTile = tester.widget<Material>(find.ancestor(of: riskDay, matching: find.byType(Material)).first);
+    expect((dayIcon.icon, dayIcon.color), (legendIcon.icon, legendIcon.color));
+    expect(dayTile.color, (legendBox.decoration! as BoxDecoration).color);
     expect(
       find.text('Les prévisions sont indicatives. Elles ne sont pas une méthode de contraception fiable.'),
       findsOneWidget,
@@ -62,8 +121,17 @@ void main() {
     expect(find.byKey(const ValueKey('next-period')), findsNothing);
     await tapKey(tester, 'period-start-today');
     expect(find.text('Règles en cours depuis le 04/11/2026'), findsOneWidget);
-    // First day logged: next period at +28 days.
-    expect(find.text('Vers le 02/12/2026'), findsOneWidget);
+    expect(
+      find.text("C'est noté : tes règles ont commencé. Prends soin de toi aujourd'hui."),
+      findsOneWidget,
+    );
+    expect(find.text('Jour 1 de tes règles'), findsOneWidget);
+    // First day logged: next period at +28 days, with a wide range; no
+    // encouragement block any more.
+    expect(find.text('Tes prochaines règles devraient arriver vers le 02/12/2026.'), findsOneWidget);
+    expect(find.text('Plutôt entre le 28/11/2026 et le 06/12/2026.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('cycle-encourage')), findsNothing);
+    expect(find.byKey(const ValueKey('cycle-goal')), findsNothing);
     await tapKey(tester, 'intensity-forte');
     await tapKey(tester, 'mood-4');
     await tapKey(tester, 'period-end-today');
@@ -84,11 +152,12 @@ void main() {
     final (env, session) = await start(tester, [(DateTime(2026, 11, 3), null)]);
     await tapKey(tester, 'tile-cycle');
     // The three choices of an ongoing period.
+    await revealKey(tester, 'day-save');
     expect(find.text('Enregistrer mon suivi du jour'), findsOneWidget);
     expect(find.text('Mes règles sont terminées aujourd\'hui'), findsOneWidget);
     expect(find.text('Choisir une autre date de fin'), findsOneWidget);
     // Every choice is explained.
-    expect(find.text('Beaucoup de sang, protection remplie rapidement.'), findsOneWidget);
+    expect(find.text('Beaucoup de sang'), findsOneWidget);
     expect(find.text('Petites pertes de sang (spotting)'), findsOneWidget);
     expect(find.text('0 · Aucune'), findsOneWidget);
     expect(find.text('3 · Forte'), findsOneWidget);
@@ -100,7 +169,7 @@ void main() {
     await tapKey(tester, 'pain-2');
     await tapKey(tester, 'mood-2');
     await tapKey(tester, 'day-save');
-    expect(find.text('Suivi du jour enregistré.'), findsOneWidget);
+    expect(find.text("C'est noté. Prends soin de toi aujourd'hui."), findsOneWidget);
     // Still ongoing: no start button.
     expect(find.byKey(const ValueKey('period-start-today')), findsNothing);
 
@@ -173,8 +242,10 @@ void main() {
       (DateTime(2026, 9, 26), DateTime(2026, 9, 30)),
     ]);
     await tapKey(tester, 'tile-cycle');
+    expect(find.text('11 jours de retard'), findsOneWidget);
+    await revealKey(tester, 'signal-late');
     expect(find.byKey(const ValueKey('signal-late')), findsOneWidget);
-    expect(find.textContaining('faites un test de grossesse'), findsOneWidget);
+    expect(find.textContaining('fais un test de grossesse'), findsOneWidget);
     await tapKey(tester, 'go-pregnancy');
     expect(find.byType(PregnancyHomeScreen), findsOneWidget);
     await finish(tester, env, session);
@@ -280,10 +351,37 @@ void main() {
       await tapKey(tester, 'tile-cycle');
       await revealKey(tester, 'cycle-calendar');
       await tapKey(tester, 'cal-day-2026-11-02');
+      // First day chosen: the last one, or the usual length.
+      expect(find.byKey(const ValueKey('cal-range-panel')), findsOneWidget);
+      await tapKey(tester, 'cal-range-usual');
       expect(find.text('02/11/2026'), findsOneWidget);
       await tapKey(tester, 'period-save');
       final periods = await tester.runAsync(() => CycleRepository(session.active!.db).periods());
       expect(periods!.map((p) => p.start), contains(DateTime(2026, 11, 2)));
+      // Started 2 days ago, usual length 5 days: may still be going on.
+      expect(periods.firstWhere((p) => p.start == DateTime(2026, 11, 2)).end, isNull);
+      expect(find.text("C'est noté. Tes prévisions sont à jour."), findsOneWidget);
+      await finish(tester, env, session);
+    });
+
+    testWidgets('a period is chosen on the grid: first day, then last day', (tester) async {
+      final (env, session) = await start(tester, cycles);
+      await tapKey(tester, 'tile-cycle');
+      await revealKey(tester, 'cycle-calendar');
+      await tapKey(tester, 'cal-prev');
+      await tapKey(tester, 'cal-day-2026-10-25');
+      await tapKey(tester, 'cal-day-2026-10-28');
+      Finder inField(String key, String text) =>
+          find.descendant(of: find.byKey(ValueKey(key)), matching: find.text(text));
+      expect(inField('period-start-field', '25/10/2026'), findsOneWidget);
+      expect(inField('period-end-field', '28/10/2026'), findsOneWidget);
+      // Duration in one tap: 6 days from the 25th.
+      await tapKey(tester, 'period-duration-6');
+      expect(inField('period-end-field', '30/10/2026'), findsOneWidget);
+      await tapKey(tester, 'period-save');
+      final periods = await tester.runAsync(() => CycleRepository(session.active!.db).periods());
+      final p = periods!.firstWhere((p) => p.start == DateTime(2026, 10, 25));
+      expect(p.end, DateTime(2026, 10, 30));
       await finish(tester, env, session);
     });
 
@@ -295,6 +393,8 @@ void main() {
       await revealKey(tester, 'cycle-calendar');
       await tapKey(tester, 'cal-day-2026-11-11');
       expect(find.byKey(const ValueKey('period-save')), findsNothing);
+      // What is expected that day is said under the grid.
+      expect(find.text('11/11/2026 : Règles prévues · Estimé'), findsOneWidget);
       for (var i = 0; i < 3; i++) {
         await tapKey(tester, 'cal-next');
       }

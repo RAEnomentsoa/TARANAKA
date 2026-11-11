@@ -5,7 +5,6 @@ import '../i18n/l10n.dart';
 import '../platform/phone_caller.dart';
 import '../theme/tokens.dart';
 import '../widgets/screen.dart';
-import '../widgets/status_pill.dart';
 import 'alert_contact.dart';
 
 class AlertContactScreen extends StatefulWidget {
@@ -68,10 +67,6 @@ class _AlertContactScreenState extends State<AlertContactScreen> {
         child: Text(l10n.save),
       ),
       children: [
-        NoticeBox(icon: Icons.info_outline, text: l10n.contactHelp),
-        const Gap(Space.s),
-        Text(l10n.contactCallPermission, style: Theme.of(context).textTheme.bodySmall),
-        const Gap(Space.l),
         TextField(
           key: const ValueKey('contact-name'),
           controller: _name,

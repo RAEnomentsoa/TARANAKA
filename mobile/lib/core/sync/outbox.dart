@@ -33,6 +33,19 @@ class OutboxOp {
   final String? lastStatus;
   final String? lastError;
 
+  OutboxOp withPayload(Map<String, Object?> value) => OutboxOp(
+    seq: seq,
+    key: key,
+    table: table,
+    operation: operation,
+    rowId: rowId,
+    version: version,
+    payload: value,
+    attempts: attempts,
+    lastStatus: lastStatus,
+    lastError: lastError,
+  );
+
   /// One operation of `POST /api/sync/push/`.
   Map<String, Object?> toPush() => {
     'cle_idempotence': key,
@@ -114,6 +127,19 @@ abstract final class Outbox {
 
   static Future<int> count(DatabaseExecutor db) async =>
       (await db.rawQuery('SELECT count(*) AS n FROM outbox')).first['n']! as int;
+
+  /// Operations the server refused last time (shown as an error).
+  static Future<int> failedCount(DatabaseExecutor db) async =>
+      (await db.rawQuery('SELECT count(*) AS n FROM outbox WHERE last_status IS NOT NULL')).first['n']!
+          as int;
+
+  /// Drops the queued operations of [tables] (e.g. the cycle, once she stops
+  /// sharing it).
+  static Future<void> removeTables(DatabaseExecutor db, List<String> tables) => db.delete(
+    'outbox',
+    where: 'table_name IN (${List.filled(tables.length, '?').join(',')})',
+    whereArgs: tables,
+  );
 
   static Future<bool> hasPendingFor(DatabaseExecutor db, String table, String rowId) async => (await db.query(
     'outbox',

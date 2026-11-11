@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taranaka/core/db/app_database.dart';
+import 'package:taranaka/core/db/schema.dart';
 import 'package:taranaka/core/security/pin_crypto.dart';
 
 import '../../helpers/test_env.dart';
@@ -55,6 +56,44 @@ void main() {
     await db2.db.insert('extra', {'id': 'x'});
     expect((await db2.db.rawQuery('PRAGMA user_version')).first.values.first, 2);
     await db2.close();
+  });
+
+  test('v12 (D16): rows of an older version get a sync id and are kept', () async {
+    final path = '${dir.path}/v11.db';
+    final old = await AppDatabase.open(opener, path, key, steps: migrations.sublist(0, 11));
+    const at = '2026-10-01T08:00:00Z';
+    await old.db.insert('enfant', {
+      'id': 'enf-1',
+      'nom': 'Kanto',
+      'sexe': 'M',
+      'date_naissance': '2026-02-01',
+      'created_at': at,
+      'updated_at': at,
+    });
+    for (final code in ['bcg', 'polio_0']) {
+      await old.db.insert('vaccin_fait', {
+        'enfant_id': 'enf-1',
+        'code': code,
+        'date_faite': '2026-02-02',
+        'created_at': at,
+      });
+    }
+    await old.db.insert('cycle_jour', {'date_jour': '2026-10-02', 'created_at': at, 'updated_at': at});
+    await old.close();
+
+    final db = await AppDatabase.open(opener, path, key);
+    expect((await db.db.rawQuery('PRAGMA user_version')).first.values.first, migrations.length);
+    final vaccines = await db.db.query('vaccin_fait', orderBy: 'code');
+    expect(vaccines.map((v) => v['code']), ['bcg', 'polio_0']);
+    final ids = {for (final v in vaccines) v['id']};
+    expect(ids, hasLength(2), reason: 'one distinct id per row');
+    expect(ids.every((id) => id is String && id.length == 36), isTrue);
+    expect(vaccines.first['version'], 1);
+    final day = (await db.db.query('cycle_jour')).single;
+    expect(day['id'], isA<String>());
+    // The agent's view of the beneficiaries exists.
+    await db.db.insert('beneficiaire', {'id': 'mere-1', 'prenom': 'Voahangy', 'nom': '', 'updated_at': at});
+    await db.close();
   });
 
   test('flags and JSON values', () async {

@@ -35,6 +35,7 @@ void main() {
         birthDate: DateTime(2025, 5, 4),
         regionId: 1,
         agentId: 'agent-1',
+        motherId: 'mere-1',
       ),
     );
     await tester.runAsync(agent.refreshCounts);

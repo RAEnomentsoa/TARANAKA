@@ -1,39 +1,22 @@
 import 'pin_crypto.dart';
 
-/// The predefined secret questions offered at the profile creation (offline
-/// recovery of the secret code). The profile keeps only [stored]: the
-/// question is shown in the language of the moment. Older profiles may hold a
-/// question written by hand: it is shown as it is.
-enum SecurityQuestion {
-  firstPet,
-  birthPlace,
-  primarySchool,
-  childhoodNickname,
-  childhoodFriend,
-  favouriteDish;
+/// Rules of the secret question, written by the user herself at the profile
+/// creation (offline recovery of the secret code). The profile keeps the
+/// question as typed (ProfileInfo.recoveryQuestion); the answer is never
+/// kept, only a verifier of it (see ProfileRegistry).
+abstract final class SecurityQuestion {
+  /// Shortest question accepted (after removing spaces at the ends).
+  static const minQuestionLength = 3;
 
-  static const _prefix = 'preset:';
-
-  /// What the profile keeps (never the answer).
-  String get stored => '$_prefix$name';
-
-  /// The predefined question kept by a profile, null for a question written
-  /// by hand (older profiles) or none.
-  static SecurityQuestion? parse(String? stored) {
-    if (stored == null || !stored.startsWith(_prefix)) return null;
-    final id = stored.substring(_prefix.length);
-    for (final q in values) {
-      if (q.name == id) return q;
-    }
-    return null;
-  }
-
-  /// Shortest answer accepted (after removing spaces at the ends).
+  /// Shortest answer accepted.
   static const minAnswerLength = 2;
+
+  static const maxQuestionLength = 120;
+  static const maxAnswerLength = 60;
+
+  static bool validQuestion(String question) => question.trim().length >= minQuestionLength;
 
   /// The answer is compared without capitals nor extra spaces, as at the
   /// recovery ([PinCrypto.normaliseAnswer]).
-  static bool sameAnswer(String a, String b) => PinCrypto.normaliseAnswer(a) == PinCrypto.normaliseAnswer(b);
-
   static bool validAnswer(String answer) => PinCrypto.normaliseAnswer(answer).length >= minAnswerLength;
 }

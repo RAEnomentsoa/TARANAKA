@@ -8,15 +8,32 @@ import '../../../core/widgets/screen.dart';
 import 'privacy_policy_screen.dart';
 
 /// Consent in plain language (spec §3, loi 2014-038), shown right after the
-/// profile is created: "J'accepte et je continue" opens the app, "Consulter la
-/// politique de confidentialité" opens the full policy (offline).
-class ConsentScreen extends StatelessWidget {
+/// profile is created, and once to the profiles created before the sync
+/// existed (D16). Personal mode: what is sent to the server and who sees it,
+/// the cycle kept private unless shared; consent is given with the explicit
+/// "J'accepte et je continue" button. The region is chosen when the profile
+/// is created (older profiles without one set it in "Synchronisation").
+class ConsentScreen extends StatefulWidget {
   const ConsentScreen({super.key});
+
+  @override
+  State<ConsentScreen> createState() => _ConsentScreenState();
+}
+
+class _ConsentScreenState extends State<ConsentScreen> {
+  bool _busy = false;
+  Future<void> _accept() async {
+    final session = AppScope.read(context).session;
+    setState(() => _busy = true);
+    await session.acceptConsent();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final session = AppScope.of(context).session;
+    final sync = session.active?.sync;
+    final personal = sync != null;
     return AppScreen(
       title: l10n.consentTitle,
       leading: IconButton(
@@ -28,17 +45,22 @@ class ConsentScreen extends StatelessWidget {
           session.setLanguage(appLanguages[(i + 1) % appLanguages.length]);
         },
       ),
-      bottomAction: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          FilledButton(
-            key: const ValueKey('consent-accept'),
-            onPressed: session.acceptConsent,
-            child: Text(l10n.consentAgree),
-          ),
-          const Gap(Space.s),
-          OutlinedButton.icon(
+      bottomAction: FilledButton(
+        key: const ValueKey('consent-accept'),
+        onPressed: _busy ? null : _accept,
+        child: Text(l10n.consentAgree),
+      ),
+      children: [
+        _Point(icon: Icons.edit_note, title: l10n.consentWhatTitle, text: l10n.consentWhat),
+        if (personal) ...[
+          _Point(icon: Icons.cloud_upload_outlined, title: l10n.consentSyncTitle, text: l10n.consentSync),
+          _Point(icon: Icons.water_drop_outlined, title: l10n.consentCycleTitle, text: l10n.consentCycle),
+        ] else
+          _Point(icon: Icons.shield_outlined, title: l10n.consentWhereTitle, text: l10n.consentWhere),
+        _Point(icon: Icons.tune, title: l10n.consentControlTitle, text: l10n.consentControl),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
             key: const ValueKey('consent-policy'),
             onPressed: () =>
                 Navigator.of(context)
@@ -46,12 +68,8 @@ class ConsentScreen extends StatelessWidget {
             icon: const Icon(Icons.policy_outlined),
             label: Text(l10n.privacyPolicyOpen),
           ),
-        ],
-      ),
-      children: [
-        _Point(icon: Icons.edit_note, title: l10n.consentWhatTitle, text: l10n.consentWhat),
-        _Point(icon: Icons.shield_outlined, title: l10n.consentWhereTitle, text: l10n.consentWhere),
-        _Point(icon: Icons.tune, title: l10n.consentControlTitle, text: l10n.consentControl),
+        ),
+        const Gap(Space.m),
       ],
     );
   }

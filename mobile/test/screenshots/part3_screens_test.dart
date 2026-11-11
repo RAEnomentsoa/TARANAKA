@@ -19,6 +19,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Fara', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       final repo = ChildRepository(session.active!.db);
       final c = await repo.addChild(
         name: 'Kanto',

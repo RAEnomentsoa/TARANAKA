@@ -7,6 +7,7 @@ import '../../../core/security/profile.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/states.dart';
+import '../../account/presentation/erase_data_screen.dart';
 import 'change_pin_screen.dart';
 import 'secret_question_screen.dart';
 import 'security_settings.dart';
@@ -26,6 +27,12 @@ class SettingsScreen extends StatelessWidget {
 
     Future<void> eraseAll() async {
       final navigator = Navigator.of(context);
+      // Personal profiles: "Sur ce téléphone seulement" or "Aussi sur le
+      // serveur" (D16, /api/auth/my-data/erase/).
+      if (active.sync != null) {
+        await navigator.push(MaterialPageRoute<void>(builder: (_) => const EraseDataScreen()));
+        return;
+      }
       final ok = await confirmAction(
         context,
         message: l10n.eraseAllConfirm,

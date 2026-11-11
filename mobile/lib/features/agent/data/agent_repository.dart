@@ -4,6 +4,8 @@ import 'package:sqflite_common/sqlite_api.dart';
 
 import '../../../core/db/app_database.dart';
 import '../../../core/sync/outbox.dart';
+import '../../../core/sync/sync_engine.dart';
+import '../../../core/sync/sync_tables.dart';
 import '../../../core/sync/sync_status.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/util/ids.dart';
@@ -41,13 +43,18 @@ class AgentRepository {
     return rows.isEmpty ? null : Child.fromRow(rows.first);
   }
 
+  /// A child is always attached to its mother, a beneficiary (D16: no child
+  /// without a mother any more), and to her pregnancy when known.
   Future<Child> createChild({
     required String name,
     required String sex,
     required DateTime birthDate,
     required int? regionId,
     required String agentId,
+    required String motherId,
+    String? pregnancyId,
   }) async {
+    if (motherId.isEmpty) throw ArgumentError.value(motherId, 'motherId', 'a child needs its mother');
     final id = newUuid();
     final now = _now();
     final payload = {
@@ -56,6 +63,8 @@ class AgentRepository {
       'date_naissance': isoDate(birthDate),
       'region_id': regionId,
       'asc_id': agentId,
+      'mere_id': motherId,
+      'grossesse_id': ?pregnancyId,
     };
     await _db.transaction((txn) async {
       await txn.insert('enfant', {
@@ -98,6 +107,256 @@ class AgentRepository {
     });
     return (await child(id))!;
   }
+
+  Future<List<Child>> childrenOf(String motherId) async => (await _db.query(
+    'enfant',
+    where: 'mere_id = ?',
+    whereArgs: [motherId],
+    orderBy: 'date_naissance DESC',
+  )).map(Child.fromRow).toList();
+
+  // ----------------------------------------------------------- beneficiaries
+
+  /// Women already seen on this phone (list of the zone, or files opened).
+  Future<List<Beneficiary>> beneficiaries({String search = '', bool followedOnly = false}) async {
+    final q = search.trim().toLowerCase().replaceAll('-', '');
+    final where = [
+      if (followedOnly) 'suivie = 1',
+      if (q.isNotEmpty)
+        "(lower(prenom || ' ' || nom) LIKE ? OR replace(lower(coalesce(code_beneficiaire, '')), '-', '') LIKE ? "
+            "OR coalesce(phone, '') LIKE ? OR lower(coalesce(identifiant, '')) LIKE ?)",
+    ];
+    final rows = await _db.query(
+      'beneficiaire',
+      where: where.isEmpty ? null : where.join(' AND '),
+      whereArgs: q.isEmpty ? null : ['%$q%', '%$q%', '%$q%', '%$q%'],
+      orderBy: 'suivie DESC, prenom COLLATE NOCASE',
+    );
+    return rows.map(Beneficiary.fromRow).toList();
+  }
+
+  Future<Beneficiary?> beneficiary(String id) async {
+    final rows = await _db.query('beneficiaire', where: 'id = ?', whereArgs: [id]);
+    return rows.isEmpty ? null : Beneficiary.fromRow(rows.first);
+  }
+
+  /// Lines of `/api/beneficiaries/` (or of a file): kept to work offline.
+  Future<void> saveBeneficiaries(List<Map<String, Object?>> lines) => _db.transaction((txn) async {
+    for (final l in lines) {
+      await _saveBeneficiary(txn, l);
+    }
+  });
+
+  Future<void> _saveBeneficiary(DatabaseExecutor txn, Map<String, Object?> l, {bool? followed}) async {
+    final values = <String, Object?>{
+      'id': l['id'],
+      'prenom': l['prenom'] ?? '',
+      'nom': l['nom'] ?? '',
+      'phone': l['phone'],
+      'region_id': l['region_id'],
+      'code_beneficiaire': l['code_beneficiaire'],
+      if (l.containsKey('identifiant')) 'identifiant': l['identifiant'],
+      if (l.containsKey('grossesse_en_cours')) 'grossesse_en_cours': l['grossesse_en_cours'] == true ? 1 : 0,
+      if (l.containsKey('nb_enfants')) 'nb_enfants': l['nb_enfants'],
+      if (l.containsKey('partage_cycle')) 'partage_cycle': l['partage_cycle'] == true ? 1 : 0,
+      if (followed != null || l.containsKey('suivie')) 'suivie': (followed ?? l['suivie'] == true) ? 1 : 0,
+      'updated_at': _now(),
+    };
+    final n = await txn.update('beneficiaire', values, where: 'id = ?', whereArgs: [l['id']]);
+    if (n == 0) await txn.insert('beneficiaire', values);
+  }
+
+  /// Her whole file (`/api/beneficiaries/{id}/` or `lookup/`): she is now
+  /// followed; her clinical rows go to the local tables (as with the pull),
+  /// and the file itself is kept to be read offline. Rows this phone still
+  /// has to send are not overwritten.
+  Future<Beneficiary> saveFile(Map<String, Object?> file) async {
+    final who = (file['beneficiaire']! as Map).cast<String, Object?>();
+    final sections = <String, SyncTable>{
+      'grossesses': SyncTables.pregnancy,
+      'signes_danger': SyncTables.danger,
+      'contacts_soin': SyncTables.careContact,
+      'suivis_grossesse': SyncTables.pregnancyCheck,
+      'enfants': SyncTables.child,
+      'mesures': SyncTables.measurement,
+      'journaux_alimentaires': SyncTables.feedingLog,
+      'vaccins': SyncTables.vaccine,
+      'referencements': SyncTables.referral,
+      'rendez_vous': SyncTables.appointment,
+    };
+    await _db.transaction((txn) async {
+      await _saveBeneficiary(txn, who, followed: true);
+      final enfants = (file['enfants'] as List?) ?? const [];
+      final grossesses = (file['grossesses'] as List?) ?? const [];
+      await txn.update(
+        'beneficiaire',
+        {
+          'dossier': jsonEncode(file),
+          'dossier_at': _now(),
+          'nb_enfants': enfants.length,
+          'grossesse_en_cours':
+              grossesses.whereType<Map<Object?, Object?>>().any(
+                (g) => g['terminee'] != true && g['date_accouchement'] == null,
+              )
+              ? 1
+              : 0,
+        },
+        where: 'id = ?',
+        whereArgs: [who['id']],
+      );
+      for (final MapEntry(key: section, value: table) in sections.entries) {
+        for (final raw
+            in (file[section] as List?)?.whereType<Map<Object?, Object?>>() ??
+                const <Map<Object?, Object?>>[]) {
+          final line = raw.cast<String, Object?>();
+          final id = line['id'] as String?;
+          if (id == null || line['deleted_at'] != null) continue;
+          if (await Outbox.hasPendingFor(txn, table.name, id)) continue;
+          try {
+            await SyncEngine.upsert(txn, table.adapter, {
+              ...table.toLocal(line),
+              'sync_status': SyncStatus.synced.name,
+            });
+          } on DatabaseException {
+            // A row whose parent is not on this phone: skipped.
+          }
+        }
+      }
+    });
+    return (await beneficiary(who['id']! as String))!;
+  }
+
+  // ---------------------------------------------------------- her pregnancy
+
+  Future<List<AgentPregnancy>> pregnanciesOf(String userId) async => (await _db.query(
+    'grossesse',
+    where: 'user_id = ?',
+    whereArgs: [userId],
+    orderBy: 'created_at DESC',
+  )).map(AgentPregnancy.fromRow).toList();
+
+  Future<List<(String, DateTime)>> dangersOf(String pregnancyId) async => [
+    for (final r in await _db.query(
+      'danger_grossesse',
+      where: 'grossesse_id = ?',
+      whereArgs: [pregnancyId],
+      orderBy: 'date_signalement DESC',
+    ))
+      (r['code']! as String, DateTime.parse(r['date_signalement']! as String)),
+  ];
+
+  Future<int> antenatalContactsOf(String pregnancyId) async =>
+      (await _db.rawQuery("SELECT count(*) AS n FROM contact_soin WHERE grossesse_id = ? AND type = 'cpn'", [
+            pregnancyId,
+          ])).first['n']!
+          as int;
+
+  /// Doses received, by code, with their date.
+  Future<Map<String, DateTime>> vaccinesOf(String childId) async => {
+    for (final r in await _db.query('vaccin_fait', where: 'enfant_id = ?', whereArgs: [childId]))
+      r['code']! as String: parseIsoDate(r['date_faite']! as String),
+  };
+
+  /// A pregnancy recorded by the agent for a woman (e.g. without a phone).
+  Future<AgentPregnancy> createPregnancy({required String userId, DateTime? lmp, DateTime? dueDate}) async {
+    if (lmp == null && dueDate == null) throw ArgumentError('lmp or dueDate');
+    final id = newUuid();
+    final now = _now();
+    final due = dueDate ?? (lmp == null ? null : addDays(lmp, 280));
+    final payload = <String, Object?>{
+      'user_id': userId,
+      'ddr': lmp == null ? null : isoDate(lmp),
+      'dpa': due == null ? null : isoDate(due),
+      if (dueDate != null) 'dpa_saisie': isoDate(dueDate),
+    };
+    await _db.transaction((txn) async {
+      await txn.insert('grossesse', {
+        'id': id,
+        ...payload,
+        'sync_status': SyncStatus.pending.name,
+        'created_at': now,
+        'updated_at': now,
+      });
+      await Outbox.enqueue(txn, table: 'grossesse', operation: 'create', rowId: id, payload: payload);
+    });
+    return (await pregnanciesOf(userId)).firstWhere((p) => p.id == id);
+  }
+
+  /// Refers a pregnant woman (D16): each danger sign is recorded with its
+  /// config `code` and `periode`, then one referral `origine: grossesse`.
+  /// The signs are sent without `csb_id`, so the server creates no second
+  /// referral of its own.
+  Future<Referral> createPregnancyReferral({
+    required AgentPregnancy pregnancy,
+    required List<String> signs,
+    required Centre centre,
+    required String motif,
+    required String agentId,
+    String period = 'grossesse',
+  }) async {
+    final id = newUuid();
+    final code = await codes.next();
+    final now = _clock.now().toUtc().toIso8601String();
+    await _db.transaction((txn) async {
+      for (final sign in signs) {
+        final dangerId = newUuid();
+        final danger = <String, Object?>{
+          'grossesse_id': pregnancy.id,
+          'code': sign,
+          'periode': period,
+          'date_signalement': now,
+        };
+        await txn.insert('danger_grossesse', {
+          'id': dangerId,
+          ...danger,
+          'sync_status': SyncStatus.pending.name,
+          'created_at': now,
+          'updated_at': now,
+        });
+        await Outbox.enqueue(
+          txn,
+          table: 'danger_grossesse',
+          operation: 'create',
+          rowId: dangerId,
+          payload: danger,
+        );
+      }
+      final payload = <String, Object?>{
+        'code_unique': code,
+        'origine': 'grossesse',
+        'grossesse_id': pregnancy.id,
+        'asc_id': agentId,
+        'csb_id': centre.id,
+        'priorite': 'urgente',
+        'motif': motif,
+        'date_referencement': now,
+      };
+      await txn.insert('referencement', {
+        'id': id,
+        'code_unique': code,
+        'origine': 'grossesse',
+        'grossesse_id': pregnancy.id,
+        'csb_id': centre.id,
+        'priorite': 'urgente',
+        'urgence': 'rouge',
+        'motif': motif,
+        'date_referencement': now,
+        'status': 'envoye',
+        'sync_status': SyncStatus.pending.name,
+        'created_at': now,
+        'updated_at': now,
+      });
+      await Outbox.enqueue(txn, table: 'referencement', operation: 'create', rowId: id, payload: payload);
+    });
+    return (await referral(id))!;
+  }
+
+  Future<List<Referral>> referralsOfPregnancy(String pregnancyId) async => (await _db.query(
+    'referencement',
+    where: 'grossesse_id = ?',
+    whereArgs: [pregnancyId],
+    orderBy: 'date_referencement DESC',
+  )).map(Referral.fromRow).toList();
 
   // ------------------------------------------------------------ measurements
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:sqflite_common/sqlite_api.dart';
 
 import '../../../core/db/app_database.dart';
+import '../../../core/sync/local_changes.dart';
 import '../../../core/sync/sync_status.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/util/ids.dart';
@@ -93,7 +94,8 @@ class FollowUpEntry {
       notes.trim().isEmpty;
 }
 
-/// Local store of "Ma grossesse" (encrypted profile database).
+/// Local store of "Ma grossesse" (encrypted profile database). Every change
+/// is queued for the sync in the same transaction (D16, [LocalChanges]).
 class PregnancyRepository {
   PregnancyRepository(this.database, {Clock? clock}) : _clock = clock ?? const SystemClock();
 
@@ -101,6 +103,17 @@ class PregnancyRepository {
   final Clock _clock;
   Database get _db => database.db;
   String _now() => _clock.now().toUtc().toIso8601String();
+
+  Future<void> _write(String table, String id, Future<void> Function(Transaction txn) change) =>
+      _db.transaction((txn) async {
+        await change(txn);
+        await LocalChanges.saved(txn, table, id);
+      });
+
+  Future<void> _remove(String table, String id) => _db.transaction((txn) async {
+    await LocalChanges.deleting(txn, table, id);
+    await txn.delete(table, where: 'id = ?', whereArgs: [id]);
+  });
 
   DateTime? _date(Object? v) => v is String && v.isNotEmpty ? parseIsoDate(v) : null;
 
@@ -127,47 +140,62 @@ class PregnancyRepository {
   Future<Pregnancy> start(PregnancyDates dates, PregnancyCalculator calc) async {
     final id = newUuid();
     final due = calc.dueDate(dates);
-    await _db.insert('grossesse', {
-      'id': id,
-      'ddr': dates.lmp == null ? null : isoDate(dates.lmp!),
-      'terme_confirme_date': dates.confirmedOn == null ? null : isoDate(dates.confirmedOn!),
-      'terme_confirme_jours': dates.confirmedAgeDays,
-      'dpa': due == null ? null : isoDate(due),
-      'dpa_saisie': dates.dueOn == null ? null : isoDate(dates.dueOn!),
-      'sync_status': SyncStatus.saved.name,
-      'created_at': _now(),
-      'updated_at': _now(),
-    });
-    return (await current())!;
-  }
-
-  Future<void> updateDates(String id, PregnancyDates dates, PregnancyCalculator calc) async {
-    final due = calc.dueDate(dates);
-    await _db.update(
+    await _write(
       'grossesse',
-      {
+      id,
+      (txn) => txn.insert('grossesse', {
+        'id': id,
         'ddr': dates.lmp == null ? null : isoDate(dates.lmp!),
         'terme_confirme_date': dates.confirmedOn == null ? null : isoDate(dates.confirmedOn!),
         'terme_confirme_jours': dates.confirmedAgeDays,
         'dpa': due == null ? null : isoDate(due),
         'dpa_saisie': dates.dueOn == null ? null : isoDate(dates.dueOn!),
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
         'updated_at': _now(),
-      },
-      where: 'id = ?',
-      whereArgs: [id],
+      }),
+    );
+    return (await current())!;
+  }
+
+  Future<void> updateDates(String id, PregnancyDates dates, PregnancyCalculator calc) async {
+    final due = calc.dueDate(dates);
+    await _write(
+      'grossesse',
+      id,
+      (txn) => txn.update(
+        'grossesse',
+        {
+          'ddr': dates.lmp == null ? null : isoDate(dates.lmp!),
+          'terme_confirme_date': dates.confirmedOn == null ? null : isoDate(dates.confirmedOn!),
+          'terme_confirme_jours': dates.confirmedAgeDays,
+          'dpa': due == null ? null : isoDate(due),
+          'dpa_saisie': dates.dueOn == null ? null : isoDate(dates.dueOn!),
+          'updated_at': _now(),
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      ),
     );
   }
 
-  Future<void> recordDelivery(String id, DateTime on, String breastfeeding) => _db.update(
+  Future<void> recordDelivery(String id, DateTime on, String breastfeeding) => _write(
     'grossesse',
-    {'date_accouchement': isoDate(on), 'mode_allaitement': breastfeeding, 'updated_at': _now()},
-    where: 'id = ?',
-    whereArgs: [id],
+    id,
+    (txn) => txn.update(
+      'grossesse',
+      {'date_accouchement': isoDate(on), 'mode_allaitement': breastfeeding, 'updated_at': _now()},
+      where: 'id = ?',
+      whereArgs: [id],
+    ),
   );
 
   /// Closes the pregnancy (e.g. after the post-partum, or to start a new one).
-  Future<void> close(String id) =>
-      _db.update('grossesse', {'terminee': 1, 'updated_at': _now()}, where: 'id = ?', whereArgs: [id]);
+  Future<void> close(String id) => _write(
+    'grossesse',
+    id,
+    (txn) => txn.update('grossesse', {'terminee': 1, 'updated_at': _now()}, where: 'id = ?', whereArgs: [id]),
+  );
 
   // ------------------------------------------------------------- contacts
 
@@ -181,18 +209,54 @@ class PregnancyRepository {
   };
 
   /// "J'y suis allée".
-  Future<void> markContact(String id, String type, int number, DateTime on) => _db.insert('contact_soin', {
-    'grossesse_id': id,
-    'type': type,
-    'numero': number,
-    'date_faite': isoDate(on),
-  }, conflictAlgorithm: ConflictAlgorithm.replace);
+  /// One row per pregnancy, type and number: marking again corrects the date
+  /// and keeps the row's id.
+  Future<void> markContact(String id, String type, int number, DateTime on) async {
+    final rowId = await _contactId(id, type, number);
+    if (rowId != null) {
+      await _write(
+        'contact_soin',
+        rowId,
+        (txn) => txn.update(
+          'contact_soin',
+          {'date_faite': isoDate(on), 'updated_at': _now()},
+          where: 'id = ?',
+          whereArgs: [rowId],
+        ),
+      );
+      return;
+    }
+    final newId = newUuid();
+    await _write(
+      'contact_soin',
+      newId,
+      (txn) => txn.insert('contact_soin', {
+        'id': newId,
+        'grossesse_id': id,
+        'type': type,
+        'numero': number,
+        'date_faite': isoDate(on),
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      }),
+    );
+  }
 
-  Future<void> unmarkContact(String id, String type, int number) => _db.delete(
-    'contact_soin',
-    where: 'grossesse_id = ? AND type = ? AND numero = ?',
-    whereArgs: [id, type, number],
-  );
+  Future<void> unmarkContact(String id, String type, int number) async {
+    final rowId = await _contactId(id, type, number);
+    if (rowId != null) await _remove('contact_soin', rowId);
+  }
+
+  Future<String?> _contactId(String id, String type, int number) async {
+    final rows = await _db.query(
+      'contact_soin',
+      columns: ['id'],
+      where: 'grossesse_id = ? AND type = ? AND numero = ?',
+      whereArgs: [id, type, number],
+    );
+    return rows.isEmpty ? null : rows.first['id'] as String?;
+  }
 
   /// Contact dates changed by the user ("Modifier la date"), by number. Kept
   /// in the profile database only, like the rest of the pregnancy.
@@ -245,19 +309,32 @@ class PregnancyRepository {
           )
           .toList();
 
-  Future<void> addFollowUp(String id, FollowUpEntry e) => _db.insert('suivi_grossesse', {
-    'id': newUuid(),
-    'grossesse_id': id,
-    ..._followUpRow(e),
-    'created_at': _now(),
-  });
+  Future<void> addFollowUp(String id, FollowUpEntry e) {
+    final rowId = newUuid();
+    return _write(
+      'suivi_grossesse',
+      rowId,
+      (txn) => txn.insert('suivi_grossesse', {
+        'id': rowId,
+        'grossesse_id': id,
+        ..._followUpRow(e),
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      }),
+    );
+  }
 
   /// Corrects an entry (typing mistake): every value is replaced.
-  Future<void> updateFollowUp(FollowUpEntry e) => _db.update(
+  Future<void> updateFollowUp(FollowUpEntry e) => _write(
     'suivi_grossesse',
-    {..._followUpRow(e), 'updated_at': _now()},
-    where: 'id = ?',
-    whereArgs: [e.id],
+    e.id,
+    (txn) => txn.update(
+      'suivi_grossesse',
+      {..._followUpRow(e), 'updated_at': _now()},
+      where: 'id = ?',
+      whereArgs: [e.id],
+    ),
   );
 
   Map<String, Object?> _followUpRow(FollowUpEntry e) => {
@@ -274,8 +351,7 @@ class PregnancyRepository {
     'source': e.source.code,
   };
 
-  Future<void> deleteFollowUp(String entryId) =>
-      _db.delete('suivi_grossesse', where: 'id = ?', whereArgs: [entryId]);
+  Future<void> deleteFollowUp(String entryId) => _remove('suivi_grossesse', entryId);
 
   // ------------------------------------------------------------ movements
 
@@ -312,32 +388,47 @@ class PregnancyRepository {
     ];
   }
 
-  Future<void> addMovement(String id, DateTime at, MovementType type) => _db.insert('mouvement_evenement', {
-    'id': newUuid(),
-    'grossesse_id': id,
-    // Local time, without zone: the hour the mother felt it.
-    'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
-    'type': type.code,
-    'created_at': _now(),
-  });
+  Future<void> addMovement(String id, DateTime at, MovementType type) {
+    final rowId = newUuid();
+    return _write(
+      'mouvement_evenement',
+      rowId,
+      (txn) => txn.insert('mouvement_evenement', {
+        'id': rowId,
+        'grossesse_id': id,
+        // Local time, without zone: the hour the mother felt it.
+        'horodatage': DateTime(at.year, at.month, at.day, at.hour, at.minute).toIso8601String(),
+        'type': type.code,
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      }),
+    );
+  }
 
-  Future<void> deleteMovement(String eventId) =>
-      _db.delete('mouvement_evenement', where: 'id = ?', whereArgs: [eventId]);
+  Future<void> deleteMovement(String eventId) => _remove('mouvement_evenement', eventId);
 
   // -------------------------------------------------------- danger signals
 
-  /// Kept on the phone (and synced only if the user enabled it).
-  Future<void> recordDanger(String id, String code, String period, {SyncStatus status = SyncStatus.saved}) =>
-      _db.insert('danger_grossesse', {
-        'id': newUuid(),
+  /// Sent with its config `code` and `periode`: the server finds the type
+  /// of the sign from them (D16).
+  Future<void> recordDanger(String id, String code, String period) {
+    final rowId = newUuid();
+    return _write(
+      'danger_grossesse',
+      rowId,
+      (txn) => txn.insert('danger_grossesse', {
+        'id': rowId,
         'grossesse_id': id,
         'code': code,
         'periode': period,
         'date_signalement': _clock.now().toUtc().toIso8601String(),
-        'sync_status': status.name,
+        'sync_status': SyncStatus.saved.name,
         'created_at': _now(),
         'updated_at': _now(),
-      });
+      }),
+    );
+  }
 
   Future<List<(String, DateTime)>> dangers(String id) async => [
     for (final r in await _db.query(
@@ -374,10 +465,42 @@ class PregnancyRepository {
 
   /// One set per day: a group is ticked once a day, whatever the number of
   /// its foods eaten.
-  Future<void> setDiet(DateTime day, Set<int> groups) => _db.insert('alimentation_femme', {
-    'date_jour': isoDate(day),
-    'groupes': jsonEncode(groups.toList()..sort()),
-  }, conflictAlgorithm: ConflictAlgorithm.replace);
+  Future<void> setDiet(DateTime day, Set<int> groups) async {
+    final rows = await _db.query(
+      'alimentation_femme',
+      columns: ['id'],
+      where: 'date_jour = ?',
+      whereArgs: [isoDate(day)],
+    );
+    final groupes = jsonEncode(groups.toList()..sort());
+    final existing = rows.isEmpty ? null : rows.first['id'] as String?;
+    if (existing != null) {
+      await _write(
+        'alimentation_femme',
+        existing,
+        (txn) => txn.update(
+          'alimentation_femme',
+          {'groupes': groupes, 'updated_at': _now()},
+          where: 'id = ?',
+          whereArgs: [existing],
+        ),
+      );
+      return;
+    }
+    final rowId = newUuid();
+    await _write(
+      'alimentation_femme',
+      rowId,
+      (txn) => txn.insert('alimentation_femme', {
+        'id': rowId,
+        'date_jour': isoDate(day),
+        'groupes': groupes,
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      }),
+    );
+  }
 }
 
 /// The current pregnancy with its contacts: done and moved, antenatal and

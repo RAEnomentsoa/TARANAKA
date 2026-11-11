@@ -99,7 +99,7 @@ class _SecretQuestionScreenState extends State<SecretQuestionScreen> {
         ] else ...[
           Text(l10n.secretQuestionIntro),
           const Gap(Space.l),
-          SecurityQuestionForm(key: _form),
+          SecurityQuestionForm(key: _form, onSubmitted: _save),
           const Gap(Space.xl),
           FilledButton(
             key: const ValueKey('secret-question-save'),

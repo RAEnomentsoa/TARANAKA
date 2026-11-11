@@ -9,6 +9,7 @@ import '../core/auth/auth_service.dart';
 
 import '../core/db/app_database.dart';
 import '../core/platform/local_reminders.dart';
+import '../features/account/data/personal_sync_controller.dart';
 import '../features/child/application/vaccine_reminders_sync.dart';
 import '../core/security/pin_crypto.dart';
 import '../core/security/profile.dart';
@@ -33,10 +34,13 @@ enum SessionStage {
 }
 
 class ActiveProfile {
-  ActiveProfile(this.info, this.db, this.masterKey);
+  ActiveProfile(this.info, this.db, this.masterKey, {this.sync});
 
   ProfileInfo info;
   final AppDatabase db;
+
+  /// Personal profiles: account, outbox and sync with the server (D16).
+  final PersonalSyncController? sync;
 
   /// Key of the open database, in memory only while unlocked (to enable the
   /// fingerprint or set up the recovery by e-mail).
@@ -96,8 +100,12 @@ class SessionController extends ChangeNotifier {
   /// consent, shown right after the profile is created, before anything else
   /// of the app (and again at each opening until it is accepted).
   void _refreshStage() {
-    if (_active != null) {
-      _stage = _consent ? SessionStage.unlocked : SessionStage.consent;
+    final active = _active;
+    if (active != null) {
+      // Personal profiles: the consent to the sync (D16) is given per profile,
+      // also by the profiles created before it (asked at their next opening).
+      final consented = active.sync != null ? active.sync!.consented : _consent;
+      _stage = consented ? SessionStage.unlocked : SessionStage.consent;
     } else if (_languageCode == null) {
       _stage = SessionStage.chooseLanguage;
     } else if (_profiles.isEmpty && !_welcomeDone && _firstProfileMode == null) {
@@ -141,9 +149,12 @@ class SessionController extends ChangeNotifier {
     _refreshStage();
   }
 
-  Future<void> acceptConsent() async {
+  /// [region] and [phone]: asked of the personal profiles created before the
+  /// account existed (D16).
+  Future<void> acceptConsent({String? region, String? phone}) async {
     _consent = true;
     await _savePrefs();
+    await _active?.sync?.acceptConsent(region: region, phone: phone, firstName: _active?.info.displayName);
     _refreshStage();
   }
 
@@ -153,12 +164,24 @@ class SessionController extends ChangeNotifier {
     PinCrypto.passphrase(masterKey),
   );
 
-  Future<void> _activate(Unlocked unlocked, {Future<void> Function(AppDatabase db)? prepare}) async {
+  Future<void> _activate(
+    Unlocked unlocked, {
+    Future<void> Function(AppDatabase db)? prepare,
+    String? pin,
+  }) async {
     await _closeActive();
     final db = await _openDb(unlocked.profile.id, unlocked.masterKey);
     // Written before the home of the profile opens (e.g. the agent account).
     await prepare?.call(db);
-    _active = ActiveProfile(unlocked.profile, db, unlocked.masterKey);
+    PersonalSyncController? sync;
+    if (unlocked.profile.mode == ProfileMode.personal) {
+      sync = PersonalSyncController(services: services, database: db);
+      await sync.init();
+      if (pin != null) await sync.rememberPin(pin);
+      // Opportunistic sync when the profile opens; never blocks the screens.
+      unawaited(sync.syncNow());
+    }
+    _active = ActiveProfile(unlocked.profile, db, unlocked.masterKey, sync: sync);
     _profiles = await services.registry.list();
     _refreshStage();
     // Recovery by e-mail set up offline: the account is created now if the
@@ -173,6 +196,8 @@ class SessionController extends ChangeNotifier {
     String? recoveryQuestion,
     String? recoveryAnswer,
     String? email,
+    String? region,
+    String? phone,
     Future<void> Function(AppDatabase db)? prepare,
   }) async {
     var unlocked = await services.registry.create(
@@ -188,7 +213,22 @@ class SessionController extends ChangeNotifier {
       unlocked = Unlocked((await services.registry.find(unlocked.profile.id))!, unlocked.masterKey);
     }
     _firstProfileMode = null;
-    await _activate(unlocked, prepare: prepare);
+    await _activate(
+      unlocked,
+      prepare: (db) async {
+        // The server account is created as soon as there is network (D16).
+        if (mode == ProfileMode.personal) {
+          await PersonalSyncController.prepareRegistration(
+            db,
+            firstName: displayName,
+            region: region,
+            phone: phone,
+            pin: pin,
+          );
+        }
+        await prepare?.call(db);
+      },
+    );
     return unlocked.profile;
   }
 
@@ -292,7 +332,7 @@ class SessionController extends ChangeNotifier {
   Future<UnlockResult> recoverWithEmailSecret(String profileId, List<int> secret, String newPin) async {
     final result = await services.registry.recoverWithEmailSecret(profileId, secret, newPin);
     if (result is Unlocked) {
-      await _activate(result);
+      await _activate(result, pin: newPin);
     } else {
       _profiles = await services.registry.list();
       notifyListeners();
@@ -327,7 +367,7 @@ class SessionController extends ChangeNotifier {
   Future<UnlockResult> unlock(String profileId, String pin) async {
     final result = await services.registry.unlock(profileId, pin);
     if (result is Unlocked) {
-      await _activate(result);
+      await _activate(result, pin: pin);
     } else {
       _profiles = await services.registry.list();
       notifyListeners();
@@ -338,7 +378,7 @@ class SessionController extends ChangeNotifier {
   Future<UnlockResult> recover(String profileId, String answer, String newPin) async {
     final result = await services.registry.recover(profileId, answer, newPin);
     if (result is Unlocked) {
-      await _activate(result);
+      await _activate(result, pin: newPin);
     } else {
       _profiles = await services.registry.list();
       notifyListeners();
@@ -377,6 +417,8 @@ class SessionController extends ChangeNotifier {
     final check = await services.registry.unlock(active.info.id, currentPin);
     if (check is Unlocked) {
       await services.registry.changePin(active.info.id, check.masterKey, newPin);
+      // The server account has the same PIN (login from a second phone).
+      await active.sync?.pinChanged(currentPin, newPin);
     }
     _profiles = await services.registry.list();
     notifyListeners();
@@ -386,6 +428,7 @@ class SessionController extends ChangeNotifier {
   Future<void> _closeActive() async {
     final active = _active;
     _active = null;
+    active?.sync?.dispose();
     await active?.db.close();
   }
 

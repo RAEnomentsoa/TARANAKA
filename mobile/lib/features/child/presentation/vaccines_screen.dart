@@ -73,7 +73,10 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
   }
 
   void _reload() {
-    setState(() => _data = _load());
+    final next = _load();
+    setState(() {
+      _data = next;
+    });
     _syncReminders();
   }
 

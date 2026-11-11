@@ -7,6 +7,7 @@ environment:
   sdk: ^3.13.7
 
 dependencies:
+  audioplayers: ^6.8.1
   cloud_firestore: ^7.1.0
   connectivity_plus: ^7.3.2
   crypto: ^3.0.8
@@ -20,7 +21,9 @@ dependencies:
   http: ^1.6.0
   intl: ^0.20.3
   local_auth: ^3.0.2
+  mobile_scanner: ^7.5.0
   path_provider: ^2.1.6
+  qr_flutter: ^4.1.0
   sqflite_common: ^2.5.15
   sqflite_sqlcipher: ^3.4.1
   url_launcher: ^6.3.3
@@ -39,6 +42,7 @@ flutter:
     - assets/config/
     - assets/who/
     - assets/images/
+    - assets/audio/
 
 # Host tests (flutter test) load the system SQLCipher library, so the tests
 # exercise real encryption. Install it with `apt install libsqlcipher-dev`.

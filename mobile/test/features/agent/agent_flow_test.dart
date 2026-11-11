@@ -9,7 +9,7 @@ import '../../helpers/test_env.dart';
 
 void main() {
   testWidgets('scenario 5 in the agent UI: offline referral, then transmitted', (tester) async {
-    final server = FakeServer();
+    final server = FakeServer()..addBeneficiary(id: 'mere-1', prenom: 'Voahangy', code: 'K7QM4Z');
     final network = FakeNetworkStatus();
     final env = await TestEnv.create(httpClient: server.client, network: network);
     final session = await pumpApp(tester, env);
@@ -26,25 +26,31 @@ void main() {
     await tester.enterText(find.byKey(const ValueKey('agent-login-pin')), '1234');
     await tapKey(tester, 'agent-login-submit');
     expect(find.text('Dépister un enfant'), findsOneWidget);
-
-    // Offline from now on.
-    network.kind = NetworkKind.none;
     final agent = AgentScope.read(tester.element(find.text('Dépister un enfant')));
-    await tester.runAsync(
+
+    // The mother first (D16): her code opens her file, kept on the phone.
+    await tapKey(tester, 'agent-screen');
+    await typeKey(tester, 'beneficiary-code', 'k7qm4z');
+    await tapKey(tester, 'open-code');
+    expect(find.textContaining('Voahangy'), findsWidgets);
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+
+    // Offline from now on: her child is registered, then screened.
+    network.kind = NetworkKind.none;
+    final child = await tester.runAsync(
       () => agent.repo.createChild(
         name: 'Soa',
         sex: 'F',
         birthDate: DateTime(2025, 5, 4),
         regionId: 1,
         agentId: 'agent-1',
+        motherId: 'mere-1',
       ),
     );
-
-    await tapKey(tester, 'agent-screen');
+    await tapKey(tester, 'beneficiary-mere-1');
     expect(find.text('Soa'), findsOneWidget);
-    await tester.tap(find.text('Soa'));
-    await settle(tester);
-    await tapKey(tester, 'new-measure');
+    await tapKey(tester, 'file-screen-${child!.id}');
     await tester.enterText(find.byKey(const ValueKey('field-weight')), '8,6');
     await tester.enterText(find.byKey(const ValueKey('field-length')), '77,5');
     await tester.enterText(find.byKey(const ValueKey('field-muac')), '112');
@@ -81,6 +87,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Voahangy', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
     });
     await settle(tester);
     await tapKey(tester, 'tile-agent');

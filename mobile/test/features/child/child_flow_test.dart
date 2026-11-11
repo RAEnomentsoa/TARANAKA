@@ -19,6 +19,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Fara', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       // 9 months on 4 Nov 2026 (the test clock).
       final c = await ChildRepository(session.active!.db)
           .addChild(name: 'Kanto', sex: 'M', birthDate: DateTime(2026, 2, 1));
@@ -64,6 +65,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Fara', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       childId = (await ChildRepository(
         session.active!.db,
       ).addChild(name: 'Kanto', sex: 'M', birthDate: DateTime(2026, 2, 1))).id;
@@ -108,6 +110,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Fara', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       // 2 months on 4 Nov 2026: breastfeeding.
       final c = await ChildRepository(session.active!.db)
           .addChild(name: 'Kanto', sex: 'F', birthDate: DateTime(2026, 9, 4));
@@ -149,6 +152,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Fara', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       // 2 months on 4 Nov 2026 (the test clock).
       final repo = ChildRepository(session.active!.db);
       final c = await repo.addChild(name: 'Kanto', sex: 'F', birthDate: DateTime(2026, 9, 4));
@@ -226,6 +230,7 @@ void main() {
       await session.setLanguage('mg');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Fara', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       final c = await ChildRepository(session.active!.db)
           .addChild(name: 'Kanto', sex: 'F', birthDate: DateTime(2026, 11, 1));
       childId = c.id;

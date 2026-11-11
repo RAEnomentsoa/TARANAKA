@@ -4,10 +4,11 @@ import '../../../app/app_scope.dart';
 import '../../../core/i18n/l10n.dart';
 import '../../../core/theme/tokens.dart';
 import '../../../core/widgets/big_tile.dart';
-import '../../../core/widgets/config_banner.dart';
+import '../../../core/security/profile.dart';
 import '../../../core/widgets/screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'module_routes.dart';
+import 'notification_bell.dart';
 import 'reminders.dart';
 
 /// Personal mode home (spec §3): three illustrated tiles, plus the agent tile
@@ -20,7 +21,11 @@ class PersonalHomeScreen extends StatelessWidget {
     final l10n = context.l10n;
     final session = AppScope.of(context).session;
     final name = session.active?.info.displayName ?? '';
-    void open(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    // Back on the home, a module may have changed the reminders.
+    Future<void> open(Widget screen) async {
+      await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+      remindersRevision.value++;
+    }
 
     return AppScreen(
       title: l10n.appName,
@@ -29,12 +34,15 @@ class PersonalHomeScreen extends StatelessWidget {
       children: [
         Semantics(
           header: true,
-          child: Text(l10n.homeGreeting(name), style: Theme.of(context).textTheme.headlineSmall),
+          child: Text(
+            l10n.homeGreeting(name),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
         ),
-        const Gap(Space.m),
-        const ConfigBanner(),
-        const PersonalReminders(),
-        const Gap(Space.l),
+        // Reminders are behind the bell of the header only; the sync state
+        // ("Sur ce téléphone seulement"…) is in Settings only.
+        const Gap(Space.xl),
         BigTile(
           key: const ValueKey('tile-cycle'),
           icon: Icons.water_drop_outlined,
@@ -68,10 +76,13 @@ class PersonalHomeScreen extends StatelessWidget {
   }
 }
 
-/// Settings and lock, on every home screen.
+/// The home header, in this order: the bell (personal profiles, whose
+/// reminders it lists), Settings, then the padlock.
 List<Widget> homeActions(BuildContext context) {
   final l10n = context.l10n;
+  final personal = AppScope.read(context).session.active?.info.mode == ProfileMode.personal;
   return [
+    if (personal) const NotificationBell(),
     IconButton(
       key: const ValueKey('open-settings'),
       tooltip: l10n.settings,

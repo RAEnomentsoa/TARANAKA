@@ -11,6 +11,7 @@ import '../domain/models.dart';
 import '../domain/screening.dart';
 import 'agent_labels.dart';
 import 'agent_scope.dart';
+import 'centre_picker.dart';
 import 'referral_sheet_screen.dart';
 
 /// Classification and orientation, computed offline from the configuration.
@@ -37,49 +38,7 @@ class _ScreeningResultScreenState extends State<ScreeningResultScreen> {
 
   Future<void> _refer() async {
     final agent = AgentScope.read(context);
-    final l10n = context.l10n;
-    final all = await agent.repo.centres();
-    if (!mounted) return;
-    final centre = await showModalBottomSheet<Centre>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        final user = agent.account!.user;
-        final type = widget.result.centre;
-        int rank(Centre c) => (c.type == type ? 0 : 2) + (c.regionId == user.regionId ? 0 : 1);
-        final sorted = [...all]..sort((a, b) => rank(a).compareTo(rank(b)));
-        final matching = sorted.where((c) => c.type == type).toList();
-        final others = sorted.where((c) => c.type != type).toList();
-        Widget tile(Centre c) => ListTile(
-          key: ValueKey('centre-${c.id}'),
-          leading: const Icon(Icons.local_hospital_outlined, color: AppColors.accent),
-          title: Text(c.name),
-          subtitle: Text('${centreTypeLabel(c.type)}${c.tel == null ? '' : ' · ${c.tel}'}'),
-          onTap: () => Navigator.pop(context, c),
-        );
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: Space.l),
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.l),
-                child: Text(l10n.chooseCentre, style: Theme.of(context).textTheme.titleMedium),
-              ),
-              if (all.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(Space.l),
-                  child: NoticeBox(icon: Icons.sync_problem, tone: Tone.warning, text: l10n.noCentre),
-                ),
-              ...matching.map(tile),
-              if (others.isNotEmpty)
-                ExpansionTile(title: Text(l10n.otherCentres), children: others.map(tile).toList()),
-            ],
-          ),
-        );
-      },
-    );
+    final centre = await pickCentre(context, preferredType: widget.result.centre);
     if (centre == null || !mounted) return;
     setState(() => _busy = true);
     final referral = await agent.repo.createReferral(

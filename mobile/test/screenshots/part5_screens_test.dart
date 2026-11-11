@@ -16,6 +16,7 @@ void main() {
       await session.setLanguage('fr');
       await session.acceptConsent();
       await session.createProfile(displayName: 'Voahangy', pin: '1234', mode: ProfileMode.personal);
+      await session.acceptConsent();
       final repo = CycleRepository(session.active!.db, clock: env.clock);
       for (final d in [
         DateTime(2026, 7, 21),

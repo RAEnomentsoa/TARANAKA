@@ -51,7 +51,7 @@ class AppServices {
     WhoTables? whoTables,
     this.defaultApiBaseUrl = const String.fromEnvironment(
       'TARANAKA_API',
-      defaultValue: 'https://api.taranaka.example',
+      defaultValue: 'https://taranaka-production.up.railway.app',
     ),
   }) : biometrics = biometrics ?? LocalBiometricAuth(),
        auth = auth ?? FirebaseAuthService(),

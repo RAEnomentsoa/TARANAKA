@@ -9,6 +9,7 @@ import '../../../core/widgets/big_tile.dart';
 import '../../../core/widgets/pin_pad.dart';
 import '../../../core/widgets/screen.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../../account/presentation/region_field.dart';
 import '../../agent/presentation/agent_login_screen.dart';
 import '../../profiles/presentation/security_question_form.dart';
 
@@ -45,6 +46,11 @@ class CreateProfileScreen extends StatefulWidget {
 class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
+  final _phone = TextEditingController();
+
+  /// Personal profiles: her region (D16), so the account can be created and
+  /// the health staff of her zone can follow her.
+  String? _region;
   final _pinKey = GlobalKey<PinPadState>();
   final _secretKey = GlobalKey<SecurityQuestionFormState>();
 
@@ -66,6 +72,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -104,6 +111,15 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   /// offline. Agents get a new PIN from their supervisor.
   bool get _needsSecret => _mode != ProfileMode.agent;
 
+  /// Question and answer typed once: straight to the secret code.
+  void _secretDone() {
+    final secret = _secretKey.currentState!.validate();
+    if (secret != null) {
+      _secret = secret;
+      _go(_Step.pin);
+    }
+  }
+
   Future<void> _create() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -116,6 +132,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
       recoveryQuestion: _secret?.question,
       recoveryAnswer: _secret?.answer,
+      region: _mode == ProfileMode.personal ? _region : null,
+      phone: _mode == ProfileMode.personal && _phone.text.trim().isNotEmpty ? _phone.text.trim() : null,
     );
     // The gate now shows the home of the new profile.
     if (widget.canCancel && navigator.mounted) navigator.popUntil((r) => r.isFirst);
@@ -161,6 +179,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
             setState(() => _error = l10n.nameRequired);
           } else if (email.isNotEmpty && !PinCrypto.isValidEmail(email)) {
             setState(() => _error = l10n.emailInvalid);
+          } else if (_mode != ProfileMode.agent && _region == null) {
+            setState(() => _error = l10n.regionRequired);
           } else {
             _go(_needsSecret ? _Step.secret : _Step.pin);
           }
@@ -169,19 +189,29 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       ),
       _Step.secret => FilledButton(
         key: const ValueKey('secret-continue'),
-        onPressed: () {
-          final secret = _secretKey.currentState!.validate();
-          if (secret != null) {
-            _secret = secret;
-            _go(_Step.pin);
-          }
-        },
+        onPressed: _secretDone,
         child: Text(l10n.continueLabel),
       ),
       _ => null,
     };
     if (action == null) return const [];
-    return [const Gap(Space.xl), action, const Gap(Space.l)];
+    return [
+      const Gap(Space.xl),
+      action,
+      // The secret question is optional: skip it, straight to the code.
+      if (_step == _Step.secret) ...[
+        const Gap(Space.s),
+        TextButton(
+          key: const ValueKey('secret-skip'),
+          onPressed: () {
+            _secret = null;
+            _go(_Step.pin);
+          },
+          child: Text(l10n.skip),
+        ),
+      ],
+      const Gap(Space.l),
+    ];
   }
 
   List<Widget> _body(BuildContext context) {
@@ -214,9 +244,20 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
               maxLength: 120,
               decoration: InputDecoration(
                 labelText: l10n.emailLabel,
-                helperText: l10n.emailHelp,
-                helperMaxLines: 3,
                 prefixIcon: const Icon(Icons.alternate_email),
+              ),
+            ),
+            const Gap(Space.s),
+            RegionField(value: _region, onChanged: (r) => setState(() => _region = r)),
+            const Gap(Space.l),
+            TextField(
+              key: const ValueKey('profile-phone'),
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              maxLength: 20,
+              decoration: InputDecoration(
+                labelText: l10n.phoneLabel,
+                prefixIcon: const Icon(Icons.phone_outlined),
               ),
             ),
           ],
@@ -227,7 +268,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
           const Gap(Space.s),
           Text(l10n.secretQuestionIntro),
           const Gap(Space.l),
-          SecurityQuestionForm(key: _secretKey, initial: _secret),
+          SecurityQuestionForm(
+            key: _secretKey,
+            initial: _secret,
+            showAnswerHelp: false,
+            onSubmitted: _secretDone,
+          ),
         ];
       case _Step.pin:
         return [

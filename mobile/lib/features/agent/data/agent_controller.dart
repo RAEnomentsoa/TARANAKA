@@ -9,6 +9,7 @@ import '../../../core/growth/who_lms.dart';
 import '../../../core/sync/api_client.dart';
 import '../../../core/sync/network_status.dart';
 import '../../../core/sync/sync_engine.dart';
+import '../domain/models.dart';
 import '../domain/referral_code.dart';
 import 'agent_repository.dart';
 import 'agent_sync_adapters.dart';
@@ -152,6 +153,67 @@ class AgentController extends ChangeNotifier {
     _notify();
   }
 
+  Future<ApiClient> _client({String language = 'fr'}) async {
+    final a = account!;
+    return ApiClient(
+      baseUrl: a.baseUrl,
+      deviceId: await _deviceId(),
+      languageCode: language,
+      client: httpClient,
+      tokens: a.tokens,
+      onTokens: (t) async {
+        account = account!.withTokens(t);
+        await database.setMetaJson(_accountKey, account!.toJson());
+      },
+    );
+  }
+
+  // ----------------------------------------------- beneficiaries (D16)
+  //
+  // Opening a file needs the network (the server records who opened it and
+  // starts sending her data to this phone). Files already opened stay
+  // readable offline. Each call throws [ApiException] ('offline', 404…).
+
+  /// The women of the agent's zone, kept to be searched offline.
+  Future<List<Beneficiary>> searchBeneficiaries(String query) async {
+    final lines = await (await _client()).beneficiaries(query: query.trim());
+    await repo.saveBeneficiaries(lines);
+    return repo.beneficiaries(search: query);
+  }
+
+  /// Opens her file from the list: she is followed from now on.
+  Future<Beneficiary> openBeneficiary(String id) async => _opened(await (await _client()).beneficiary(id));
+
+  /// Opens her file with the code she shows (QR or typed), any region.
+  Future<Beneficiary> openByCode(String code) async {
+    final clean = beneficiaryCodeFromScan(code);
+    return _opened(await (await _client()).lookupBeneficiary(clean));
+  }
+
+  Future<Beneficiary> _opened(Map<String, Object?> file) async {
+    final b = await repo.saveFile(file);
+    await refreshCounts();
+    return b;
+  }
+
+  /// A woman without a phone, registered with her consent (cahier §3.2.A).
+  /// The server generates her login and code; her file is then opened.
+  Future<Beneficiary> registerBeneficiary({
+    required String firstName,
+    required String lastName,
+    required String pin,
+    String? phone,
+  }) async {
+    final api = await _client();
+    final created = await api.createBeneficiary(
+      prenom: firstName.trim(),
+      nom: lastName.trim(),
+      pin: pin,
+      phone: phone?.trim(),
+    );
+    return _opened(await api.beneficiary(created['id']! as String));
+  }
+
   /// Push the outbox, pull changes, refresh the centres. Never blocks the
   /// screens: they keep working on local data whatever happens here.
   Future<SyncReport?> syncNow({bool manual = false, String language = 'fr'}) async {
@@ -177,17 +239,7 @@ class AgentController extends ChangeNotifier {
     problem = null;
     problemDetail = null;
     _notify();
-    final api = ApiClient(
-      baseUrl: a.baseUrl,
-      deviceId: await _deviceId(),
-      languageCode: language,
-      client: httpClient,
-      tokens: a.tokens,
-      onTokens: (t) async {
-        account = account!.withTokens(t);
-        await database.setMetaJson(_accountKey, account!.toJson());
-      },
-    );
+    final api = await _client(language: language);
     try {
       final engine = SyncEngine(
         database: database,
@@ -213,3 +265,15 @@ class AgentController extends ChangeNotifier {
     }
   }
 }
+
+/// The code inside her QR (`TARANAKA:K7QM4Z`), or the code typed (dashes,
+/// spaces and case ignored).
+String beneficiaryCodeFromScan(String raw) {
+  var v = raw.trim();
+  final i = v.lastIndexOf(':');
+  if (v.toUpperCase().startsWith('TARANAKA') && i >= 0) v = v.substring(i + 1);
+  return v.replaceAll(RegExp(r'[\s-]'), '').toUpperCase();
+}
+
+/// Content of the QR code shown in "Mon code".
+String beneficiaryQrData(String code) => 'TARANAKA:${code.replaceAll(RegExp(r'[\s-]'), '').toUpperCase()}';

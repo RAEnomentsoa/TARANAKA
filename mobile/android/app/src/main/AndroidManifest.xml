@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Network is only used to synchronise (spec §1). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Agent mode: scan the QR code of a beneficiary (D16). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Red alert: "Appeler mon centre de santé" calls in one tap once the
          user allowed it (asked when the centre is saved, never during an

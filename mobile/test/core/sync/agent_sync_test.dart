@@ -58,6 +58,7 @@ void main() {
       birthDate: DateTime(2025, 5, 4),
       regionId: 1,
       agentId: 'agent-1',
+      motherId: 'mere-1',
     );
     final input = ScreeningInput(
       sex: 'F',
@@ -161,6 +162,7 @@ void main() {
       birthDate: DateTime(2025, 5, 4),
       regionId: 1,
       agentId: 'agent-1',
+      motherId: 'mere-1',
     );
     await agent.repo.updateChild(c.id, name: 'Soa');
     final ops = await Outbox.pending(db.db);
@@ -177,6 +179,7 @@ void main() {
       birthDate: DateTime(2025, 5, 4),
       regionId: 1,
       agentId: 'agent-1',
+      motherId: 'mere-1',
     );
     await agent.syncNow();
     await agent.repo.updateChild(c.id, name: 'Soa R.');
@@ -281,5 +284,71 @@ void main() {
     await login();
     expect(agent.lastReport!.configUpdated, isTrue);
     expect(env.services.config.current.version, 2);
+  });
+
+  // ------------------------------------------------- beneficiaries (D16)
+
+  test('her code (typed or from the QR) opens her file, kept for offline', () async {
+    server.addBeneficiary(id: 'mere-7', prenom: 'Voahangy', code: 'K7QM4Z');
+    server.tables['enfant']!['enf-1'] = {
+      'id': 'enf-1',
+      'mere_id': 'mere-7',
+      'nom': 'Soa',
+      'sexe': 'F',
+      'date_naissance': '2025-05-04',
+      'version': 1,
+      'updated_at': '2026-11-01T08:00:00Z',
+    };
+    await login();
+    expect(beneficiaryCodeFromScan(beneficiaryQrData('K7QM4Z')), 'K7QM4Z');
+    final b = await agent.openByCode(beneficiaryQrData('k7qm4z'));
+    expect(b.id, 'mere-7');
+    expect(b.file, isNotNull);
+
+    network.kind = NetworkKind.none;
+    expect((await agent.repo.beneficiaries(search: 'voah')).single.id, 'mere-7');
+    expect((await agent.repo.beneficiaries(search: 'K7QM')).single.id, 'mere-7');
+    expect((await agent.repo.childrenOf('mere-7')).single.name, 'Soa');
+  });
+
+  test('a child screened by the agent carries mere_id (and grossesse_id)', () async {
+    await login();
+    final child = await agent.repo.createChild(
+      name: 'Soa',
+      sex: 'F',
+      birthDate: DateTime(2025, 5, 4),
+      regionId: 1,
+      agentId: 'agent-1',
+      motherId: 'mere-7',
+      pregnancyId: 'gro-1',
+    );
+    await agent.syncNow(manual: true);
+    expect(server.tables['enfant']![child.id]!['mere_id'], 'mere-7');
+    expect(server.tables['enfant']![child.id]!['grossesse_id'], 'gro-1');
+  });
+
+  test('pregnant woman with a danger sign: danger + urgent referral of the pregnancy', () async {
+    await login();
+    final pregnancy = await agent.repo.createPregnancy(userId: 'mere-7', lmp: DateTime(2026, 8, 12));
+    final centre = (await agent.repo.centres()).first;
+    final r = await agent.repo.createPregnancyReferral(
+      pregnancy: pregnancy,
+      signs: const ['saignement_vaginal'],
+      centre: centre,
+      motif: 'Saignement',
+      agentId: 'agent-1',
+    );
+    expect(await agent.repo.referralsOfPregnancy(pregnancy.id), hasLength(1));
+    expect((await agent.repo.dangersOf(pregnancy.id)).single.$1, 'saignement_vaginal');
+
+    await agent.syncNow(manual: true);
+    final sent = server.tables['referencement']![r.id]!;
+    expect(sent['grossesse_id'], pregnancy.id);
+    expect(sent['origine'], 'grossesse');
+    expect(sent['priorite'], 'urgente');
+    final danger = server.tables['danger_grossesse']!.values.single;
+    expect(danger['grossesse_id'], pregnancy.id);
+    expect(danger['code'], 'saignement_vaginal');
+    expect(server.tables['grossesse']![pregnancy.id]!['user_id'], 'mere-7');
   });
 }

@@ -19,14 +19,39 @@ CycleRepository cycleRepository(BuildContext context) {
   return CycleRepository(scope.session.active!.db, clock: scope.services.clock);
 }
 
+/// Soft transitions of "Mon cycle" (skill: 150–250 ms), none when the system
+/// asks for no animations.
+Duration cycleMotion(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 220);
+
+/// Short, warm confirmation after a save ("C'est noté. Prends soin de toi.").
+void showCycleFeedback(ScaffoldMessengerState messenger, String message) {
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 3),
+        content: Row(
+          children: [
+            const ExcludeSemantics(child: Icon(Icons.favorite_rounded, color: AppColors.accentSoftBorder)),
+            const SizedBox(width: Space.m),
+            Expanded(child: Text(message)),
+          ],
+        ),
+      ),
+    );
+}
+
 /// What "Mon cycle" shows: the periods, the usual length chosen by the user
 /// (null: none) and the days noted in "Mon suivi du jour".
 typedef _CycleData = ({List<Period> periods, int? setting, List<DayLog> days});
 
-/// "Mon cycle" (spec §4). Outside a period, the main button is "Mes règles
-/// ont commencé aujourd'hui" (home → Mon cycle → button: 2 taps). During a
-/// period, the card "Mon suivi du jour" offers three clear choices: save the
-/// day (the period goes on), the period ended today, or another end date.
+/// "Mon cycle" (spec §4). At the top, what matters most: when the next period
+/// should come and in how many days. Outside a period,
+/// the main button is "Mes règles ont commencé aujourd'hui" (home → Mon cycle
+/// → button: 2 taps). During a period, the card "Mon suivi du jour" offers
+/// three clear choices: save the day (the period goes on), the period ended
+/// today, or another end date.
 class CycleHomeScreen extends StatefulWidget {
   const CycleHomeScreen({super.key});
 
@@ -36,6 +61,10 @@ class CycleHomeScreen extends StatefulWidget {
 
 class _CycleHomeScreenState extends State<CycleHomeScreen> {
   Future<_CycleData>? _data;
+
+  /// Last data shown: kept on screen while a reload runs, so a save never
+  /// flashes a loading screen.
+  _CycleData? _shown;
 
   @override
   void didChangeDependencies() {
@@ -69,31 +98,50 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
   }
 
   Future<void> _startOn(DateTime day) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = context.l10n.periodStartedSaved;
     await cycleRepository(context).start(day);
+    showCycleFeedback(messenger, message);
     _reload();
   }
 
-  /// Adds a past period ([period] null) or edits one.
+  /// Adds a period ([period] null) or edits one. [start] and [end]: dates
+  /// already chosen on the calendar.
   Future<void> _openSheet(
     Period? period,
     List<Period> periods,
     DateTime today,
     int periodDays, {
     DateTime? start,
+    DateTime? end,
   }) async {
-    final changed = await showModalBottomSheet<bool>(
+    final messenger = ScaffoldMessenger.of(context);
+    final feedback = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) =>
-          _PeriodSheet(period: period, periods: periods, today: today, periodDays: periodDays, start: start),
+      builder: (_) => _PeriodSheet(
+        period: period,
+        periods: periods,
+        today: today,
+        periodDays: periodDays,
+        start: start,
+        end: end,
+      ),
     );
-    if (changed == true) _reload();
+    if (feedback == null) return;
+    showCycleFeedback(messenger, feedback);
+    _reload();
   }
 
   Future<void> _openDay(DateTime day, {required bool inPeriod}) async {
-    if (await showDaySheet(context, day: day, inPeriod: inPeriod)) _reload();
+    final messenger = ScaffoldMessenger.of(context);
+    final message = context.l10n.daySaved;
+    if (await showDaySheet(context, day: day, inPeriod: inPeriod)) {
+      showCycleFeedback(messenger, message);
+      _reload();
+    }
   }
 
   @override
@@ -109,8 +157,9 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
       future: _data,
       builder: (context, snap) {
         if (snap.hasError) return Scaffold(body: ErrorView(onRetry: _reload));
-        if (!snap.hasData) return const Scaffold(body: LoadingView());
-        final (:periods, :setting, :days) = snap.data!;
+        if (snap.hasData) _shown = snap.data;
+        if (_shown == null) return const Scaffold(body: LoadingView());
+        final (:periods, :setting, :days) = _shown!;
         final s = calc.summarise(periods, today, periodDays: setting);
         final ongoing = calc.ongoing(periods, today, periodDays: s.periodDays);
         final todayLog = days.where((d) => d.day == today).firstOrNull;
@@ -150,20 +199,14 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
             ],
           ),
           children: [
-            Text(
-              l10n.cycleIntro,
-              key: const ValueKey('cycle-intro'),
-              style: text.bodyLarge?.copyWith(color: AppColors.textMuted),
-            ),
-            const Gap(Space.l),
-            if (ongoing != null) ...[
-              StatusPill(
-                icon: Icons.water_drop,
-                label: l10n.periodOngoing(formatDate(ongoing.start)),
-                tone: Tone.danger,
-              ),
+            // 1. The next period and the countdown, first thing on screen.
+            _HeroCard(summary: s, ongoing: ongoing, today: today),
+            for (final signal in s.signals) ...[
               const Gap(Space.m),
+              _SignalBox(signal: signal, summary: s, calc: calc),
             ],
+            const Gap(Space.l),
+            // 2. Today's follow-up (the main actions during a period).
             _TodayCard(
               // A new state when the period starts or ends, or the day changes.
               key: ValueKey('today-${ongoing?.id}-${isoDate(today)}'),
@@ -172,12 +215,6 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
               log: todayLog,
               onChanged: _reload,
             ),
-            const Gap(Space.l),
-            _PredictionCard(summary: s, calc: calc, today: today),
-            for (final signal in s.signals) ...[
-              const Gap(Space.m),
-              _SignalBox(signal: signal, summary: s, calc: calc),
-            ],
             SectionTitle(l10n.calendarTitle),
             CycleCalendar(
               key: const ValueKey('cycle-calendar'),
@@ -186,9 +223,17 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
               today: today,
               first: _PeriodSheet.firstDay(today),
               onPeriodTap: (p) => _openSheet(p, periods, today, s.periodDays),
-              onDayTap: (d) => _openSheet(null, periods, today, s.periodDays, start: d),
+              onRangePicked: (start, end) =>
+                  _openSheet(null, periods, today, s.periodDays, start: start, end: end),
             ),
-            SectionTitle(l10n.cycleStats),
+            // What was really noted (as opposed to the estimates above).
+            Padding(
+              padding: const EdgeInsets.only(top: Space.l, bottom: Space.s),
+              child: LabelWithPill(
+                label: Semantics(header: true, child: Text(l10n.cycleStats, style: text.titleMedium)),
+                pill: StatusPill(icon: Icons.edit_note, label: l10n.calendarLogged, tone: Tone.neutral),
+              ),
+            ),
             Wrap(
               spacing: Space.s,
               runSpacing: Space.s,
@@ -260,85 +305,144 @@ class _CycleHomeScreenState extends State<CycleHomeScreen> {
   }
 }
 
-class _PredictionCard extends StatelessWidget {
-  const _PredictionCard({required this.summary, required this.calc, required this.today});
+/// Top of "Mon cycle": a sentence fitted to the moment of the cycle (or the
+/// intro before the first period), then, very visible, the days left before the next period (or the
+/// day of the ongoing one, or the delay), its date and the range when the
+/// cycle is not well known yet.
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.summary, required this.ongoing, required this.today});
 
   final CycleSummary summary;
-  final CycleCalculator calc;
+  final Period? ongoing;
   final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final s = summary;
     final text = Theme.of(context).textTheme;
-    // No period logged yet: nothing to predict (the intro says what to do).
-    if (s.nextPeriod == null) return const SizedBox.shrink();
-    final reliable = s.confidence == Confidence.reliable;
-    final inDays = daysBetween(today, s.nextPeriod!);
+    final s = summary;
+    final phase = cyclePhase(s, ongoing, today);
+    final (IconData icon, String message) = switch (phase) {
+      // No welcome line before the first period: only the intro below.
+      CyclePhase.noData => (Icons.info_outline, ''),
+      CyclePhase.period => (Icons.favorite_border, l10n.phasePeriod),
+      CyclePhase.late => (Icons.schedule, l10n.phaseLate),
+      CyclePhase.periodSoon => (Icons.notifications_none, l10n.phasePeriodSoon),
+      CyclePhase.ovulation => (Icons.star_border, l10n.phaseOvulation),
+      CyclePhase.fertile => (Icons.spa_outlined, l10n.phaseFertile),
+      CyclePhase.calm => (Icons.self_improvement, l10n.phaseCalm),
+    };
+    final next = s.nextPeriod;
+    final showRange = next != null && s.margin > 0 && s.reliability != Reliability.good;
+
     return Card(
+      key: const ValueKey('cycle-hero'),
       child: Padding(
         padding: const EdgeInsets.all(Space.l),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LabelWithPill(
-              label: Text(l10n.nextPeriod, style: text.labelLarge?.copyWith(color: AppColors.textMuted)),
-              pill: StatusPill(
-                key: const ValueKey('cycle-confidence'),
-                icon: reliable ? Icons.verified_outlined : Icons.help_outline,
-                label: reliable ? l10n.confidenceReliable : l10n.confidenceEstimate,
-                tone: reliable ? Tone.success : Tone.caution,
+            if (phase != CyclePhase.noData)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ExcludeSemantics(child: Icon(icon, color: AppColors.accent)),
+                  const SizedBox(width: Space.s),
+                  Expanded(
+                    child: Text(message, key: ValueKey('cycle-phase-${phase.name}'), style: text.bodyLarge),
+                  ),
+                ],
+              )
+            else
+              Text(l10n.cycleIntro, key: const ValueKey('cycle-intro'), style: text.bodyLarge),
+            if (next != null) ...[
+              const Gap(Space.l),
+              AnimatedSwitcher(
+                duration: cycleMotion(context),
+                child: KeyedSubtree(
+                  key: ValueKey('hero-${phase.name}-${isoDate(next)}-${ongoing?.start}'),
+                  child: _countdown(context, phase, next),
+                ),
               ),
-            ),
-            Text(
-              l10n.nextPeriodOn(formatDate(s.nextPeriod!)),
-              key: const ValueKey('next-period'),
-              style: text.headlineSmall,
-            ),
-            if (inDays >= 0) Text(l10n.nextPeriodIn(inDays)),
-            const Gap(Space.m),
-            Row(
-              children: [
-                const Icon(Icons.spa_outlined, color: AppColors.accent),
-                const SizedBox(width: Space.s),
-                Expanded(
-                  child: Text(
-                    '${l10n.fertileWindow} : ${l10n.fertileFromTo(formatDate(s.fertileStart!), formatDate(s.fertileEnd!))}',
-                    key: const ValueKey('fertile-window'),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(Space.xs),
-            Row(
-              children: [
-                const Icon(Icons.star, color: AppColors.accent),
-                const SizedBox(width: Space.s),
-                Expanded(child: Text(l10n.ovulationOn(formatDate(s.ovulation!)))),
-              ],
-            ),
-            const Gap(Space.xs),
-            Row(
-              children: [
-                const Icon(Icons.error_outline, color: AppColors.caution),
-                const SizedBox(width: Space.s),
-                Expanded(
-                  child: Text(
-                    '${l10n.riskWindow} : ${l10n.fertileFromTo(formatDate(s.riskStart!), formatDate(s.riskEnd!))}',
-                    key: const ValueKey('risk-window'),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(Space.s),
-            Text(l10n.riskHint, style: text.bodySmall),
-            if (!reliable) ...[
               const Gap(Space.s),
-              Text(l10n.confidenceEstimateHint(calc.cyclesForReliable), style: text.bodySmall),
+              Text(
+                l10n.nextPeriodOn(formatDate(next)),
+                key: const ValueKey('next-period'),
+                style: text.titleMedium,
+              ),
+              if (showRange)
+                Text(
+                  l10n.nextPeriodRange(formatDate(s.nextPeriodEarliest!), formatDate(s.nextPeriodLatest!)),
+                  key: const ValueKey('next-period-range'),
+                  style: text.bodyMedium?.copyWith(color: AppColors.textMuted),
+                ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// The big number: day N of the period, days late, or days left.
+  Widget _countdown(BuildContext context, CyclePhase phase, DateTime next) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final big = text.displaySmall?.copyWith(color: AppColors.danger, fontWeight: FontWeight.w800, height: 1);
+    if (ongoing != null) {
+      final day = daysBetween(ongoing!.start, today) + 1;
+      final until = addDays(ongoing!.start, summary.periodDays - 1);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.periodDayN(day), key: const ValueKey('period-day'), style: big),
+          const Gap(Space.xs),
+          Text(l10n.periodOngoing(formatDate(ongoing!.start)), style: text.bodyMedium),
+          if (!until.isBefore(today)) ...[
+            const Gap(Space.xs),
+            Text(l10n.periodExpectedUntil(formatDate(until)), style: text.bodyMedium),
+          ],
+        ],
+      );
+    }
+    if (phase == CyclePhase.late && summary.daysLate > 0) {
+      return Text(
+        l10n.lateBy(summary.daysLate),
+        key: const ValueKey('period-late'),
+        style: big?.copyWith(color: AppColors.warning),
+      );
+    }
+    final inDays = daysBetween(today, next);
+    if (inDays <= 0) {
+      return Text(l10n.countdownToday, key: const ValueKey('countdown'), style: text.headlineSmall);
+    }
+    // The number, very large, inside its localized phrase ("7 jours").
+    final phrase = l10n.countdownDays(inDays);
+    final at = phrase.indexOf('$inDays');
+    final unit = text.titleLarge?.copyWith(color: AppColors.danger);
+    return Semantics(
+      label: l10n.countdownSemantics(inDays),
+      excludeSemantics: true,
+      child: Column(
+        key: const ValueKey('countdown'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
+            TextSpan(
+              style: unit,
+              children: at < 0
+                  ? [TextSpan(text: phrase)]
+                  : [
+                      if (at > 0) TextSpan(text: phrase.substring(0, at)),
+                      TextSpan(
+                        text: '$inDays',
+                        style: big?.copyWith(fontSize: (big.fontSize ?? 36) * 1.4),
+                      ),
+                      TextSpan(text: phrase.substring(at + '$inDays'.length)),
+                    ],
+            ),
+          ),
+          Text(l10n.countdownCaption, style: text.bodyMedium),
+        ],
       ),
     );
   }
@@ -435,22 +539,36 @@ const List<IconData> _moodIcons = [
   Icons.sentiment_very_satisfied_outlined,
 ];
 
+/// Red of the drops, from the palest (spotting) to the deepest (heavy).
+const _spottingRed = Color(0xFFF2A7A7);
+const _lightRed = Color(0xFFE57373);
+const _mediumRed = Color(0xFFE53935);
+const _heavyRed = Color(0xFFB71C1C);
+
+/// Faces colored by the feeling: deep red when very bad, orange, calm
+/// blue-grey for neutral, then greens when well. The face and its label
+/// still say it: the color is never alone.
+const List<Color> _moodColors = [
+  Color(0xFFC62828),
+  Color(0xFFE65100),
+  Color(0xFF607D8B),
+  Color(0xFF43A047),
+  Color(0xFF2E7D32),
+];
+
 /// 1 to 3 drops: the bleeding intensity, never told by the color alone.
 class _Drops extends StatelessWidget {
-  const _Drops(this.count, {this.outlined = false});
+  const _Drops(this.count, {required this.color});
 
   final int count;
-  final bool outlined;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: 52,
+    width: 60,
     child: Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var k = 0; k < count; k++)
-          Icon(outlined ? Icons.water_drop_outlined : Icons.water_drop, size: 16, color: AppColors.danger),
-      ],
+      children: [for (var k = 0; k < count; k++) Icon(Icons.water_drop, size: 20, color: color)],
     ),
   );
 }
@@ -552,7 +670,7 @@ class _FlowChoices extends StatelessWidget {
           for (final (i, v) in periodIntensities.indexed)
             _ChoiceTile(
               key: ValueKey('intensity-$v'),
-              leading: _Drops(i + 1),
+              leading: _Drops(i + 1, color: const [_lightRed, _mediumRed, _heavyRed][i]),
               title: _intensityLabel(l10n, v),
               subtitle: hints[i],
               selected: value == v,
@@ -562,7 +680,7 @@ class _FlowChoices extends StatelessWidget {
         ],
         _ChoiceTile(
           key: const ValueKey('flow-spotting'),
-          leading: const _Drops(1, outlined: true),
+          leading: const _Drops(1, color: _spottingRed),
           title: l10n.flowSpotting,
           subtitle: l10n.flowSpottingHint,
           selected: value == spottingFlow,
@@ -574,7 +692,7 @@ class _FlowChoices extends StatelessWidget {
   }
 }
 
-/// Pain 0–3, each number with its meaning (0 none … 3 strong).
+/// Pain 0–3, each chip with its number and its meaning.
 class _PainChoices extends StatelessWidget {
   const _PainChoices({required this.value, required this.onChanged});
 
@@ -590,7 +708,6 @@ class _PainChoices extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.pain, style: text.titleSmall),
-        Text(l10n.painHint, style: text.bodySmall?.copyWith(color: AppColors.textMuted)),
         const Gap(Space.xs),
         Wrap(
           spacing: Space.s,
@@ -610,7 +727,8 @@ class _PainChoices extends StatelessWidget {
   }
 }
 
-/// Mood: 5 faces, each with its name and a short description.
+/// Mood: 5 faces colored by the feeling, each with its name and a short
+/// description.
 class _MoodChoices extends StatelessWidget {
   const _MoodChoices({required this.value, required this.onChanged});
 
@@ -630,10 +748,12 @@ class _MoodChoices extends StatelessWidget {
         for (var m = 1; m <= moodMax; m++)
           _ChoiceTile(
             key: ValueKey('mood-$m'),
-            leading: Icon(
-              _moodIcons[m - 1],
-              size: 32,
-              color: value == m ? AppColors.accent : AppColors.textMuted,
+            // Each face in its own color; the chosen one full, the others
+            // softened so the choice stands out.
+            leading: AnimatedOpacity(
+              opacity: value == null || value == m ? 1 : 0.55,
+              duration: const Duration(milliseconds: 150),
+              child: Icon(_moodIcons[m - 1], size: 32, color: _moodColors[m - 1]),
             ),
             title: moods[m - 1],
             subtitle: hints[m - 1],
@@ -709,6 +829,22 @@ class _TodayCardState extends State<_TodayCard> {
   late bool _irregular = widget.period?.irregular ?? false;
   bool _busy = false;
 
+  /// The period or today's log changed elsewhere (period sheet, day sheet):
+  /// take the new values, so a save never writes old ones back.
+  @override
+  void didUpdateWidget(_TodayCard old) {
+    super.didUpdateWidget(old);
+    if (old.period?.irregular != widget.period?.irregular) _irregular = widget.period?.irregular ?? false;
+    if (!_sameLog(old.log, widget.log)) _draft = widget.log ?? DayLog(day: widget.today);
+  }
+
+  static bool _sameLog(DayLog? a, DayLog? b) =>
+      a?.flow == b?.flow &&
+      a?.pain == b?.pain &&
+      a?.mood == b?.mood &&
+      (a?.symptoms ?? const <String>{}).length == (b?.symptoms ?? const <String>{}).length &&
+      (a?.symptoms ?? const <String>{}).containsAll(b?.symptoms ?? const <String>{});
+
   /// Saves the day (and the irregularity of the period), then [then].
   Future<void> _save(String message, {Future<void> Function(CycleRepository repo, Period p)? then}) async {
     if (_busy) return;
@@ -719,7 +855,7 @@ class _TodayCardState extends State<_TodayCard> {
     if (p != null && _irregular != p.irregular) await repo.setDetails(p.id, irregular: _irregular);
     await repo.saveDay(_draft);
     if (p != null && then != null) await then(repo, p);
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    showCycleFeedback(messenger, message);
     if (mounted) setState(() => _busy = false);
     widget.onChanged();
   }
@@ -1081,6 +1217,7 @@ class _PeriodSheet extends StatefulWidget {
     required this.today,
     required this.periodDays,
     this.start,
+    this.end,
   });
   final Period? period;
 
@@ -1089,6 +1226,9 @@ class _PeriodSheet extends StatefulWidget {
 
   /// Start already chosen (a day tapped in the calendar).
   final DateTime? start;
+
+  /// End already chosen (the last day tapped in the calendar).
+  final DateTime? end;
 
   /// Two years back: enough for several past cycles.
   static DateTime firstDay(DateTime today) => addDays(today, -730);
@@ -1101,7 +1241,7 @@ class _PeriodSheet extends StatefulWidget {
 
 class _PeriodSheetState extends State<_PeriodSheet> {
   late DateTime? _start = widget.period?.start ?? widget.start;
-  late DateTime? _end = widget.period?.end;
+  late DateTime? _end = widget.period?.end ?? widget.end ?? _usualEnd(widget.start);
   late String _intensity = widget.period?.intensity ?? 'moyenne';
   late Set<String> _symptoms = widget.period?.symptoms ?? const {};
   late bool _irregular = widget.period?.irregular ?? false;
@@ -1111,6 +1251,14 @@ class _PeriodSheetState extends State<_PeriodSheet> {
   List<DayLog>? _days;
 
   DateTime get _first => _PeriodSheet.firstDay(widget.today);
+
+  /// End proposed for a new start: the usual length, when already over
+  /// (otherwise the period may still be going on and stays without end).
+  DateTime? _usualEnd(DateTime? start) {
+    if (start == null || widget.period != null) return null;
+    final end = addDays(start, widget.periodDays - 1);
+    return end.isAfter(widget.today) ? null : end;
+  }
 
   @override
   void didChangeDependencies() {
@@ -1166,7 +1314,7 @@ class _PeriodSheetState extends State<_PeriodSheet> {
         irregular: _irregular,
       );
     }
-    navigator.pop(true);
+    navigator.pop(l10n.periodSavedFeedback);
   }
 
   @override
@@ -1194,6 +1342,18 @@ class _PeriodSheetState extends State<_PeriodSheet> {
                     editing ? l10n.editPeriod : l10n.periodAddPast,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  if (start != null)
+                    Text(
+                      _end == null
+                          ? l10n.periodNoEnd(formatDate(start))
+                          : l10n.periodDays(
+                              formatDate(start),
+                              formatDate(_end!),
+                              daysBetween(start, _end!) + 1,
+                            ),
+                      key: const ValueKey('period-sheet-summary'),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+                    ),
                   const Gap(Space.m),
                   if (_error != null) ...[
                     NoticeBox(icon: Icons.error_outline, tone: Tone.danger, text: _error!),
@@ -1208,9 +1368,22 @@ class _PeriodSheetState extends State<_PeriodSheet> {
                     onChanged: (d) => setState(() {
                       _start = d;
                       if (_end != null && _end!.isBefore(d)) _end = null;
+                      _end ??= _usualEnd(d);
                       _error = null;
                     }),
                   ),
+                  if (start != null) ...[
+                    const Gap(Space.m),
+                    _DurationChips(
+                      start: start,
+                      end: _end,
+                      today: widget.today,
+                      onChanged: (end) => setState(() {
+                        _end = end;
+                        _error = null;
+                      }),
+                    ),
+                  ],
                   const Gap(Space.m),
                   DateField(
                     key: const ValueKey('period-end-field'),
@@ -1263,7 +1436,7 @@ class _PeriodSheetState extends State<_PeriodSheet> {
                         );
                         if (!ok || !context.mounted) return;
                         await cycleRepository(context).delete(widget.period!.id);
-                        navigator.pop(true);
+                        navigator.pop(l10n.periodDeletedFeedback);
                       },
                       child: Text(l10n.delete),
                     ),
@@ -1363,6 +1536,52 @@ class _PeriodLength extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "Durée": 3 to 8 days in one tap; fills the end date from the start. A
+/// length that would end after today is not offered.
+class _DurationChips extends StatelessWidget {
+  const _DurationChips({
+    required this.start,
+    required this.end,
+    required this.today,
+    required this.onChanged,
+  });
+
+  final DateTime start;
+  final DateTime? end;
+  final DateTime today;
+  final ValueChanged<DateTime> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final text = Theme.of(context).textTheme;
+    final current = end == null ? null : daysBetween(start, end!) + 1;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.periodDuration, style: text.titleSmall),
+        Text(l10n.periodDurationHint, style: text.bodySmall?.copyWith(color: AppColors.textMuted)),
+        const Gap(Space.xs),
+        Wrap(
+          spacing: Space.s,
+          runSpacing: Space.s,
+          children: [
+            for (var n = periodDaysMin; n <= periodDaysMax; n++)
+              ChoiceChip(
+                key: ValueKey('period-duration-$n'),
+                label: Text(l10n.periodDurationDays(n), semanticsLabel: l10n.periodLengthValue(n)),
+                selected: current == n,
+                onSelected: addDays(start, n - 1).isAfter(today)
+                    ? null
+                    : (_) => onChanged(addDays(start, n - 1)),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

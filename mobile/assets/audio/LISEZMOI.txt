@@ -1,0 +1,15 @@
+Enregistrements audio du consentement (D16)
+===========================================
+
+L'écran de consentement propose « Écouter en malagasy » et « Écouter en
+français ». Déposez ici les enregistrements, lus hors ligne :
+
+  consentement_mg.mp3   texte du consentement lu en malagasy
+  consentement_fr.mp3   texte du consentement lu en français
+
+Le texte à lire est celui des clés consentWhat, consentSync, consentCycle,
+consentControl et consentCheck de lib/l10n/app_mg.arb et app_fr.arb.
+Voix claire, lente, 64 kbit/s mono suffisent (taille de l'APK).
+
+Tant qu'un fichier manque, son bouton reste visible mais désactivé, avec
+la mention « Audio bientôt disponible ».

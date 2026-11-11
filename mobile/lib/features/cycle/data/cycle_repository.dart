@@ -3,13 +3,15 @@ import 'dart:convert';
 import 'package:sqflite_common/sqlite_api.dart';
 
 import '../../../core/db/app_database.dart';
+import '../../../core/sync/local_changes.dart';
 import '../../../core/sync/sync_status.dart';
 import '../../../core/util/clock.dart';
 import '../../../core/util/ids.dart';
 import '../domain/cycle.dart';
 
-/// Local store of "Mon cycle" (spec §4: stored only on the phone by default,
-/// never synced without explicit activation). Nothing here touches the outbox.
+/// Local store of "Mon cycle" (spec §4: stored only on the phone by default).
+/// Changes reach the outbox only when the woman shares her cycle
+/// ("Partager mon cycle" in the settings, D16 option a): see [LocalChanges].
 class CycleRepository {
   CycleRepository(this.database, {Clock? clock}) : _clock = clock ?? const SystemClock();
 
@@ -47,12 +49,15 @@ class CycleRepository {
   /// "Mes règles ont commencé aujourd'hui" (one tap).
   Future<Period> start(DateTime day) async {
     final id = newUuid();
-    await _db.insert('cycle', {
-      'id': id,
-      'date_debut': isoDate(day),
-      'sync_status': SyncStatus.saved.name,
-      'created_at': _now(),
-      'updated_at': _now(),
+    await _db.transaction((txn) async {
+      await txn.insert('cycle', {
+        'id': id,
+        'date_debut': isoDate(day),
+        'sync_status': SyncStatus.saved.name,
+        'created_at': _now(),
+        'updated_at': _now(),
+      });
+      await LocalChanges.saved(txn, 'cycle', id);
     });
     return (await periods()).firstWhere((p) => p.id == id);
   }
@@ -132,25 +137,42 @@ class CycleRepository {
   /// The period of that day then takes its flow, pain, mood and symptoms.
   Future<void> saveDay(DayLog log) async {
     final day = isoDate(log.day);
-    if (log.isEmpty) {
-      await _db.delete('cycle_jour', where: 'date_jour = ?', whereArgs: [day]);
-    } else {
-      final existing = await _db.query(
+    await _db.transaction((txn) async {
+      final existing = await txn.query(
         'cycle_jour',
-        columns: ['created_at'],
+        columns: ['id'],
         where: 'date_jour = ?',
         whereArgs: [day],
       );
-      await _db.insert('cycle_jour', {
-        'date_jour': day,
+      final id = existing.isEmpty ? null : existing.first['id'] as String?;
+      if (log.isEmpty) {
+        if (id != null) await LocalChanges.deleting(txn, 'cycle_jour', id);
+        await txn.delete('cycle_jour', where: 'date_jour = ?', whereArgs: [day]);
+        return;
+      }
+      final values = {
         'flux': log.flow,
         'douleur': log.pain,
         'humeur': log.mood,
         'symptomes': _symptomsJson(log.symptoms),
-        'created_at': existing.isEmpty ? _now() : existing.first['created_at'],
         'updated_at': _now(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-    }
+      };
+      // Corrected in place: the day keeps its id (one row per day, D16).
+      if (id != null) {
+        await txn.update('cycle_jour', values, where: 'id = ?', whereArgs: [id]);
+        await LocalChanges.saved(txn, 'cycle_jour', id);
+      } else {
+        final newId = newUuid();
+        await txn.insert('cycle_jour', {
+          'id': newId,
+          'date_jour': day,
+          ...values,
+          'sync_status': SyncStatus.saved.name,
+          'created_at': _now(),
+        });
+        await LocalChanges.saved(txn, 'cycle_jour', newId);
+      }
+    });
     final period = periodOn(await periods(), log.day, _clock.now());
     if (period != null) await _syncPeriod(period.id);
   }
@@ -203,8 +225,13 @@ class CycleRepository {
     return rows.isEmpty ? null : parseIsoDate(rows.first['date_debut']! as String);
   }
 
-  Future<void> delete(String id) => _db.delete('cycle', where: 'id = ?', whereArgs: [id]);
+  Future<void> delete(String id) => _db.transaction((txn) async {
+    await LocalChanges.deleting(txn, 'cycle', id);
+    await txn.delete('cycle', where: 'id = ?', whereArgs: [id]);
+  });
 
-  Future<void> _update(String id, Map<String, Object?> values) =>
-      _db.update('cycle', {...values, 'updated_at': _now()}, where: 'id = ?', whereArgs: [id]);
+  Future<void> _update(String id, Map<String, Object?> values) => _db.transaction((txn) async {
+    await txn.update('cycle', {...values, 'updated_at': _now()}, where: 'id = ?', whereArgs: [id]);
+    await LocalChanges.saved(txn, 'cycle', id);
+  });
 }

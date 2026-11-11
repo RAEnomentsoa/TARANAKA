@@ -3,7 +3,7 @@
 /// Every synced row carries `sync_status` (spec §9):
 /// `saved` (Enregistré, grey) → `pending` (À synchroniser, orange)
 /// → `synced` (Synchronisé, green) → `conflict` (Conflit, red).
-const List<List<String>> migrations = [
+final List<List<String>> migrations = [
   // v1 – foundation
   ['CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)'],
   // v2 – agent mode: children, measurements, referrals, centres, outbox
@@ -297,4 +297,71 @@ const List<List<String>> migrations = [
       updated_at TEXT NOT NULL
     )''',
   ],
+  // v12 – alignment with the server (D16, "bénéficiaire connectée"): every
+  // personal table gets a sync `id` (UUID; the one-row-per-day/dose rule is
+  // kept by the existing keys) and the sync metadata `version`,
+  // `sync_status`, `updated_at`, like `enfant`. Existing rows get an id and
+  // stay "Enregistré" until the first sync sends the whole history.
+  [
+    ..._addSyncId('vaccin_fait'),
+    ..._addSyncMeta('vaccin_fait'),
+    ..._addSyncId('contact_soin'),
+    ..._addSyncMeta('contact_soin', created: true, updated: true),
+    ..._addSyncId('mouvement_bebe'),
+    ..._addSyncMeta('mouvement_bebe', created: true, updated: true),
+    ..._addSyncId('alimentation_femme'),
+    ..._addSyncMeta('alimentation_femme', created: true, updated: true),
+    ..._addSyncId('cycle_jour'),
+    ..._addSyncMeta('cycle_jour'),
+    ..._addSyncMeta('suivi_grossesse'),
+    ..._addSyncMeta('mouvement_evenement', updated: true),
+    ..._addSyncMeta('tetee', updated: true),
+    // Agent mode: the pregnancies of several women are kept (user_id), and
+    // the women the agent follows (list and file of /api/beneficiaries/).
+    'ALTER TABLE grossesse ADD COLUMN user_id TEXT',
+    'CREATE INDEX grossesse_user ON grossesse(user_id)',
+    'CREATE INDEX enfant_mere ON enfant(mere_id)',
+    '''CREATE TABLE beneficiaire (
+      id TEXT PRIMARY KEY,
+      identifiant TEXT,
+      prenom TEXT NOT NULL DEFAULT '',
+      nom TEXT NOT NULL DEFAULT '',
+      phone TEXT,
+      region_id INTEGER,
+      code_beneficiaire TEXT,
+      suivie INTEGER NOT NULL DEFAULT 0,
+      grossesse_en_cours INTEGER NOT NULL DEFAULT 0,
+      nb_enfants INTEGER NOT NULL DEFAULT 0,
+      partage_cycle INTEGER NOT NULL DEFAULT 0,
+      dossier TEXT,
+      dossier_at TEXT,
+      updated_at TEXT NOT NULL
+    )''',
+  ],
+];
+
+/// SQL expression of a random UUID v4 (for rows that existed before v12).
+const String sqlNewUuid =
+    "lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || "
+    "substr(lower(hex(randomblob(2))), 2) || '-' || "
+    "substr('89ab', 1 + (abs(random()) % 4), 1) || substr(lower(hex(randomblob(2))), 2) || '-' || "
+    'lower(hex(randomblob(6)))';
+
+const String _sqlNow = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
+
+/// Adds a unique `id` to a table keyed by its natural key, filled for the
+/// existing rows.
+List<String> _addSyncId(String table) => [
+  'ALTER TABLE $table ADD COLUMN id TEXT',
+  'UPDATE $table SET id = $sqlNewUuid WHERE id IS NULL',
+  'CREATE UNIQUE INDEX ${table}_id ON $table(id)',
+];
+
+List<String> _addSyncMeta(String table, {bool created = false, bool updated = false}) => [
+  'ALTER TABLE $table ADD COLUMN version INTEGER NOT NULL DEFAULT 1',
+  "ALTER TABLE $table ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'saved'",
+  if (created) 'ALTER TABLE $table ADD COLUMN created_at TEXT',
+  if (updated) 'ALTER TABLE $table ADD COLUMN updated_at TEXT',
+  if (created) 'UPDATE $table SET created_at = $_sqlNow WHERE created_at IS NULL',
+  'UPDATE $table SET updated_at = coalesce(created_at, $_sqlNow) WHERE updated_at IS NULL',
 ];
